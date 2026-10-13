@@ -11,6 +11,8 @@ export interface Fingerprint {
   rmsDb: number[];
   /** energiegewichteter spektraler Schwerpunkt in Hz */
   centroidHz: number;
+  /** Schwerpunkt nur unter 2 kHz: erfasst Tonhöhen auch unter lautem Rauschen (z. B. Snare) */
+  lowCentroidHz: number;
 }
 
 export interface Tolerance {
@@ -24,20 +26,25 @@ export interface Tolerance {
   rmsMaxDb: number;
   /** erlaubte relative Abweichung des Schwerpunkts */
   centroidRel: number;
+  /** erlaubte relative Abweichung des Schwerpunkts unter 2 kHz */
+  lowCentroidRel: number;
 }
 
 export const SILENCE_DB = -180;
 const WINDOW_S = 0.01;
 const FRAME = 2048;
+const LOW_HZ = 2000;
 const round = (v: number, digits: number) => Math.round(v * 10 ** digits) / 10 ** digits;
 const HANN = Float64Array.from(
   { length: FRAME },
   (_, i) => 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (FRAME - 1)),
 );
 
-function spectralCentroid(samples: Float32Array, sampleRate: number): number {
+function spectralCentroids(samples: Float32Array, sampleRate: number): [all: number, low: number] {
   let num = 0;
   let den = 0;
+  let lowNum = 0;
+  let lowDen = 0;
   const frame = new Float64Array(FRAME);
   for (let start = 0; start < samples.length; start += FRAME) {
     for (let i = 0; i < FRAME; i++) {
@@ -47,11 +54,16 @@ function spectralCentroid(samples: Float32Array, sampleRate: number): number {
     const mag = magnitudeSpectrum(frame);
     for (let k = 1; k < mag.length; k++) {
       const power = mag[k]! * mag[k]!;
-      num += ((k * sampleRate) / FRAME) * power;
+      const hz = (k * sampleRate) / FRAME;
+      num += hz * power;
       den += power;
+      if (hz < LOW_HZ) {
+        lowNum += hz * power;
+        lowDen += power;
+      }
     }
   }
-  return den > 0 ? num / den : 0;
+  return [den > 0 ? num / den : 0, lowDen > 0 ? lowNum / lowDen : 0];
 }
 
 export function fingerprint(samples: Float32Array, sampleRate: number): Fingerprint {
@@ -73,13 +85,15 @@ export function fingerprint(samples: Float32Array, sampleRate: number): Fingerpr
     const rms = Math.sqrt(sum / (end - i));
     rmsDb.push(rms > 0 ? round(20 * Math.log10(rms), 2) : SILENCE_DB);
   }
+  const [centroid, lowCentroid] = spectralCentroids(samples, sampleRate);
   return {
     sampleRate,
     length: samples.length,
     peak: round(peak, 5),
     nonFinite,
     rmsDb,
-    centroidHz: round(spectralCentroid(samples, sampleRate), 1),
+    centroidHz: round(centroid, 1),
+    lowCentroidHz: round(lowCentroid, 1),
   };
 }
 
@@ -116,6 +130,13 @@ export function compareFingerprints(
   if (cDiff > tol.centroidRel) {
     problems.push(
       `Schwerpunkt ${expected.centroidHz} Hz → ${actual.centroidHz} Hz (${pct(cDiff)})`,
+    );
+  }
+  const lDiff =
+    Math.abs(actual.lowCentroidHz - expected.lowCentroidHz) / Math.max(expected.lowCentroidHz, 1);
+  if (lDiff > tol.lowCentroidRel) {
+    problems.push(
+      `Schwerpunkt <2 kHz ${expected.lowCentroidHz} Hz → ${actual.lowCentroidHz} Hz (${pct(lDiff)})`,
     );
   }
   return problems;

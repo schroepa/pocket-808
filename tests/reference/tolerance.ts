@@ -10,4 +10,5 @@ export const TOLERANCE: Tolerance = {
   rmsMeanDb: 0.5,
   rmsMaxDb: 3,
   centroidRel: 0.03,
+  lowCentroidRel: 0.03,
 };
