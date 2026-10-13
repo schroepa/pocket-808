@@ -25,3 +25,8 @@ test('Start-Tipp schaltet Wiedergabe ein und aus', async ({ page, pageErrors }) 
   await expect(play).toHaveAttribute('aria-pressed', 'false');
   expect(pageErrors).toEqual([]);
 });
+
+test('Umlaute werden korrekt dargestellt', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#mixSum')).toContainText('Kanäle');
+});

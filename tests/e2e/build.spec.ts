@@ -12,6 +12,11 @@ test.describe('gebaute dist/index.html', () => {
     expect(statSync(DIST).size).toBeLessThanOrEqual(BUDGET_BYTES);
   });
 
+  test('deklariert UTF-8 (ohne Angabe raten Browser falsch, Umlaute zerfallen)', () => {
+    const html = readFileSync(DIST, 'utf8');
+    expect(html.slice(0, 200)).toMatch(/<meta charset="utf-8">/i);
+  });
+
   test('ist eigenständig: nur Google Fonts als externe Ressource', () => {
     const html = readFileSync(DIST, 'utf8');
     expect(html).not.toMatch(/<script[^>]+src=/);
