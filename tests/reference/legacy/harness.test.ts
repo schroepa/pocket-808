@@ -27,6 +27,21 @@ describe('splitLegacy', () => {
     );
   });
 
+  it('übernimmt Ersatztext wörtlich, auch mit $-Zeichen', () => {
+    const { script } = splitLegacy(html, [
+      { find: 'const hot=window.claude', replace: "x='$&$1';" },
+    ]);
+    expect(script).toContain("x='$&$1';");
+  });
+
+  it('scheitert laut, wenn ein Anker mehrfach vorkommt', () => {
+    const doppelt = html.replace(
+      'const hot=window.claude;',
+      'const hot=window.claude;const hot=window.claude;',
+    );
+    expect(() => splitLegacy(doppelt)).toThrow(/Anker mehrdeutig/);
+  });
+
   it('scheitert laut, wenn das Script fehlt', () => {
     expect(() => splitLegacy('<html></html>')).toThrow(/Legacy-Script nicht gefunden/);
   });

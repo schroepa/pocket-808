@@ -41,6 +41,8 @@ const CASES: [file: string, specifier: string, allowed: boolean][] = [
   ['src/platform/ios.ts', '../store/store.ts', false],
   ['src/main.ts', './audio/engine.ts', true],
   ['src/main.ts', './ui/knob.ts', true],
+  ['src/core/pattern.ts', '../main.js', false],
+  ['src/ui/knob.ts', '../main.js', false],
 ];
 
 describe('Schichtregel', () => {
@@ -50,4 +52,13 @@ describe('Schichtregel', () => {
       expect(errors.length > 0).toBe(!allowed);
     });
   }
+});
+
+describe('dynamische Importe', () => {
+  it('sind in src/ verboten (Schichtgrenzen wären nicht prüfbar)', async () => {
+    const [result] = await eslint.lintText("export const m = import('../audio/engine.ts');\n", {
+      filePath: 'src/ui/knob.ts',
+    });
+    expect(result?.messages.some((m) => m.ruleId === 'no-restricted-syntax')).toBe(true);
+  });
 });

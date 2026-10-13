@@ -33,6 +33,14 @@ export interface LegacyState {
   synth: Record<Part, SynthPatch>;
   mix: Record<string, MixChannel>;
   fx: Record<string, number>;
+  song: { p: string; n: number }[];
+  part: Part;
+  noteLen: number;
+  key: number;
+  scale: number;
+  sel: number;
+  preset: string | null;
+  smp: { sel: number; pads: Record<string, unknown>[] };
 }
 
 export interface LegacyHooks {
@@ -53,6 +61,49 @@ export interface LegacyHooks {
   voiceBuf: Record<string, AudioBuffer | undefined>;
   smpPcm: (Float32Array | null)[];
   drumPcm: Record<string, Float32Array | undefined>;
+  drumName: Record<string, string | undefined>;
+  queue: { step: number; time: number; slot: string; song: boolean; si: number }[];
+  DEFAULTS: Record<string, DrumParams>;
+  PRESETS: readonly { name: string; tempo: number; swing: number; pat: Record<string, string> }[];
+  SLOTS: readonly string[];
+  SEED_B: Record<string, string>;
+  SEED_NOTES: Record<string, Record<string, [number, number, number][]>>;
+  PARTS: readonly Part[];
+  PART_INFO: Record<Part, { name: string; base: number; color: string }>;
+  NAMES: readonly string[];
+  SCALES: readonly { name: string; s: number[] }[];
+  WAVES: readonly [string, string][];
+  ROWS: number;
+  SYN_KEYS: readonly string[];
+  SMP_RATE: number;
+  SMP_MAX: number;
+  SMP_DEF: Record<string, unknown>;
+  CHS: readonly string[];
+  CH_FULL: Record<string, string>;
+  KEY: string;
+  SMP_KEY: string;
+  FACTORY: readonly { name: string }[];
+  degMidi(part: Part, degree: number): number;
+  degName(degree: number): string;
+  effLen(row: unknown[], step: number): number;
+  calcAud(): void;
+  aud: Record<string, boolean>;
+  tA(x: number): number;
+  tD(x: number): number;
+  tR(x: number): number;
+  mastGain(v: number): number;
+  toggle(voiceIndex: number, step: number): void;
+  placeNote(degree: number, step: number): void;
+  toggleSub(key: string, step: number, k: number): number;
+  setSub(key: string, step: number, row: number[]): void;
+  clearTrack(): void;
+  clearAll(): void;
+  loadPreset(preset: unknown): void;
+  viewPattern(slot: string): void;
+  copyPattern(): void;
+  pastePattern(): void;
+  snap(): void;
+  undoLast(): void;
   VOICES: readonly { id: string; name: string }[];
   SYN_PRESETS: Record<Part, readonly { name: string; v: SynthPatch }[]>;
 }

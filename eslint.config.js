@@ -12,7 +12,7 @@ const forbid = (files, layers, message) => ({
       {
         patterns: [
           { regex: `(^|/)(${layers.filter((l) => l !== 'main').join('|')})(/|$)`, message },
-          ...(layers.includes('main') ? [{ regex: '(^|/)main(\\.ts)?$', message }] : []),
+          ...(layers.includes('main') ? [{ regex: '(^|/)main(\\.[cm]?[jt]s)?$', message }] : []),
         ],
       },
     ],
@@ -51,6 +51,18 @@ export default defineConfig(
     // DSP- und Test-Hilfscode indiziert Typed Arrays in engen Schleifen
     files: ['tests/**/*.ts'],
     rules: { '@typescript-eslint/no-non-null-assertion': 'off' },
+  },
+  {
+    files: ['src/**/*.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ImportExpression',
+          message: 'Keine dynamischen Importe: Schichtgrenzen wären nicht prüfbar.',
+        },
+      ],
+    },
   },
   forbid(
     ['src/core/**/*.ts'],

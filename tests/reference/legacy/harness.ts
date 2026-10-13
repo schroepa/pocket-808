@@ -12,7 +12,12 @@ export const LEGACY_HTML = fileURLToPath(new URL('../../../legacy/index.html', i
 /** Reicht interne Funktionen und Werte des Legacy-Scripts an die Tests heraus. */
 const HOOK =
   'window.__t={state,serial,ensureAudio,applyMixAll,stutterOn,stutterOff,synthNote,smpPlay,' +
-  'renderVoice,prerenderAll,pump,voiceBuf,smpPcm,drumPcm,VOICES,SYN_PRESETS,get ctx(){return ctx;},' +
+  'renderVoice,prerenderAll,pump,voiceBuf,smpPcm,drumPcm,drumName,queue,VOICES,SYN_PRESETS,' +
+  'DEFAULTS,PRESETS,SLOTS,SEED_B,SEED_NOTES,PARTS,PART_INFO,NAMES,SCALES,WAVES,ROWS,SYN_KEYS,' +
+  'SMP_RATE,SMP_MAX,SMP_DEF,CHS,CH_FULL,KEY,SMP_KEY,FACTORY,' +
+  'degMidi,degName,effLen,calcAud,aud,tA,tD,tR,mastGain,' +
+  'toggle,placeNote,toggleSub,setSub,clearTrack,clearAll,loadPreset,viewPattern,copyPattern,' +
+  'pastePattern,snap,undoLast,get ctx(){return ctx;},' +
   'begin(){playing=true;step=0;songFirst=true;barSong=false;queue.length=0;nextTime=.08;},' +
   'stop(){playing=false;}};\n';
 
@@ -56,8 +61,10 @@ export function splitLegacy(
   if (!m) throw new Error('Legacy-Script nicht gefunden');
   let script = m[0].replace(/^<script>/, '').replace(/<\/script>$/, '');
   for (const p of patches) {
-    if (!script.includes(p.find)) throw new Error(`Anker nicht gefunden: ${p.find}`);
-    script = script.replace(p.find, p.replace);
+    const parts = script.split(p.find);
+    if (parts.length < 2) throw new Error(`Anker nicht gefunden: ${p.find}`);
+    if (parts.length > 2) throw new Error(`Anker mehrdeutig: ${p.find}`);
+    script = parts.join(p.replace);
   }
   return { body: html.replace(m[0], ''), script };
 }
