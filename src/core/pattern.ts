@@ -47,8 +47,10 @@ function withSub(p: Pattern, key: SubKey, step: number, row: StepRow | null): Pa
     Object.entries(p.sub[key] ?? {}).filter(([k]) => Number(k) !== step),
   ) as Partial<Record<number, StepRow>>;
   if (row) steps[step] = row;
-  const sub = Object.fromEntries(Object.entries(p.sub).filter(([k]) => k !== key)) as SubMap;
-  if (Object.keys(steps).length) sub[key] = steps;
+  // vorhandenen Schlüssel an seiner Stelle ersetzen (Reihenfolge wie Legacy), nur leere entfernen
+  const sub: SubMap = Object.keys(steps).length
+    ? { ...p.sub, [key]: steps }
+    : Object.fromEntries(Object.entries(p.sub).filter(([k]) => k !== key));
   return { ...p, sub };
 }
 

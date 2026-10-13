@@ -31,7 +31,8 @@ describe('core loadState = Legacy merge', () => {
         const raw = JSON.stringify(save);
         const page = loadLegacy({ storage: { 'pocket808.v1': raw } });
         try {
-          expect(viaCore(raw)).toEqual(plain(page.t.serial()));
+          // JSON-Text: Inhalt und Schlüssel-Reihenfolge wie Legacy
+          expect(JSON.stringify(viaCore(raw))).toBe(JSON.stringify(page.t.serial()));
         } finally {
           page.close();
         }

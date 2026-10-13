@@ -219,8 +219,6 @@ function applyLegacy(p: LegacyPage, op: Op): void {
   }
 }
 
-const plain = (v: unknown): unknown => JSON.parse(JSON.stringify(v));
-
 describe('core Pattern-Bearbeitung = Legacy (Modelltest)', () => {
   it('beliebige Bearbeitungsfolgen führen zum selben Zustand', () => {
     fc.assert(
@@ -233,9 +231,11 @@ describe('core Pattern-Bearbeitung = Legacy (Modelltest)', () => {
           for (const [i, op] of ops.entries()) {
             m = applyCore(m, op);
             applyLegacy(page, op);
-            expect(plain(serialize(m.state)), `nach Schritt ${i}: ${JSON.stringify(op)}`).toEqual(
-              plain(page.t.serial()),
-            );
+            // JSON-Text statt Inhalt: auch die Schlüssel-Reihenfolge muss stimmen (bytegleich speichern)
+            expect(
+              JSON.stringify(serialize(m.state)),
+              `nach Schritt ${i}: ${JSON.stringify(op)}`,
+            ).toBe(JSON.stringify(page.t.serial()));
           }
           expect(page.errors).toEqual([]);
         } finally {

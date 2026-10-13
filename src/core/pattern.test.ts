@@ -66,6 +66,14 @@ describe('Sub-Steps', () => {
     expect(Object.keys(s.patterns.A.sub.CH ?? {})).toEqual(['5']);
     expect(setSubSteps(fresh(), 'CH', 1, SUB_PATTERNS.clear()).patterns.A.sub).toEqual({});
   });
+  it('behält die Reihenfolge der Schlüssel wie Legacy (gespeichertes JSON bleibt bytegleich)', () => {
+    let s = setSubSteps(fresh(), 'BD', 1, roll());
+    s = setSubSteps(deepFreeze(s), 'CH', 2, roll());
+    s = setSubSteps(deepFreeze(s), 'BD', 5, roll());
+    expect(Object.keys(s.patterns.A.sub)).toEqual(['BD', 'CH']);
+    s = setSubSteps(deepFreeze(s), 'BD', 1, SUB_PATTERNS.clear());
+    expect(Object.keys(s.patterns.A.sub)).toEqual(['BD', 'CH']);
+  });
   it('Vorlagen Roll, ÷2, ÷4, Leeren', () => {
     expect(SUB_PATTERNS.roll().every((x) => x === 1)).toBe(true);
     expect(SUB_PATTERNS.half().filter(Boolean)).toHaveLength(8);
