@@ -18,7 +18,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:ref": "vitest run --project reference",
+    "ref:update": "REF_UPDATE=1 vitest run --project reference"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

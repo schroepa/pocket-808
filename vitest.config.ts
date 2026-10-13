@@ -16,6 +16,16 @@ export default defineConfig({
           ],
         },
       },
+      {
+        test: {
+          name: 'reference',
+          environment: 'node',
+          include: ['tests/reference/*.test.ts'],
+          exclude: ['tests/reference/golden.test.ts', 'tests/reference/bench.test.ts'],
+          pool: 'forks',
+          testTimeout: 300_000,
+        },
+      },
     ],
   },
 });
