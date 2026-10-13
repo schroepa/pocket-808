@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
-    "test:unit": "vitest run --project unit",
+    "test:unit": "vitest run --project unit --coverage",
     "prepare": "simple-git-hooks",
     "dev": "vite",
     "build": "vite build",
