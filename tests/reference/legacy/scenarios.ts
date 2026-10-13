@@ -1,6 +1,6 @@
 import { fingerprint, type Fingerprint } from '../../support/fingerprint.ts';
 import { loadLegacy, type LegacyPage } from './harness.ts';
-import type { DrumParams, Part } from './types.ts';
+import { row, type DrumParams, type LegacyHooks, type Part } from './types.ts';
 
 export interface StereoPrint {
   L: Fingerprint;
@@ -107,9 +107,129 @@ export async function samplerPad(args: { pad: number; seed?: number }): Promise<
   }
 }
 
+/** Leert alle Patterns und stellt einen neutralen Ausgangszustand her (wie mixlib.clearAll). */
+function isolate(t: LegacyHooks): void {
+  for (const pat of Object.values(t.state.patterns)) {
+    for (const v of t.VOICES) row(pat, v.id).fill(0);
+    pat.notes.BA.fill(null);
+    pat.notes.LD.fill(null);
+    for (const r of pat.smp) r.fill(0);
+    pat.sub = {};
+  }
+  t.state.mode = 'pattern';
+  t.state.cur = 'A';
+  const a = t.state.patterns.A;
+  if (!a) throw new Error('Pattern A fehlt');
+  t.state.pat = a;
+  t.state.tempo = 120;
+}
+
+function hits(t: LegacyHooks, steps: Record<string, number[]>): void {
+  const a = t.state.patterns.A;
+  if (!a) throw new Error('Pattern A fehlt');
+  for (const [id, list] of Object.entries(steps)) for (const s of list) row(a, id)[s] = 1;
+}
+
+const mixOf = (t: LegacyHooks, id: string) => {
+  const ch = t.state.mix[id];
+  if (!ch) throw new Error(`Kanal ${id} fehlt`);
+  return ch;
+};
+
+interface MixCase {
+  seconds: number;
+  setup: (t: LegacyHooks) => void;
+  events?: { at: number; run: (t: LegacyHooks) => void }[];
+}
+
+const MIX: Record<string, MixCase> = {
+  // Startzustand der App: Hip-Hop-Pattern A mit Bass, Lead und Sampler, Tempo 90, Swing
+  demo: { seconds: 4, setup: () => undefined },
+  reverbWet: {
+    seconds: 2.4,
+    setup: (t) => {
+      isolate(t);
+      hits(t, { SD: [0] });
+      mixOf(t, 'SD').r = 1;
+      t.state.fx.ret = 1;
+      t.state.fx.size = 0.8;
+    },
+  },
+  djLowpass: {
+    seconds: 1.4,
+    setup: (t) => {
+      isolate(t);
+      hits(t, { CH: [0, 2, 4], CY: [0] });
+      t.state.fx.dj = 0.05;
+    },
+  },
+  djHighpass: {
+    seconds: 1.4,
+    setup: (t) => {
+      isolate(t);
+      hits(t, { BD: [0] });
+      t.state.fx.dj = 0.95;
+    },
+  },
+  panRight: {
+    seconds: 1,
+    setup: (t) => {
+      isolate(t);
+      hits(t, { BD: [0] });
+      mixOf(t, 'BD').p = 1;
+      mixOf(t, 'BD').r = 0;
+    },
+  },
+  stutter: {
+    seconds: 1.7,
+    setup: (t) => {
+      isolate(t);
+      hits(t, { BD: [0] });
+      mixOf(t, 'BD').r = 0;
+    },
+    events: [
+      {
+        at: 0.1,
+        run: (t) => {
+          t.stutterOn(0.125);
+        },
+      },
+    ],
+  },
+};
+
+export const MIX_NAMES = Object.keys(MIX);
+
+/** Spielt ein Pattern über den Legacy-Scheduler (pump im 25-ms-Takt) und rendert den Master. */
+export async function mixScenario(args: { name: string; seed?: number }): Promise<StereoPrint> {
+  const sc = MIX[args.name];
+  if (!sc) throw new Error(`Unbekanntes Mix-Szenario ${args.name}`);
+  const p = loadLegacy({ seed: args.seed ?? 1, audio: { seconds: sc.seconds } });
+  try {
+    const { t } = p;
+    sc.setup(t);
+    if (!t.ensureAudio()) throw new Error('Audio-Kontext fehlt');
+    await t.prerenderAll();
+    p.setNow(0.001);
+    t.applyMixAll();
+    p.setNow(0);
+    t.begin();
+    const pending = [...(sc.events ?? [])];
+    for (let now = 0; now < sc.seconds; now += 0.025) {
+      p.setNow(now);
+      while (pending[0] && pending[0].at <= now) pending.shift()?.run(t);
+      t.pump();
+    }
+    return await renderStereo(p);
+  } finally {
+    p.close();
+  }
+}
+
 export const SCENARIOS: Record<string, (args: never) => Promise<unknown>> = {
   smoke,
   drumVariants,
   synthPreset,
   samplerPad,
+  mixScenario,
 };
