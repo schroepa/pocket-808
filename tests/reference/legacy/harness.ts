@@ -28,7 +28,25 @@ export const PATCHES: readonly Patch[] = [
     find: 'setupGraph(ctx);\n  prerenderAll();',
     replace: 'setupGraph(ctx);\n  if(!window.__noPrerender) prerenderAll();',
   },
+  // Zufall je Zweck neu starten: Referenzen hängen dann nur vom Klang selbst ab,
+  // nicht davon, wie oft Math.random vorher schon aufgerufen wurde
+  { find: 'function setupGraph(c){', replace: 'function setupGraph(c){window.__reseed("graph");' },
+  {
+    find: 'function buildIR(c,size,damp){',
+    replace: 'function buildIR(c,size,damp){window.__reseed("ir");',
+  },
+  {
+    find: 'function renderVoice(i){',
+    replace: 'function renderVoice(i){window.__reseed("voice:"+i);',
+  },
 ];
+
+/** FNV-1a, um aus Seed und Zweck einen Start-Seed zu bilden. */
+function hash(text: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193);
+  return h >>> 0;
+}
 
 export function splitLegacy(
   html: string,
@@ -93,7 +111,11 @@ export function loadLegacy(opts: LegacyOptions = {}): LegacyPage {
     virtualConsole: vc,
   });
   const w = dom.window as DOMWindow & Record<string, unknown>;
-  w.Math.random = mulberry32(opts.seed ?? 1);
+  const seed = opts.seed ?? 1;
+  w.Math.random = mulberry32(seed);
+  w.__reseed = (tag: string) => {
+    w.Math.random = mulberry32(hash(`${seed}:${tag}`));
+  };
   // node-web-audio-api erwartet Float32Arrays aus dem Node-Realm
   w.Float32Array = Float32Array;
   w.HTMLCanvasElement.prototype.getContext = () => null;

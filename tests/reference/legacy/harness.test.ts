@@ -4,13 +4,21 @@ import { LEGACY_HTML, loadLegacy, mulberry32, PATCHES, splitLegacy } from './har
 
 describe('splitLegacy', () => {
   const html =
-    '<html><body><p>x</p><script>\n(function(){\nconst hot=window.claude;\nsetupGraph(ctx);\n  prerenderAll();\n})();\n</script></body></html>';
+    '<html><body><p>x</p><script>\n(function(){\nfunction setupGraph(c){}\nfunction buildIR(c,size,damp){}\n' +
+    'function renderVoice(i){}\nconst hot=window.claude;\nsetupGraph(ctx);\n  prerenderAll();\n})();\n</script></body></html>';
 
   it('trennt Script und Markup und wendet alle Patches an', () => {
     const { body, script } = splitLegacy(html);
     expect(body).toBe('<html><body><p>x</p></body></html>');
     expect(script).toContain('window.__t=');
     expect(script).toContain('if(!window.__noPrerender) prerenderAll();');
+  });
+
+  it('kennt die Anker für das Neustarten des Zufalls', () => {
+    const finds = PATCHES.map((p) => p.find);
+    expect(finds).toContain('function renderVoice(i){');
+    expect(finds).toContain('function buildIR(c,size,damp){');
+    expect(finds).toContain('function setupGraph(c){');
   });
 
   it('scheitert laut, wenn ein Anker fehlt', () => {
