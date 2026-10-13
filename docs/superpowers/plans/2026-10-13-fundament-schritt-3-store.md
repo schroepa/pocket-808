@@ -60,7 +60,7 @@ tests/reference/core-pattern.test.ts   Modelltest zusätzlich gegen Store-Befehl
 - [ ] **Step 1: Branch**
 
 ```bash
-git switch -c store
+git switch store 2>/dev/null || git switch -c store
 ```
 
 - [ ] **Step 2: Failing Tests für No-op-Identität und Teilen** – in `src/core/pattern.test.ts` einen Block ergänzen:
