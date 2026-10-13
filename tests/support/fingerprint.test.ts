@@ -84,6 +84,19 @@ describe('compareFingerprints', () => {
     expect(Math.abs(a.centroidHz - b.centroidHz) / a.centroidHz).toBeLessThan(0.03);
   });
 
+  it('meldet einen zusätzlichen Treffer in einer sonst stillen Stelle', () => {
+    const n = Math.round(SR * 1);
+    const hit = (at: number) =>
+      Float32Array.from({ length: n }, (_, i) => {
+        const t = i / SR - at;
+        return t >= 0 ? 0.8 * Math.sin(2 * Math.PI * 80 * t) * Math.exp(-t * 30) : 0;
+      });
+    const one = hit(0.05);
+    const two = mix(one, hit(0.9));
+    const problems = compareFingerprints(fingerprint(one, SR), fingerprint(two, SR), TOL);
+    expect(problems.some((p) => p.startsWith('RMS'))).toBe(true);
+  });
+
   it('meldet abweichende Länge statt abzustürzen', () => {
     const problems = compareFingerprints(base, fingerprint(sine(440, 0.5, 0.8), SR), TOL);
     expect(problems).toHaveLength(1);

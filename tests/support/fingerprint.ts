@@ -116,10 +116,13 @@ export function compareFingerprints(
   if (peakDiff > tol.peakRel) {
     problems.push(`Spitze ${expected.peak} → ${actual.peak} (${pct(peakDiff)})`);
   }
-  const loudest = Math.max(...expected.rmsDb);
-  const diffs = expected.rmsDb.flatMap((e, i) =>
-    e >= loudest + tol.rmsFloorDb ? [Math.abs((actual.rmsDb[i] ?? SILENCE_DB) - e)] : [],
-  );
+  // Schwelle aus der Referenz, verglichen werden Fenster, die in Referenz ODER Ist laut sind:
+  // so fällt auch zusätzlicher Klang in einer sonst stillen Stelle auf
+  const floor = Math.max(...expected.rmsDb) + tol.rmsFloorDb;
+  const diffs = expected.rmsDb.flatMap((e, i) => {
+    const a = actual.rmsDb[i] ?? SILENCE_DB;
+    return Math.max(e, a) >= floor ? [Math.abs(a - e)] : [];
+  });
   const mean = diffs.length ? diffs.reduce((a, b) => a + b, 0) / diffs.length : 0;
   const max = Math.max(0, ...diffs);
   if (mean > tol.rmsMeanDb || max > tol.rmsMaxDb) {
