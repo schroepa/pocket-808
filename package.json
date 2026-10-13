@@ -23,7 +23,7 @@
     "ref:update": "REF_UPDATE=1 vitest run --project reference",
     "bench": "vitest run --project bench",
     "bench:update": "REF_UPDATE=1 vitest run --project bench",
-    "test": "npm run test:unit && npm run test:ref && npm run test:e2e && npm run test:legacy"
+    "test": "npm run test:unit && npm run test:ref && npm run bench && npm run test:e2e && npm run test:legacy"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
