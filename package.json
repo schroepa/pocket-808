@@ -1,0 +1,14 @@
+{
+  "name": "pocket-808",
+  "version": "0.15.0",
+  "private": true,
+  "description": "Pocket 808 – mobile Drum-Machine mit Synth, Sampler, Mixer und FX als einzelne HTML-Datei",
+  "scripts": {
+    "test": "node tests/synth-test.js && node tests/smp-test.js && node tests/sub-test.js && node tests/compat-test.js && node tests/env-test.js && node tests/mix-test2.js",
+    "bench": "node tests/bench.js index.html demo && node tests/bench.js index.html worst"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1",
+    "node-web-audio-api": "^2.2.0"
+  }
+}
