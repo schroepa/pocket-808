@@ -1,6 +1,6 @@
 # Pocket 808
 
-Mobile Drum-Machine im Stil der TR-808, als einzelne HTML-Datei ohne Build-Schritt. Gebaut für das iPhone, läuft in jedem modernen Browser.
+Mobile Drum-Machine im Stil der TR-808. Gebaut für das iPhone, läuft in jedem modernen Browser. Der Build erzeugt eine einzelne, eigenständige HTML-Datei.
 
 ## Starten
 

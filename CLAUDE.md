@@ -1,6 +1,6 @@
 # Pocket 808 – Anweisungen für Claude Code
 
-Mobile Drum-Machine im Stil der TR-808 als **einzelne HTML-Datei** (`index.html`: Markup, CSS und Script, kein Build-Schritt, keine Laufzeit-Abhängigkeiten). Hauptgerät des Besitzers ist ein **iPhone**. Alles muss dort performant und knackfrei laufen.
+Mobile Drum-Machine im Stil der TR-808. Quelltext in `src/` (TypeScript, Vite), der Build erzeugt eine **einzelne `dist/index.html`** ohne Laufzeit-Abhängigkeiten. Bis zur Umstellung (Fundament Schritt 6) ist `legacy/index.html` die ausgelieferte App. Hauptgerät des Besitzers ist ein **iPhone**. Alles muss dort performant und knackfrei laufen.
 
 ## Zusammenarbeit
 
@@ -18,6 +18,8 @@ Mobile Drum-Machine im Stil der TR-808 als **einzelne HTML-Datei** (`index.html`
 
 ## Architektur
 
+- Schichten: `src/core` (reine Logik, unveränderliche Funktionen, Datenmodell = Speicherformat) → `src/store` → `src/audio` / `src/ui` → `src/main.ts`. Die Schichtregel erzwingt ESLint. `core` ist gegen Legacy geprüft (`tests/reference/core-*.test.ts`: Referenzdateien, Fuzz, Modelltest, Scheduler-Sequenz).
+- Produktionscode ohne `!`-Assertions: `must(wert, beschreibung)` aus `src/core/util.ts` wirft bei fehlenden Werten.
 - Persistenz: `localStorage` unter `pocket808.v1` (Zustand) und `pocket808.smp.v1` (Samples). Immer in try/catch. Beim Laden läuft alles durch `merge()`: neue Felder brauchen Defaults und eine **Migration alter Speicherstände** (Beispiel: der frühere Synth-Regler `sus` wird zu den Hüllkurven umgerechnet).
 - Zustand: ein Objekt `state` (Tempo, Swing, Patterns, `synth`, `smp`, `mix`, `fx`). Änderungen rufen `save()`.
 - Audio-Kette: Stimmen → Kanalzug (`chan[id]`: Gain → StereoPanner) → `bus` → DJ-Filter (LP/HP) → Kompressor → Soft-Clip → Master-Gain → Limiter → Sicherheits-Shaper → Ausgang. Sends: Reverb (Convolver mit erzeugter Impulsantwort) und tempo-synchrones Delay für die Synth-Stimmen. Der Master-Pegel ist auf Spitze ≈ 0,77 abgestimmt. Bei Änderungen nachmessen (`tests/reference/mix.test.ts`, Szenario `demo`).
@@ -54,17 +56,16 @@ npm run build         # dist/index.html (eine Datei)
 - Audio-Tests laufen je Szenario in einem eigenen Kindprozess (`tests/reference/run.ts`).
 - Der Git-Hook (vor jedem Commit) prüft Lint, Typen, Unit- und Referenztests.
 
-- Übergangsphase (Branch `fundament`): Die App liegt unverändert in `legacy/index.html`, die alten Tests in `legacy/tests/`. Neue Werkzeuge und Referenztests kommen schrittweise dazu, siehe `docs/superpowers/plans/`.
+- Übergangsphase: Die App liegt unverändert in `legacy/index.html`, die alten Tests in `legacy/tests/`. Neue Werkzeuge und Referenztests kommen schrittweise dazu, siehe `docs/superpowers/plans/`.
 
-- Tests laden `index.html` in jsdom mit `node-web-audio-api` und rendern Audio offline.
-- Die Audio-Bibliothek ist bei mehreren Kontexten pro Prozess launisch. Audio-Szenarien deshalb **einzeln pro Prozess** laufen lassen (so macht es `tests/mix-test2.js`).
-- Syntax schnell prüfen: Script aus `index.html` extrahieren und `node --check` darauf laufen lassen.
+- Referenztests laden `legacy/index.html` in jsdom (`tests/reference/legacy/harness.ts`) und rendern Audio mit `node-web-audio-api` offline, je Szenario in einem eigenen Prozess (die Bibliothek ist bei mehreren Kontexten pro Prozess launisch).
+- Neue Logik testgetrieben in `src/**/*.test.ts`; Abdeckung ≥ 90 % pro Datei wird von `npm run test:unit` erzwungen. Eigenschafts- und Modelltests mit fast-check per Mutationsprüfung kontrollieren (absichtlich Fehler einbauen, Test muss rot werden).
 - Visuelle Prüfung: Chromium/Playwright, Viewport 390 × 844.
 - Offline erscheint ein Konsolenfehler für die Google Fonts. Das ist harmlos.
 
 ## Veröffentlichung
 
-`index.html` wird zusätzlich als Claude-Artifact veröffentlicht (`<title>` "Pocket 808"). Das Artifact hängt nicht automatisch am Repo und muss separat aktualisiert werden.
+`dist/index.html` (nach `npm run build`) wird zusätzlich als Claude-Artifact veröffentlicht (`<title>` "Pocket 808"). Das Artifact hängt nicht automatisch am Repo und muss separat aktualisiert werden.
 
 ## Roadmap (in dieser Reihenfolge, je Etappe fertig, testen, bestätigen lassen)
 
