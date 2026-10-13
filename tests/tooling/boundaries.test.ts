@@ -62,3 +62,37 @@ describe('dynamische Importe', () => {
     expect(result?.messages.some((m) => m.ruleId === 'no-restricted-syntax')).toBe(true);
   });
 });
+
+describe('core ist frei von Abhängigkeiten', () => {
+  async function ruleIds(code: string, filePath = 'src/core/x.ts'): Promise<string[]> {
+    const [result] = await eslint.lintText(code, { filePath });
+    return (result?.messages ?? []).map((m) => m.ruleId ?? 'fatal');
+  }
+
+  it.each([
+    ["import { JSDOM } from 'jsdom';\nexport const x = JSDOM;\n", 'npm-Paket'],
+    ["import { readFileSync } from 'node:fs';\nexport const x = readFileSync;\n", 'Node-Modul'],
+  ])('verbietet %s (%s)', async (code) => {
+    expect(await ruleIds(code)).toContain('no-restricted-imports');
+  });
+
+  it.each([
+    ['export const x = document.title;\n', 'document'],
+    ["export const x = localStorage.getItem('a');\n", 'localStorage'],
+    ['export const x = window;\n', 'window'],
+    ['export const x = new AudioContext();\n', 'AudioContext'],
+  ])('verbietet Browser-Globals: %s (%s)', async (code) => {
+    expect(await ruleIds(code)).toContain('no-restricted-globals');
+  });
+
+  it('erlaubt atob, btoa und structuredClone', async () => {
+    const ids = await ruleIds(
+      "export const x = [atob('YQ=='), btoa('a'), structuredClone({ a: 1 })];\n",
+    );
+    expect(ids).toEqual([]);
+  });
+
+  it('gilt nicht für andere Schichten', async () => {
+    expect(await ruleIds('export const x = document.title;\n', 'src/ui/x.ts')).toEqual([]);
+  });
+});

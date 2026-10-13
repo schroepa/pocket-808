@@ -4,7 +4,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 /** Verbietet Importe aus den genannten Schichten (Schichtregel aus der Spezifikation). */
-const forbid = (files, layers, message) => ({
+const forbid = (files, layers, message, extraPatterns = []) => ({
   files,
   rules: {
     'no-restricted-imports': [
@@ -13,11 +13,18 @@ const forbid = (files, layers, message) => ({
         patterns: [
           { regex: `(^|/)(${layers.filter((l) => l !== 'main').join('|')})(/|$)`, message },
           ...(layers.includes('main') ? [{ regex: '(^|/)main(\\.[cm]?[jt]s)?$', message }] : []),
+          ...extraPatterns,
         ],
       },
     ],
   },
 });
+
+/** core hängt von nichts ab: keine Pakete, keine Node-Module, keine Browser-APIs außer diesen. */
+const CORE_ALLOWED_GLOBALS = new Set(['atob', 'btoa', 'structuredClone']);
+const coreForbiddenGlobals = Object.keys(globals.browser).filter(
+  (name) => !CORE_ALLOWED_GLOBALS.has(name),
+);
 
 export default defineConfig(
   {
@@ -64,11 +71,28 @@ export default defineConfig(
       ],
     },
   },
-  forbid(
-    ['src/core/**/*.ts'],
-    ['store', 'audio', 'ui', 'platform', 'main'],
-    'core ist reine Logik und importiert keine anderen Schichten.',
-  ),
+  {
+    ...forbid(
+      ['src/core/**/*.ts'],
+      ['store', 'audio', 'ui', 'platform', 'main'],
+      'core ist reine Logik und importiert keine anderen Schichten.',
+      [{ regex: '^[^.]', message: 'core importiert keine Pakete oder Node-Module.' }],
+    ),
+    ignores: ['src/core/**/*.test.ts', 'src/core/test-utils.ts'],
+  },
+  {
+    files: ['src/core/**/*.ts'],
+    ignores: ['src/core/**/*.test.ts', 'src/core/test-utils.ts'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        ...coreForbiddenGlobals.map((name) => ({
+          name,
+          message: 'core ist frei von Browser-APIs (nur atob, btoa, structuredClone).',
+        })),
+      ],
+    },
+  },
   forbid(
     ['src/store/**/*.ts'],
     ['audio', 'ui', 'platform', 'main'],
