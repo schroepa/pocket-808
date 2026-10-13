@@ -1,4 +1,5 @@
 import { fingerprint, type Fingerprint } from '../../support/fingerprint.ts';
+import { must } from '../../../src/core/util.ts';
 import { loadLegacy, type LegacyPage } from './harness.ts';
 import { row, type DrumParams, type LegacyHooks, type Part } from './types.ts';
 
@@ -387,7 +388,44 @@ export async function bench(args: { load: 'demo' | 'worst' }): Promise<BenchResu
   }
 }
 
+export interface SequenceArgs {
+  song: { p: string; n: number }[];
+  mode: 'song' | 'pattern';
+  cur: string;
+  tempo: number;
+  swing: number;
+  steps: number;
+}
+
+/** Zeichnet auf, was der Legacy-Scheduler je Step einplant (Slot, Zeit, Song-Position). */
+export async function songSequence(
+  args: SequenceArgs,
+): Promise<{ step: number; time: number; slot: string; song: boolean; si: number }[]> {
+  const p = loadLegacy({ audio: { seconds: 1 } });
+  try {
+    const { t } = p;
+    isolate(t);
+    t.state.song = args.song;
+    t.state.mode = args.mode;
+    t.state.cur = args.cur;
+    t.state.pat = must(t.state.patterns[args.cur], `Pattern ${args.cur}`);
+    t.state.tempo = args.tempo;
+    t.state.swing = args.swing;
+    if (!t.ensureAudio()) throw new Error('Audio-Kontext fehlt');
+    t.begin();
+    for (let now = 0; t.queue.length < args.steps; now += 0.025) {
+      p.setNow(now);
+      t.pump();
+    }
+    assertClean(p);
+    return await Promise.resolve(t.queue.slice(0, args.steps).map((q) => ({ ...q })));
+  } finally {
+    p.close();
+  }
+}
+
 export const SCENARIOS: Record<string, (args: never) => Promise<unknown>> = {
+  songSequence,
   smoke,
   drumVariants,
   synthPreset,
