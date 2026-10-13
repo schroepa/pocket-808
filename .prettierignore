@@ -1,0 +1,11 @@
+legacy/
+dist/
+coverage/
+playwright-report/
+test-results/
+tests/reference/golden/
+tests/e2e/__screenshots__/
+tests/e2e/axe-baseline.json
+package-lock.json
+**/*.md
+.superpowers/
