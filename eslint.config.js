@@ -49,7 +49,7 @@ export default defineConfig(
   { files: ['**/*.js'], extends: [tseslint.configs.disableTypeChecked] },
   {
     // DSP- und Test-Hilfscode indiziert Typed Arrays in engen Schleifen
-    files: ['tests/**/*.ts'],
+    files: ['tests/**/*.ts', 'src/**/*.test.ts', 'src/core/test-utils.ts'],
     rules: { '@typescript-eslint/no-non-null-assertion': 'off' },
   },
   {
