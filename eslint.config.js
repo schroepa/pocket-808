@@ -41,6 +41,10 @@ export default defineConfig(
         tsconfigRootDir: import.meta.dirname,
       },
     },
+    rules: {
+      // Zahlen in Template-Strings sind unbedenklich (Messwerte in Meldungen)
+      '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
+    },
   },
   { files: ['**/*.js'], extends: [tseslint.configs.disableTypeChecked] },
   {
