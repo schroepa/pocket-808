@@ -117,6 +117,16 @@ export function placeNote(state: State, degree: number, step: number): State {
   });
 }
 
+/** Noten des aktuellen Parts leeren (Legacy „Stimme leeren“; Preset bleibt). */
+export function clearNotes(state: State): State {
+  const part = state.part;
+  return updateCurrent(state, (q) => {
+    const notes = { ...q.notes };
+    notes[part] = new Array<null>(16).fill(null);
+    return { ...q, notes };
+  });
+}
+
 export const clearPattern = (state: State): State => ({
   ...replacePattern(state, state.cur, blankPattern()),
   preset: null,

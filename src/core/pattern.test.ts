@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { baseState } from './defaults.ts';
 import {
+  clearNotes,
   clearPattern,
   clearTrack,
   copyPattern,
@@ -81,6 +82,18 @@ describe('Noten', () => {
     expect(placeNote(deepFreeze(s), 3, 4).patterns.A.notes.LD[2]).toBeNull();
     expect(placeNote(deepFreeze(s), 5, 4).patterns.A.notes.LD[4]).toEqual({ d: 5, l: 4 });
     expect(placeNote(deepFreeze(s), 3, 6).patterns.A.notes.LD[6]).toEqual({ d: 3, l: 4 });
+  });
+});
+
+describe('Noten leeren', () => {
+  it('leert nur die Noten des aktuellen Parts und lässt das Preset stehen', () => {
+    let s = placeNote(fresh(), 2, 0);
+    s = placeNote(deepFreeze({ ...s, part: 'LD' as const }), 4, 3);
+    const t = clearNotes(deepFreeze({ ...s, part: 'BA' as const, preset: 'House' }));
+    expect(t.patterns.A.notes.BA.every((n) => n === null)).toBe(true);
+    expect(t.patterns.A.notes.LD[3]).toEqual({ d: 4, l: 1 });
+    expect(t.patterns.A.notes.LD).toBe(s.patterns.A.notes.LD);
+    expect(t.preset).toBe('House');
   });
 });
 

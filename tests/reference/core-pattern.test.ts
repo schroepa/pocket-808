@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { PRESETS, VOICE_IDS } from '../../src/core/constants.ts';
 import { initialState } from '../../src/core/initial.ts';
 import {
+  clearNotes,
   clearPattern,
   clearTrack,
   copyPattern,
@@ -29,6 +30,7 @@ type Op =
   | { k: 'subPreset'; key: SubKey; s: number; kind: keyof typeof SUB_PATTERNS }
   | { k: 'clearTrack'; v: number }
   | { k: 'clearAll' }
+  | { k: 'clearNotes'; part: Part }
   | { k: 'preset'; i: number }
   | { k: 'slot'; slot: Slot }
   | { k: 'copy' }
@@ -87,6 +89,13 @@ const opArb: fc.Arbitrary<Op> = fc.oneof(
   { weight: 1, arbitrary: fc.constant({ k: 'clearAll' as const }) },
   {
     weight: 1,
+    arbitrary: fc.record({
+      k: fc.constant('clearNotes' as const),
+      part: fc.constantFrom<Part>('BA', 'LD'),
+    }),
+  },
+  {
+    weight: 1,
     arbitrary: fc.record({ k: fc.constant('preset' as const), i: fc.integer({ min: 0, max: 3 }) }),
   },
   {
@@ -133,6 +142,10 @@ function applyCore(m: Model, op: Op): Model {
     }
     case 'clearAll':
       return { ...m, undo: snapshot(s), state: clearPattern(s) };
+    case 'clearNotes': {
+      const t = { ...s, part: op.part };
+      return { ...m, undo: snapshot(t), state: clearNotes(t) };
+    }
     case 'preset':
       return { ...m, undo: snapshot(s), state: applyPreset(s, PRESETS[op.i]!) };
     case 'slot':
@@ -178,6 +191,15 @@ function applyLegacy(p: LegacyPage, op: Op): void {
     case 'clearAll':
       t.clearAll();
       break;
+    case 'clearNotes': {
+      t.state.part = op.part;
+      const btn = [
+        ...p.window.document.querySelectorAll<HTMLButtonElement>('#synTools button'),
+      ].find((b) => b.textContent === 'Stimme leeren');
+      if (!btn) throw new Error('Knopf „Stimme leeren“ fehlt');
+      btn.click();
+      break;
+    }
     case 'preset':
       t.snap();
       t.loadPreset(t.PRESETS[op.i]);
