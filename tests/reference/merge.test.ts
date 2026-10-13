@@ -42,6 +42,7 @@ describe('Referenz: Laden von Speicherständen (merge)', () => {
         pad5: Array.from(p.t.smpPcm[5] ?? []).map((x) => Math.round(x * 1e4) / 1e4),
         drumBD: Array.from(p.t.drumPcm.BD ?? []).map((x) => Math.round(x * 1e4) / 1e4),
         drumKeys: Object.keys(p.t.drumPcm).sort(),
+        drumNames: Object.fromEntries(Object.entries(p.t.drumName)),
       };
       expect(actual).toEqual(readGolden('merge/sample-speicher', actual));
     } finally {

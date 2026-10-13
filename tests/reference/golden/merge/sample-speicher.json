@@ -31,5 +31,8 @@
  ],
  "drumKeys": [
   "BD"
- ]
+ ],
+ "drumNames": {
+  "BD": "Mein Kick"
+ }
 }
