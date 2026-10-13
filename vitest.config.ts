@@ -26,6 +26,16 @@ export default defineConfig({
           testTimeout: 300_000,
         },
       },
+      {
+        test: {
+          name: 'bench',
+          environment: 'node',
+          include: ['tests/reference/bench.test.ts'],
+          pool: 'forks',
+          fileParallelism: false,
+          testTimeout: 300_000,
+        },
+      },
     ],
   },
 });

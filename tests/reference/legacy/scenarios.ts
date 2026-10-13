@@ -226,10 +226,79 @@ export async function mixScenario(args: { name: string; seed?: number }): Promis
   }
 }
 
+export interface BenchResult {
+  renderMs: number;
+  /** pro Sekunde Musik erzeugte Audio-Knoten (deterministisch) */
+  nodesPerSecond: number;
+  counts: Record<string, number>;
+}
+
+const COUNTED = [
+  'createOscillator',
+  'createBufferSource',
+  'createGain',
+  'createBiquadFilter',
+  'createWaveShaper',
+  'createDelay',
+  'createDynamicsCompressor',
+] as const;
+
+/** Port von legacy/tests/bench.cjs: 7 s spielen, 8 s rendern, Knoten zählen. */
+export async function bench(args: { load: 'demo' | 'worst' }): Promise<BenchResult> {
+  const counts: Record<string, number> = Object.fromEntries(COUNTED.map((n) => [n, 0]));
+  const p = loadLegacy({
+    audio: { seconds: 8 },
+    instrument: (c) => {
+      const target = c as unknown as Record<string, (...a: unknown[]) => unknown>;
+      for (const name of COUNTED) {
+        const orig = target[name]!.bind(c);
+        target[name] = (...a: unknown[]) => {
+          counts[name] = (counts[name] ?? 0) + 1;
+          return orig(...a);
+        };
+      }
+    },
+  });
+  try {
+    const { t } = p;
+    if (args.load === 'worst') {
+      // jede laute Drum-Spur mit Sub-Roll auf jedem zweiten Step
+      const a = t.state.patterns.A!;
+      for (const id of ['BD', 'SD', 'CH', 'OH', 'CP', 'CY']) {
+        const sub: Record<number, number[]> = {};
+        for (let s = 0; s < 16; s += 2) {
+          sub[s] = Array.from({ length: 16 }, (_, k) => (k % 2 === 0 ? 1 : 0));
+        }
+        a.sub[id] = sub;
+      }
+    }
+    t.state.tempo = 120;
+    t.state.mode = 'pattern';
+    t.state.cur = 'A';
+    t.state.pat = t.state.patterns.A!;
+    if (!t.ensureAudio()) throw new Error('Audio-Kontext fehlt');
+    await t.prerenderAll();
+    for (const k of Object.keys(counts)) counts[k] = 0;
+    t.begin();
+    for (let now = 0; now < 7; now += 0.025) {
+      p.setNow(now);
+      t.pump();
+    }
+    const t0 = performance.now();
+    await p.ctx().startRendering();
+    const renderMs = Math.round(performance.now() - t0);
+    const total = Object.values(counts).reduce((x, y) => x + y, 0);
+    return { renderMs, nodesPerSecond: Math.round(total / 7), counts };
+  } finally {
+    p.close();
+  }
+}
+
 export const SCENARIOS: Record<string, (args: never) => Promise<unknown>> = {
   smoke,
   drumVariants,
   synthPreset,
   samplerPad,
   mixScenario,
+  bench,
 };

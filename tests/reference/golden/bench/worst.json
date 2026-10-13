@@ -1,0 +1,13 @@
+{
+ "renderMs": 1468,
+ "nodesPerSecond": 429,
+ "counts": {
+  "createOscillator": 73,
+  "createBufferSource": 1398,
+  "createGain": 1503,
+  "createBiquadFilter": 29,
+  "createWaveShaper": 0,
+  "createDelay": 0,
+  "createDynamicsCompressor": 0
+ }
+}
