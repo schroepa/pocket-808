@@ -20,7 +20,7 @@ Mobile Drum-Machine im Stil der TR-808 als **einzelne HTML-Datei** (`index.html`
 
 - Persistenz: `localStorage` unter `pocket808.v1` (Zustand) und `pocket808.smp.v1` (Samples). Immer in try/catch. Beim Laden läuft alles durch `merge()`: neue Felder brauchen Defaults und eine **Migration alter Speicherstände** (Beispiel: der frühere Synth-Regler `sus` wird zu den Hüllkurven umgerechnet).
 - Zustand: ein Objekt `state` (Tempo, Swing, Patterns, `synth`, `smp`, `mix`, `fx`). Änderungen rufen `save()`.
-- Audio-Kette: Stimmen → Kanalzug (`chan[id]`: Gain → StereoPanner) → `bus` → DJ-Filter (LP/HP) → Kompressor → Soft-Clip → Master-Gain → Limiter → Sicherheits-Shaper → Ausgang. Sends: Reverb (Convolver mit erzeugter Impulsantwort) und tempo-synchrones Delay für die Synth-Stimmen. Der Master-Pegel ist auf Spitze ≈ 0,77 abgestimmt. Bei Änderungen nachmessen (`tests/synth-test.js`).
+- Audio-Kette: Stimmen → Kanalzug (`chan[id]`: Gain → StereoPanner) → `bus` → DJ-Filter (LP/HP) → Kompressor → Soft-Clip → Master-Gain → Limiter → Sicherheits-Shaper → Ausgang. Sends: Reverb (Convolver mit erzeugter Impulsantwort) und tempo-synchrones Delay für die Synth-Stimmen. Der Master-Pegel ist auf Spitze ≈ 0,77 abgestimmt. Bei Änderungen nachmessen (`tests/reference/mix.test.ts`, Szenario `demo`).
 - Scheduler: Lookahead (`setInterval` 25 ms, Vorlauf 0,2 s), Noten werden auf `ctx.currentTime` geplant.
 - Drums: Die zehn Stimmen werden **offline vorgerendert** (`renderVoice`/`prerenderAll`, nacheinander, nicht parallel) und beim Spielen nur als Buffer abgespielt. Level wirkt live, Tune/Decay rechnen kurz neu (`queueRerender`).
 - Start: `mkAudio()`/`warmAudio()` bauen Kontext, Graph und Vorrechnen schon beim Laden (suspendiert). Der Start-Tipp ruft nur noch `resume()`. Keine schwere Arbeit im Tipp-Handler.
@@ -37,11 +37,22 @@ Mobile Drum-Machine im Stil der TR-808 als **einzelne HTML-Datei** (`index.html`
 ## Entwickeln und testen
 
 ```sh
-nvm use         # Node 24 laut .nvmrc
+nvm use               # Node 24 laut .nvmrc
 npm install
-npm run test:legacy   # alte Tests gegen legacy/index.html
-npm run bench:legacy  # alte Render-Last-Messung
+npm test              # alles: Unit, Referenz, E2E, alte Tests
+npm run test:unit     # schnell: Unit- und Werkzeugtests
+npm run test:ref      # Referenz: Klang-Fingerabdrücke und Speicherstände gegen legacy/
+npm run test:e2e      # Playwright auf Mobile, Tablet, Desktop
+npm run bench         # Performance-Budget (Knoten/s, Renderzeit)
+npm run lint && npm run typecheck
+npm run dev           # Vite-Dev-Server
+npm run build         # dist/index.html (eine Datei)
 ```
+
+- Referenzen neu erzeugen nur bewusst: `npm run ref:update`, `npm run bench:update`, `AXE_UPDATE=1 npx playwright test a11y`, `npx playwright test layout --update-snapshots`. Danach den Diff prüfen.
+- Klang-Toleranzen stehen in `tests/reference/tolerance.ts` und sind kalibriert (`tests/reference/calibration.test.ts`).
+- Audio-Tests laufen je Szenario in einem eigenen Kindprozess (`tests/reference/run.ts`).
+- Der Git-Hook (vor jedem Commit) prüft Lint, Typen, Unit- und Referenztests.
 
 - Übergangsphase (Branch `fundament`): Die App liegt unverändert in `legacy/index.html`, die alten Tests in `legacy/tests/`. Neue Werkzeuge und Referenztests kommen schrittweise dazu, siehe `docs/superpowers/plans/`.
 

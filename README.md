@@ -4,10 +4,10 @@ Mobile Drum-Machine im Stil der TR-808, als einzelne HTML-Datei ohne Build-Schri
 
 ## Starten
 
-`index.html` im Browser öffnen oder lokal ausliefern:
+Bauen und lokal ausliefern (ergibt eine eigenständige `dist/index.html`):
 
 ```sh
-npx serve .
+npm run build && npm run preview
 ```
 
 Für Audio muss der erste Tipp auf *Start* eine Nutzergeste sein (Browser-Vorgabe).
@@ -29,8 +29,14 @@ Tests laufen headless gegen die Seite (jsdom mit `node-web-audio-api`):
 ```sh
 nvm use               # Node 24 laut .nvmrc
 npm install
-npm run test:legacy   # alte Tests gegen legacy/index.html
-npm run bench:legacy  # Render-Last: Demo-Pattern und Worst-Case
+npm test              # alles: Unit, Referenz, E2E, alte Tests
+npm run test:unit     # schnell: Unit- und Werkzeugtests
+npm run test:ref      # Referenz: Klang-Fingerabdrücke und Speicherstände gegen legacy/
+npm run test:e2e      # Playwright auf Mobile, Tablet, Desktop
+npm run bench         # Performance-Budget (Knoten/s, Renderzeit)
+npm run lint && npm run typecheck
+npm run dev           # Vite-Dev-Server
+npm run build         # dist/index.html (eine Datei)
 ```
 
 Hinweis: Die Audio-Bibliothek ist bei mehreren Kontexten pro Prozess launisch, deshalb startet der Mixer-Test jedes Audio-Szenario in einem eigenen Prozess.

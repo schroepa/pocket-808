@@ -22,7 +22,8 @@
     "test:ref": "vitest run --project reference",
     "ref:update": "REF_UPDATE=1 vitest run --project reference",
     "bench": "vitest run --project bench",
-    "bench:update": "REF_UPDATE=1 vitest run --project bench"
+    "bench:update": "REF_UPDATE=1 vitest run --project bench",
+    "test": "npm run test:unit && npm run test:ref && npm run test:e2e && npm run test:legacy"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
@@ -43,6 +44,6 @@
     "vitest": "^5.0.4"
   },
   "simple-git-hooks": {
-    "pre-commit": "npm run lint && npm run typecheck && npm run test:unit"
+    "pre-commit": "npm run lint && npm run typecheck && npm run test:unit && npm run test:ref"
   }
 }
