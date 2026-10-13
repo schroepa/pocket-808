@@ -1,5 +1,6 @@
-import { describe, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { compareFingerprints, type Fingerprint } from '../support/fingerprint.ts';
+import type { StereoPrint } from './legacy/scenarios.ts';
 import { runLegacy } from './run.ts';
 import { TOLERANCE } from './tolerance.ts';
 
@@ -51,4 +52,16 @@ describe.concurrent('Kalibrierung der Klang-Toleranzen', () => {
       ).toBeGreaterThan(0);
     });
   }
+});
+
+describe('Kalibrierung: Synth', () => {
+  it('BA Acid einen Halbton höher fällt am Schwerpunkt auf', async () => {
+    const [base, up] = await Promise.all([
+      runLegacy<StereoPrint>('synthPreset', { part: 'BA', preset: 'Acid', midi: 45 }),
+      runLegacy<StereoPrint>('synthPreset', { part: 'BA', preset: 'Acid', midi: 46 }),
+    ]);
+    expect(
+      compareFingerprints(base.L, up.L, TOLERANCE).some((p) => p.startsWith('Schwerpunkt')),
+    ).toBe(true);
+  });
 });

@@ -1,6 +1,6 @@
 import { fingerprint, type Fingerprint } from '../../support/fingerprint.ts';
 import { loadLegacy, type LegacyPage } from './harness.ts';
-import type { DrumParams } from './types.ts';
+import type { DrumParams, Part } from './types.ts';
 
 export interface StereoPrint {
   L: Fingerprint;
@@ -61,4 +61,55 @@ export async function drumVariants(args: {
   }
 }
 
-export const SCENARIOS: Record<string, (args: never) => Promise<unknown>> = { smoke, drumVariants };
+/** Ein Synth-Ton mit Preset, durch Kanalzug, Delay und Master-Kette. Reverb aus (eigenes Mix-Szenario). */
+export async function synthPreset(args: {
+  part: Part;
+  preset: string;
+  midi: number;
+  seed?: number;
+}): Promise<StereoPrint> {
+  const p = loadLegacy({ seed: args.seed ?? 1, audio: { seconds: 2 } });
+  try {
+    const { t } = p;
+    const preset = t.SYN_PRESETS[args.part].find((x) => x.name === args.preset);
+    if (!preset) throw new Error(`Unbekanntes Preset ${args.part}/${args.preset}`);
+    t.state.tempo = 120;
+    Object.assign(t.state.synth[args.part], preset.v);
+    for (const ch of Object.values(t.state.mix)) ch.r = 0;
+    if (!t.ensureAudio()) throw new Error('Audio-Kontext fehlt');
+    p.setNow(0.001);
+    t.applyMixAll();
+    p.setNow(0);
+    t.synthNote(args.part, args.midi, 0.1, 0.5);
+    return await renderStereo(p);
+  } finally {
+    p.close();
+  }
+}
+
+/** Ein Fabrik-Sample mit Standard-Pad-Einstellungen. */
+export async function samplerPad(args: { pad: number; seed?: number }): Promise<StereoPrint> {
+  const p = loadLegacy({ seed: args.seed ?? 1, audio: { seconds: 2 } });
+  try {
+    const { t } = p;
+    const mix = t.state.mix.SM;
+    if (!mix) throw new Error('Kanal SM fehlt');
+    mix.r = 0;
+    if (!t.ensureAudio()) throw new Error('Audio-Kontext fehlt');
+    if (!t.smpPcm[args.pad]) throw new Error(`Pad ${args.pad} ist leer`);
+    p.setNow(0.001);
+    t.applyMixAll();
+    p.setNow(0);
+    t.smpPlay(args.pad, 0.1);
+    return await renderStereo(p);
+  } finally {
+    p.close();
+  }
+}
+
+export const SCENARIOS: Record<string, (args: never) => Promise<unknown>> = {
+  smoke,
+  drumVariants,
+  synthPreset,
+  samplerPad,
+};
