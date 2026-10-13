@@ -7,8 +7,20 @@ export interface StereoPrint {
   R: Fingerprint;
 }
 
+/** Wirft, wenn das Legacy-Fenster Fehler gemeldet hat: Sonst hielte eine Referenz still einen Fehlerpfad fest. */
+export function assertClean(p: Pick<LegacyPage, 'errors'>): void {
+  if (p.errors.length) throw new Error(`Fehler im Legacy-Fenster:\n${p.errors.join('\n')}`);
+}
+
+/** Wirft, wenn eine Drum-Stimme nicht vorgerendert ist (Legacy fiele still auf Live-Synthese zurück). */
+export function assertPrerendered(t: LegacyHooks): void {
+  const missing = t.VOICES.filter((v) => !t.voiceBuf[v.id]).map((v) => v.id);
+  if (missing.length) throw new Error(`Nicht vorgerendert: ${missing.join(', ')}`);
+}
+
 export async function renderStereo(p: LegacyPage): Promise<StereoPrint> {
   const buf = await p.ctx().startRendering();
+  assertClean(p);
   const right = buf.numberOfChannels > 1 ? 1 : 0;
   return {
     L: fingerprint(buf.getChannelData(0), buf.sampleRate),
@@ -55,6 +67,7 @@ export async function drumVariants(args: {
       if (!buf) throw new Error(`Kein Buffer für ${args.voice}/${name}`);
       out[name] = fingerprint(buf.getChannelData(0), buf.sampleRate);
     }
+    assertClean(p);
     return out;
   } finally {
     p.close();
@@ -145,6 +158,60 @@ interface MixCase {
 const MIX: Record<string, MixCase> = {
   // Startzustand der App: Hip-Hop-Pattern A mit Bass, Lead und Sampler, Tempo 90, Swing
   demo: { seconds: 4, setup: () => undefined },
+  base: {
+    seconds: 1.9,
+    setup: (t) => {
+      isolate(t);
+      hits(t, { BD: [0], SD: [4] });
+    },
+  },
+  mute: {
+    seconds: 1.9,
+    setup: (t) => {
+      isolate(t);
+      hits(t, { BD: [0], SD: [4] });
+      mixOf(t, 'BD').m = true;
+      mixOf(t, 'SD').m = true;
+    },
+  },
+  solo: {
+    seconds: 1.9,
+    setup: (t) => {
+      isolate(t);
+      hits(t, { BD: [0], SD: [4] });
+      mixOf(t, 'SD').s = true;
+    },
+  },
+  faderHalf: {
+    seconds: 1,
+    setup: (t) => {
+      isolate(t);
+      hits(t, { BD: [0] });
+      mixOf(t, 'BD').v = 0.4;
+      mixOf(t, 'BD').r = 0;
+    },
+  },
+  // dichtes Muster bei Master 100 %: reizt Kompressor, Soft-Clip, Limiter und Sicherheits-Shaper aus
+  master1: {
+    seconds: 2,
+    setup: (t) => {
+      isolate(t);
+      t.state.master = 1;
+      ['BD', 'SD', 'CH', 'CP', 'OH', 'CY'].forEach((id, k) => {
+        const steps: number[] = [];
+        for (let i = k % 2; i < 16; i += 2) steps.push(i);
+        hits(t, { [id]: steps });
+      });
+    },
+  },
+  reverbDry: {
+    seconds: 2.4,
+    setup: (t) => {
+      isolate(t);
+      hits(t, { SD: [0] });
+      mixOf(t, 'SD').r = 0;
+    },
+  },
   reverbWet: {
     seconds: 2.4,
     setup: (t) => {
@@ -198,6 +265,29 @@ const MIX: Record<string, MixCase> = {
   },
 };
 
+MIX.stutterRelease = {
+  seconds: 2.4,
+  setup: (t) => {
+    isolate(t);
+    hits(t, { BD: [0], SD: [12] });
+    mixOf(t, 'BD').r = 0;
+  },
+  events: [
+    {
+      at: 0.1,
+      run: (t) => {
+        t.stutterOn(0.125);
+      },
+    },
+    {
+      at: 0.8,
+      run: (t) => {
+        t.stutterOff();
+      },
+    },
+  ],
+};
+
 export const MIX_NAMES = Object.keys(MIX);
 
 /** Spielt ein Pattern über den Legacy-Scheduler (pump im 25-ms-Takt) und rendert den Master. */
@@ -210,6 +300,7 @@ export async function mixScenario(args: { name: string; seed?: number }): Promis
     sc.setup(t);
     if (!t.ensureAudio()) throw new Error('Audio-Kontext fehlt');
     await t.prerenderAll();
+    assertPrerendered(t);
     p.setNow(0.001);
     t.applyMixAll();
     p.setNow(0);
@@ -278,6 +369,7 @@ export async function bench(args: { load: 'demo' | 'worst' }): Promise<BenchResu
     t.state.pat = t.state.patterns.A!;
     if (!t.ensureAudio()) throw new Error('Audio-Kontext fehlt');
     await t.prerenderAll();
+    assertPrerendered(t);
     for (const k of Object.keys(counts)) counts[k] = 0;
     t.begin();
     for (let now = 0; now < 7; now += 0.025) {
@@ -286,6 +378,7 @@ export async function bench(args: { load: 'demo' | 'worst' }): Promise<BenchResu
     }
     const t0 = performance.now();
     await p.ctx().startRendering();
+    assertClean(p);
     const renderMs = Math.round(performance.now() - t0);
     const total = Object.values(counts).reduce((x, y) => x + y, 0);
     return { renderMs, nodesPerSecond: Math.round(total / 7), counts };
