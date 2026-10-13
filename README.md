@@ -22,14 +22,15 @@ Für Audio muss der erste Tipp auf *Start* eine Nutzergeste sein (Browser-Vorgab
 
 ## Entwicklung
 
-Ein Single-File-Projekt: Markup, Styles und Script stehen in `index.html`.
+Übergangsphase: Die App liegt in `legacy/index.html` und wird schrittweise nach TypeScript portiert (siehe `docs/superpowers/specs/`).
 
 Tests laufen headless gegen die Seite (jsdom mit `node-web-audio-api`):
 
 ```sh
+nvm use               # Node 24 laut .nvmrc
 npm install
-npm test        # Synth, Sampler, Sub-Steps, Kompatibilität, Hüllkurven, Mixer/FX
-npm run bench   # Render-Last: Demo-Pattern und Worst-Case
+npm run test:legacy   # alte Tests gegen legacy/index.html
+npm run bench:legacy  # Render-Last: Demo-Pattern und Worst-Case
 ```
 
 Hinweis: Die Audio-Bibliothek ist bei mehreren Kontexten pro Prozess launisch, deshalb startet der Mixer-Test jedes Audio-Szenario in einem eigenen Prozess.

@@ -37,10 +37,13 @@ Mobile Drum-Machine im Stil der TR-808 als **einzelne HTML-Datei** (`index.html`
 ## Entwickeln und testen
 
 ```sh
+nvm use         # Node 24 laut .nvmrc
 npm install
-npm test        # Synth, Sampler, Sub-Steps, Kompatibilität, Hüllkurven, Mixer/FX
-npm run bench   # Render-Last Demo/Worst
+npm run test:legacy   # alte Tests gegen legacy/index.html
+npm run bench:legacy  # alte Render-Last-Messung
 ```
+
+- Übergangsphase (Branch `fundament`): Die App liegt unverändert in `legacy/index.html`, die alten Tests in `legacy/tests/`. Neue Werkzeuge und Referenztests kommen schrittweise dazu, siehe `docs/superpowers/plans/`.
 
 - Tests laden `index.html` in jsdom mit `node-web-audio-api` und rendern Audio offline.
 - Die Audio-Bibliothek ist bei mehreren Kontexten pro Prozess launisch. Audio-Szenarien deshalb **einzeln pro Prozess** laufen lassen (so macht es `tests/mix-test2.js`).

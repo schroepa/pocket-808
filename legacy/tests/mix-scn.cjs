@@ -1,5 +1,5 @@
 // führt genau ein Audio-Szenario in einem eigenen Prozess aus und druckt Messwerte als JSON
-const {page,run,clearAll,rmsOf,SR}=require('./mixlib.js');
+const {page,run,clearAll,rmsOf,SR}=require('./mixlib.cjs');
 const nanCount=(...a)=>{let n=0;for(const f of a)for(const x of f)if(!isFinite(x))n++;return n;};
 const peak=f=>{let p=0;for(const x of f)if(isFinite(x)&&Math.abs(x)>p)p=Math.abs(x);return p;};
 const pat=(S,o)=>{for(const k in o)for(const i of o[k])S.patterns.A[k][i]=1;};

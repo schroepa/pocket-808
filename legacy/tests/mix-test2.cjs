@@ -1,9 +1,9 @@
-const {page,main0,body,JSDOM,VirtualConsole,wa,SR}=require('./mixlib.js');
+const {page,main0,body,JSDOM,VirtualConsole,wa,SR}=require('./mixlib.cjs');
 const {spawnSync}=require('child_process');
 let fails=0;const ok=(c,msg)=>{console.log((c?'PASS ':'FAIL ')+msg);if(!c)fails++;};
 function scn(name){
   for(let a=0;a<3;a++){
-    const r=spawnSync('node',[__dirname+'/mix-scn.js',name],{encoding:'utf8',timeout:120000});
+    const r=spawnSync('node',[__dirname+'/mix-scn.cjs',name],{encoding:'utf8',timeout:120000});
     const m=(r.stdout||'').match(/JSON(.*)/);
     if(m) return JSON.parse(m[1]);
     console.log('retry',name,(r.stdout||'').slice(-200),(r.stderr||'').slice(-200));

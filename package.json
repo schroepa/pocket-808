@@ -2,13 +2,31 @@
   "name": "pocket-808",
   "version": "0.15.0",
   "private": true,
+  "type": "module",
   "description": "Pocket 808 – mobile Drum-Machine mit Synth, Sampler, Mixer und FX als einzelne HTML-Datei",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
-    "test": "node tests/synth-test.js && node tests/smp-test.js && node tests/sub-test.js && node tests/compat-test.js && node tests/env-test.js && node tests/mix-test2.js",
-    "bench": "node tests/bench.js index.html demo && node tests/bench.js index.html worst"
+    "test:legacy": "node legacy/tests/synth-test.cjs && node legacy/tests/smp-test.cjs && node legacy/tests/sub-test.cjs && node legacy/tests/compat-test.cjs && node legacy/tests/env-test.cjs && node legacy/tests/mix-test2.cjs",
+    "bench:legacy": "node legacy/tests/bench.cjs index.html demo && node legacy/tests/bench.cjs index.html worst"
   },
   "devDependencies": {
-    "jsdom": "^29.1.1",
-    "node-web-audio-api": "^2.2.0"
+    "@axe-core/playwright": "^4.13.0",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.0",
+    "@types/jsdom": "^30.0.0",
+    "@types/node": "^24.19.2",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0",
+    "jsdom": "^30.1.2",
+    "node-web-audio-api": "^2.2.0",
+    "prettier": "^3.9.10",
+    "simple-git-hooks": "^2.14.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.2",
+    "vite": "^8.3.4",
+    "vite-plugin-singlefile": "^2.3.3",
+    "vitest": "^5.0.4"
   }
 }
