@@ -51,7 +51,11 @@ export const changeMode = (
   mode: State['mode'],
 ): { state: State; cursor: SongCursor } => ({ state: { ...s, mode }, cursor: songStart() });
 
-/** Zu Beginn jedes Takts: Welches Pattern spielt, und wie steht der Song-Cursor danach? */
+/**
+ * Zu Beginn jedes Takts: Song-Position weiterzählen. `slot` gilt nur im Song-Modus für den ganzen
+ * Takt; welches Pattern ein Step spielt, liefert `stepSlot` (im Pattern-Modus zählt state.cur
+ * bei jedem Step, ein Slot-Wechsel wirkt also sofort).
+ */
 export function nextBar(
   c: SongCursor,
   s: Pick<State, 'mode' | 'song' | 'cur'>,
@@ -75,3 +79,7 @@ export function nextBar(
   const slot = must(s.song[index], `Song-Eintrag ${index}`).p;
   return { cursor: { first: false, index, repeat }, slot, fromSong: true };
 }
+
+/** Pattern, das ein Step spielt (Legacy pump: barSong ? barSlot : state.cur). */
+export const stepSlot = (bar: { slot: Slot; fromSong: boolean }, s: Pick<State, 'cur'>): Slot =>
+  bar.fromSong ? bar.slot : s.cur;

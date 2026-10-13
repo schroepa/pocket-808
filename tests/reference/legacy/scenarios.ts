@@ -395,12 +395,19 @@ export interface SequenceArgs {
   tempo: number;
   swing: number;
   steps: number;
+  /** optional: ab diesem Step (bzw. sobald so viele eingeplant sind) auf Slot `switchTo` wechseln */
+  switchAt?: number;
+  switchTo?: string;
+}
+
+export interface SequenceResult {
+  entries: { step: number; time: number; slot: string; song: boolean; si: number }[];
+  /** Index des ersten Steps, den Legacy nach dem Wechsel eingeplant hat (-1 = kein Wechsel) */
+  switchedAt: number;
 }
 
 /** Zeichnet auf, was der Legacy-Scheduler je Step einplant (Slot, Zeit, Song-Position). */
-export async function songSequence(
-  args: SequenceArgs,
-): Promise<{ step: number; time: number; slot: string; song: boolean; si: number }[]> {
+export async function songSequence(args: SequenceArgs): Promise<SequenceResult> {
   const p = loadLegacy({ audio: { seconds: 1 } });
   try {
     const { t } = p;
@@ -413,12 +420,20 @@ export async function songSequence(
     t.state.swing = args.swing;
     if (!t.ensureAudio()) throw new Error('Audio-Kontext fehlt');
     t.begin();
+    let switchedAt = -1;
     for (let now = 0; t.queue.length < args.steps; now += 0.025) {
+      if (switchedAt < 0 && args.switchAt !== undefined && t.queue.length >= args.switchAt) {
+        const to = must(args.switchTo, 'switchTo');
+        t.state.cur = to;
+        t.state.pat = must(t.state.patterns[to], `Pattern ${to}`);
+        switchedAt = t.queue.length;
+      }
       p.setNow(now);
       t.pump();
     }
     assertClean(p);
-    return await Promise.resolve(t.queue.slice(0, args.steps).map((q) => ({ ...q })));
+    const entries = t.queue.slice(0, args.steps).map((q) => ({ ...q }));
+    return await Promise.resolve({ entries, switchedAt });
   } finally {
     p.close();
   }

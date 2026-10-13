@@ -1,9 +1,9 @@
 import fc from 'fast-check';
 import { describe, it } from 'vitest';
-import { nextBar, songStart } from '../../src/core/song.ts';
+import { nextBar, songStart, stepSlot } from '../../src/core/song.ts';
 import { stepDuration, swingDelay } from '../../src/core/timing.ts';
 import type { Slot, SongEntry } from '../../src/core/types.ts';
-import type { SequenceArgs } from './legacy/scenarios.ts';
+import type { SequenceArgs, SequenceResult } from './legacy/scenarios.ts';
 import { runLegacy } from './run.ts';
 
 interface Entry {
@@ -14,7 +14,7 @@ interface Entry {
   si: number;
 }
 
-function coreSequence(a: SequenceArgs): Entry[] {
+function coreSequence(a: SequenceArgs, switchedAt = -1): Entry[] {
   const d = stepDuration(a.tempo);
   const s = { mode: a.mode, song: a.song as SongEntry[], cur: a.cur as Slot };
   let cursor = songStart();
@@ -24,11 +24,12 @@ function coreSequence(a: SequenceArgs): Entry[] {
   const out: Entry[] = [];
   for (let i = 0; i < a.steps; i++) {
     const step = i % 16;
+    if (i === switchedAt) s.cur = a.switchTo as Slot;
     if (step === 0) ({ cursor, slot, fromSong } = nextBar(cursor, s));
     out.push({
       step,
       time: next + swingDelay(step, a.swing, d),
-      slot,
+      slot: stepSlot({ slot, fromSong }, s),
       song: fromSong,
       si: cursor.index,
     });
@@ -62,12 +63,35 @@ const cases: SequenceArgs[] = [
     steps: 16 * 12,
   },
   { song: [], mode: 'song', cur: 'C', tempo: 120, swing: 0, steps: 16 * 3 },
+  // Slot-Wechsel mitten im Takt: im Pattern-Modus sofort hörbar, im Song-Modus ohne Wirkung
+  {
+    song: [],
+    mode: 'pattern',
+    cur: 'A',
+    tempo: 100,
+    swing: 0.2,
+    steps: 16 * 3,
+    switchAt: 21,
+    switchTo: 'B',
+  },
+  {
+    song: [{ p: 'C', n: 2 }],
+    mode: 'song',
+    cur: 'A',
+    tempo: 100,
+    swing: 0,
+    steps: 16 * 3,
+    switchAt: 21,
+    switchTo: 'B',
+  },
   ...fc.sample(argsArb, { numRuns: 8, seed: 808 }),
 ];
 
 describe('core Song-Kette und Timing = Legacy-Scheduler', () => {
   it.concurrent.for(cases)('Fall %#', async (args, { expect }) => {
-    const legacy = await runLegacy<Entry[]>('songSequence', args);
-    expect(coreSequence(args)).toEqual(legacy);
+    const legacy = await runLegacy<SequenceResult>('songSequence', args);
+    if (args.switchAt !== undefined)
+      expect(legacy.switchedAt).toBeGreaterThanOrEqual(args.switchAt);
+    expect(coreSequence(args, legacy.switchedAt)).toEqual(legacy.entries);
   });
 });

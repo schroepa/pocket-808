@@ -10,6 +10,7 @@ import {
   removeEntry,
   SONG_MAX,
   songStart,
+  stepSlot,
   type SongCursor,
 } from './song.ts';
 import { deepFreeze } from './test-utils.ts';
@@ -92,6 +93,18 @@ describe('nextBar', () => {
       { mode: 'song', cur: 'A', song: [{ p: 'B', n: 1 }] },
     );
     expect(r).toEqual({ cursor: { first: false, index: 0, repeat: 0 }, slot: 'B', fromSong: true });
+  });
+});
+
+describe('stepSlot', () => {
+  it('im Pattern-Modus zählt das aktuelle Pattern bei jedem Step, im Song-Modus der Takt', () => {
+    const song: SongEntry[] = [{ p: 'B', n: 1 }];
+    const pat = withSong(song, { mode: 'pattern', cur: 'A' });
+    const bar = nextBar(songStart(), pat);
+    expect(stepSlot(bar, { ...pat, cur: 'C' })).toBe('C');
+    const sng = withSong(song, { mode: 'song', cur: 'A' });
+    const sbar = nextBar(songStart(), sng);
+    expect(stepSlot(sbar, { ...sng, cur: 'C' })).toBe('B');
   });
 });
 
