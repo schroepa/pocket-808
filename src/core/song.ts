@@ -42,6 +42,15 @@ export interface SongCursor {
 
 export const songStart = (): SongCursor => ({ first: true, index: 0, repeat: 0 });
 
+/**
+ * Modus wechseln (Legacy setMode: songFirst=true). Der Song beginnt danach wieder von vorn –
+ * auch bei einem Wechsel mitten im Takt oder erneutem Tippen auf „Song“.
+ */
+export const changeMode = (
+  s: State,
+  mode: State['mode'],
+): { state: State; cursor: SongCursor } => ({ state: { ...s, mode }, cursor: songStart() });
+
 /** Zu Beginn jedes Takts: Welches Pattern spielt, und wie steht der Song-Cursor danach? */
 export function nextBar(
   c: SongCursor,

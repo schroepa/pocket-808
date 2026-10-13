@@ -3,6 +3,7 @@ import { baseState } from './defaults.ts';
 import {
   appendToSong,
   bumpRepeat,
+  changeMode,
   clearSong,
   moveEntry,
   nextBar,
@@ -91,6 +92,24 @@ describe('nextBar', () => {
       { mode: 'song', cur: 'A', song: [{ p: 'B', n: 1 }] },
     );
     expect(r).toEqual({ cursor: { first: false, index: 0, repeat: 0 }, slot: 'B', fromSong: true });
+  });
+});
+
+describe('changeMode', () => {
+  it('setzt den Modus und startet den Song-Cursor neu, auch mitten im Takt', () => {
+    const song: SongEntry[] = [
+      { p: 'A', n: 1 },
+      { p: 'B', n: 1 },
+    ];
+    const s = withSong(song, { mode: 'song' });
+    let c = nextBar(songStart(), s).cursor;
+    expect(nextBar(c, s).slot).toBe('B');
+    const toPattern = changeMode(s, 'pattern');
+    expect(toPattern.state.mode).toBe('pattern');
+    const back = changeMode(toPattern.state, 'song');
+    c = back.cursor;
+    expect(nextBar(c, back.state).slot).toBe('A');
+    expect(changeMode(s, 'song').cursor).toEqual(songStart());
   });
 });
 
