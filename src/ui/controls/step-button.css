@@ -11,7 +11,8 @@
     position: absolute;
     inset: auto 0 5px;
     font: 12px var(--font-lcd);
-    color: color-mix(in srgb, var(--acc) 40%, var(--cell));
+    /* Kontrast ≥ 4,5:1 (axe), aus Akzent und Zellfarbe gemischt */
+    color: color-mix(in srgb, var(--acc) 90%, var(--cell));
   }
   .step::before {
     content: '';
@@ -29,7 +30,7 @@
     box-shadow: var(--glow-acc);
   }
   .step.on span {
-    color: rgba(0, 0, 0, 0.55);
+    color: var(--chassis);
   }
   .step.on::before {
     background: #fff;
