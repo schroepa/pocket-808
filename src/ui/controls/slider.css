@@ -1,0 +1,53 @@
+@layer components {
+  .sl {
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+  }
+  .sl-t {
+    position: relative;
+    width: 100%;
+    min-width: var(--touch);
+    height: 104px;
+    border-radius: 8px;
+    touch-action: none;
+    cursor: ns-resize;
+  }
+  .sl-t::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 6px;
+    bottom: 6px;
+    width: 4px;
+    margin-left: -2px;
+    border-radius: 2px;
+    background: var(--well);
+  }
+  .sl-f {
+    position: absolute;
+    left: 50%;
+    bottom: 6px;
+    width: 4px;
+    height: calc(var(--v, 0) * (100% - 12px));
+    margin-left: -2px;
+    border-radius: 2px;
+    background: var(--acc);
+    box-shadow: 0 0 8px rgba(211, 146, 90, 0.4);
+  }
+  .sl-h {
+    position: absolute;
+    left: 50%;
+    bottom: calc(6px + var(--v, 0) * (100% - 12px) - 5px);
+    width: 20px;
+    height: 10px;
+    margin-left: -10px;
+    border-radius: 3px;
+    background: var(--ink);
+  }
+  .sl-l {
+    font: 600 12px var(--font-display);
+    letter-spacing: 0.1em;
+    color: var(--ink-dim);
+  }
+}

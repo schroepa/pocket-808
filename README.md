@@ -4,7 +4,7 @@
 
 ▶ **Live ausprobieren: [pocket-808.vercel.app](https://pocket-808.vercel.app)**
 
-🔧 **Die neue Oberfläche im Aufbau: [pocket-808.vercel.app/next/](https://pocket-808.vercel.app/next/)** (Drums, Step-Editor und Transport sind schon da; Synth, Sampler, Mixer und FX folgen)
+🔧 **Die neue Oberfläche im Aufbau: [pocket-808.vercel.app/next/](https://pocket-808.vercel.app/next/)** (Drums, Step-Editor, Transport und Synth sind schon da; Sampler, Mixer und FX folgen)
 
 Aufmachen, auf *Start* tippen, und der Beat läuft. Pocket 808 braucht keine Installation, kein Konto und keinen Server. Alles, was du baust, bleibt in deinem Browser.
 
@@ -154,6 +154,7 @@ So sieht es auf den einzelnen Geräten aus:
   - Beim Drehen des Tablets wird nichts neu aufgebaut.
   - Kein Framework: Kleine DOM-Funktionen (`h`, `bind`, `listen`) binden einzelne Knoten an Ausschnitte des Zustands. Ein Step-Tipp ändert genau eine Zelle im DOM, das Lauflicht zwei, und Tests zählen das nach.
   - Synth, Sampler, Mixer und FX sitzen in einem Geräte-Halter: auf dem iPhone als Akkordeon, auf dem Tablet als Tabs, auf dem Desktop alle offen.
+  - Der Synth ist schon umgezogen: Piano-Roll mit Takthälften und Notenlängen, die fünf SH-101-Module mit Drehreglern, senkrechten ADSR-Schiebereglern und live gezeichneter Hüllkurve, Presets je Stimme. Die Bedienlogik steckt als reine Funktionen in `core/synth.ts`.
   - Die Oberfläche kennt die Audio-Engine nicht direkt, sondern nur eine schmale Schnittstelle. Plattform-Eigenheiten (iOS-Stummschalter, Wake Lock, Hintergrund, Artifact-Host, Dateiauswahl) liegen in einer eigenen Schicht.
 - **Design:**
   - Flach, ohne Konturen und Schatten; aktive Elemente leuchten in einem gedämpften Kupferton („wie im Club“).
@@ -170,10 +171,10 @@ Pocket 808 wird mit mehr Testcode als App-Code gebaut. Jeder Commit läuft durch
 
 | Ebene | Was geprüft wird | Umfang |
 |---|---|---|
-| **Unit** | `core`, `store`, `audio`, `ui` und `platform` einzeln (Oberfläche in jsdom), mit Eigenschafts- und Modelltests (fast-check); Abdeckung ≥ 90 % pro Datei erzwungen | 351 Tests |
+| **Unit** | `core`, `store`, `audio`, `ui` und `platform` einzeln (Oberfläche in jsdom), mit Eigenschafts- und Modelltests (fast-check); Abdeckung ≥ 90 % pro Datei erzwungen | 395 Tests |
 | **Referenz** | Die neue Engine klingt wie die bewährte alte App: Beide rendern dieselben Szenarien offline (`node-web-audio-api`) und werden über **Klang-Fingerabdrücke** (Spitze, RMS-Verlauf in 10 ms, spektraler Schwerpunkt) verglichen, dazu Speicherstände, Scheduler-Sequenzen und das Umrechnen importierter Samples (bitgleich) | 162 Tests, 15 Mix-Szenarien, 50 Drum-Varianten |
 | **Bench** | Performance-Budget: Audio-Knoten pro Sekunde und Renderzeit für ein Demo- und ein Worst-Case-Pattern | Demo 47 Knoten/s, Worst-Case 429 Knoten/s |
-| **E2E** | Playwright auf iPhone, iPad hoch und quer (WebKit) und Desktop (Chromium): Funktion, Kürzel, kein horizontaler Scroll, Screenshots je Gerät, Barrierefreiheit mit axe (keine schweren Verstöße), alte Speicherstände, Artifact-Host, keine Long Tasks beim Spielen, Größenbudget | 65 Tests |
+| **E2E** | Playwright auf iPhone hoch und quer, iPad hoch und quer (WebKit) und Desktop (Chromium): Funktion, Kürzel, kein horizontaler Scroll, Screenshots je Gerät, Barrierefreiheit mit axe (keine schweren Verstöße), alte Speicherstände, Artifact-Host, keine Long Tasks beim Spielen, Touch-Ziele ≥ 44 px, Größenbudget | 104 Tests |
 
 - **Toleranzen kalibriert:** Die Toleranzen der Klang-Fingerabdrücke sind kalibriert. Ein Halbton Verstimmung oder 10 % mehr Decay werden erkannt, Rauschschwankungen nicht.
 - **Mutationsprüfung:** Wir bauen absichtlich Fehler ein, zum Beispiel einen ausgebauten Live-Effekt, falschen Swing oder eine Closed Hat, die die Open Hat nicht mehr abwürgt. Der passende Test muss rot werden, sonst fehlt ein Test.
@@ -192,8 +193,9 @@ Pocket 808 wird gerade auf ein neues technisches Fundament gestellt. Live läuft
 | 3 | `store`: Signals-Kern, Zustand, Undo, Speichern | ✅ |
 | 4 | `audio`: Engine, gleich zur Referenz | ✅ |
 | 5a | UI-Grundgerüst: drei Layouts, Deck, Step-Editor, Spuren, Transport, Tastaturkürzel, platform | ✅ (live unter `/next/`) |
-| 5b | Synth in der neuen UI | als Nächstes |
-| 5c–5d | Sampler, Mixer/FX/Song in der neuen UI | geplant |
+| 5b | Synth in der neuen UI: Piano-Roll, SH-101-Module mit Hüllkurvenanzeige, Presets | ✅ (live unter `/next/`) |
+| 5c | Sampler in der neuen UI | als Nächstes |
+| 5d | Mixer, FX, Song, Vorlagen in der neuen UI | geplant |
 | 6 | Umstellung: die neue App geht live | geplant |
 
 ---

@@ -1,4 +1,4 @@
-import type { VoiceId } from '../core/types.ts';
+import type { Part, VoiceId } from '../core/types.ts';
 import type { SampleBank } from '../store/samples.ts';
 import type { ReadonlySignal } from '../store/signals.ts';
 import type { Store } from '../store/store.ts';
@@ -15,6 +15,8 @@ export interface UiAudio {
   stop(): void;
   tick(): void;
   audition(voice: VoiceId): void;
+  /** Stufe des Parts vorhören (Länge in Steps) */
+  auditionNote(part: Part, degree: number, length: number): void;
   decode(data: ArrayBuffer): Promise<Float32Array>;
 }
 

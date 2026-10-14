@@ -6,6 +6,7 @@
   }
   .chip {
     position: relative;
+    min-width: var(--touch);
     min-height: var(--touch);
     padding: 0 14px;
     border: 0;
@@ -17,6 +18,15 @@
   }
   .chip:active:not(:disabled) {
     filter: brightness(1.3);
+  }
+  /* läuft gerade (z. B. gespielte Takthälfte): Glow über den Nachbarn */
+  .chip.now {
+    z-index: 1;
+    color: var(--ink);
+    box-shadow: 0 0 10px var(--acc);
+  }
+  .chip.active.now {
+    box-shadow: 0 0 16px var(--cream);
   }
   .chip.active {
     z-index: 1;

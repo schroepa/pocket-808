@@ -11,6 +11,7 @@ import { brand } from './panels/brand.ts';
 import { deck } from './panels/deck.ts';
 import { slots } from './panels/slots.ts';
 import { stepEditor } from './panels/step-editor.ts';
+import { synthDevice } from './panels/synth/device.ts';
 import { tracks } from './panels/tracks.ts';
 import { transport } from './panels/transport.ts';
 import { drivePlayhead } from './playhead.ts';
@@ -52,7 +53,7 @@ export function mountShell(
       slots(c),
       stepEditor(c),
       tracks(c),
-      devices(c, layout, []),
+      devices(c, layout, [synthDevice(c)]),
       transport(c),
     ]),
   );

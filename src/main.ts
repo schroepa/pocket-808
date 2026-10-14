@@ -99,6 +99,9 @@ function boot(hostData: unknown): Store {
     audition: (v) => {
       engine.audition(v);
     },
+    auditionNote: (p, d, l) => {
+      engine.auditionNote(p, d, l);
+    },
     decode: (d) => engine.decode(d),
   };
   mountShell(must(document.getElementById('app') ?? undefined, '#app'), {
