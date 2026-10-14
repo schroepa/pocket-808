@@ -100,7 +100,7 @@
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   grid-template-areas:
-    'brand brand deck deck deck deck slots slots slots slots transport transport'
+    'brand brand deck deck deck deck slots slots slots transport transport transport'
     'editor editor editor editor synth synth synth synth mix mix mix mix'
     'tracks tracks tracks tracks smp smp smp smp fx fx fx fx';
   grid-template-rows: auto auto 1fr;
@@ -114,6 +114,15 @@
   position: static;
   padding: 0;
   background: none;
+}
+[data-layout='desktop'] .brand h1 {
+  font-size: 26px;
+}
+[data-layout='desktop'] .stripe {
+  display: none;
+}
+[data-layout='desktop'] :is(.deck, .slots, .transport) {
+  align-self: center;
 }
 [data-layout='desktop'] :is(.devices, .dev-bodies) {
   display: contents;
