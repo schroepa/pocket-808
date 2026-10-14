@@ -1,0 +1,19 @@
+@layer components {
+  .sub-ed {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: var(--radius);
+    background: var(--well);
+  }
+  .sub-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+    margin: 8px 0 10px;
+  }
+  @container editor (min-width: 640px) {
+    .sub-grid {
+      grid-template-columns: repeat(16, 1fr);
+    }
+  }
+}

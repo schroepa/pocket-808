@@ -8,6 +8,7 @@ import { knob } from '../controls/knob.ts';
 import { markColumn } from '../controls/marker.ts';
 import { stepButton } from '../controls/step-button.ts';
 import { bind, h } from '../dom.ts';
+import { subEditor } from './sub-editor.ts';
 import { drumOn, drumSub, selectedVoice, toggleWithAudition } from './voice.ts';
 import './step-editor.css';
 
@@ -100,6 +101,21 @@ export function stepEditor(c: UiContext, sub: Signal<EditorSub> = createEditorSu
     computed(() => audio.playhead.value.step),
     (s) => buttons.slice(s, s + 1),
   );
+  const subPanel = subEditor(c, {
+    key: voice,
+    step: computed(() => sub.value.step),
+    label: voice,
+    audition: () => {
+      audio.audition(voice.peek());
+    },
+  });
+  bind(
+    scope,
+    () => sub.value.on,
+    (on) => {
+      subPanel.hidden = !on;
+    },
+  );
   const param = (key: keyof DrumParams, label: string, format: (v: number) => string) =>
     knob(scope, {
       label,
@@ -125,7 +141,7 @@ export function stepEditor(c: UiContext, sub: Signal<EditorSub> = createEditorSu
     [
       head,
       h('div', { class: 'steps' }, groups),
-      h('div', { class: 'sub-slot' }),
+      subPanel,
       h('div', { class: 'knob-row inst' }, [
         param('level', 'Level', pct),
         param('tune', 'Tune', fmtTune),
