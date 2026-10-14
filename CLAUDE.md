@@ -65,9 +65,13 @@ npm run build         # dist/index.html (eine Datei)
 - Visuelle Prüfung: Chromium/Playwright, Viewport 390 × 844.
 - Offline erscheint ein Konsolenfehler für die Google Fonts. Das ist harmlos.
 
+## README (lebendes Dokument)
+
+`README.md` erklärt die Technik ausführlich und soll Lust auf das Produkt machen. Sie wird **mit jeder Änderung mitgepflegt**: Funktionen, Architektur, Testzahlen, Projektstand-Tabelle, Befehle, Roadmap und das Datum „Stand“ oben. Ein Schritt ist erst fertig, wenn die README stimmt.
+
 ## Veröffentlichung
 
-`dist/index.html` (nach `npm run build`) wird zusätzlich als Claude-Artifact veröffentlicht (`<title>` "Pocket 808"). Das Artifact hängt nicht automatisch am Repo und muss separat aktualisiert werden.
+Live: Jeder Push nach `main` wird von Vercel ausgeliefert (https://pocket-808.vercel.app, Build `npm run build`). `dist/index.html` (nach `npm run build`) wird zusätzlich als Claude-Artifact veröffentlicht (`<title>` "Pocket 808"). Das Artifact hängt nicht automatisch am Repo und muss separat aktualisiert werden.
 
 ## Roadmap (in dieser Reihenfolge, je Etappe fertig, testen, bestätigen lassen)
 
