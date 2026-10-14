@@ -1,0 +1,126 @@
+@layer components {
+  .brand {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .brand h1 {
+    font: 700 32px/1 var(--font-display);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .brand-sub {
+    margin-top: 4px;
+    font: 500 12px var(--font-display);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+  .stripe {
+    display: flex;
+    gap: 3px;
+    padding-bottom: 4px;
+    opacity: 0.9;
+  }
+  .stripe i {
+    width: 16px;
+    height: 10px;
+    border-radius: 1px;
+  }
+  .stripe i:nth-child(1) {
+    background: #2e2e37;
+  }
+  .stripe i:nth-child(2) {
+    background: #45454f;
+  }
+  .stripe i:nth-child(3) {
+    background: #6a6a76;
+  }
+  .stripe i:nth-child(4) {
+    background: var(--acc);
+  }
+  .deck {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: center;
+    justify-content: center;
+  }
+  .lcd {
+    flex: 1 1 150px;
+    min-width: 0;
+    display: grid;
+    gap: 6px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: var(--well);
+  }
+  .lcd-main {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-family: var(--font-lcd);
+  }
+  .lcd-digits {
+    font-size: 48px;
+    line-height: 1;
+    color: var(--acc);
+    text-shadow: 0 0 10px rgba(211, 146, 90, 0.35);
+  }
+  .lcd-unit {
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    color: var(--acc);
+    opacity: 0.8;
+  }
+  .lcd-sub {
+    min-height: 1.2em;
+    overflow: hidden;
+    font: 14px var(--font-lcd);
+    text-transform: uppercase;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--acc);
+    opacity: 0.85;
+  }
+  .knob-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  .slots {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 5px;
+  }
+  .slot {
+    position: relative;
+    min-height: max(40px, var(--touch));
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: var(--cell);
+    color: var(--ink-dim);
+    font: 700 18px var(--font-display);
+  }
+  .slot.has::after {
+    content: '';
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--ink-dim);
+  }
+  .slot.sel {
+    z-index: 1;
+    background: var(--cream);
+    color: var(--chassis);
+    box-shadow: var(--glow-cream);
+  }
+  .slot.sel.has::after {
+    background: var(--chassis);
+  }
+}
