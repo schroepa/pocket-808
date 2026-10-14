@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { baseState } from '../core/defaults.ts';
 import { createSampleBank } from '../store/samples.ts';
 import { createStore } from '../store/store.ts';
@@ -11,6 +11,11 @@ const media = (matches: Record<string, boolean>) => (q: string) =>
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
   }) as unknown as MediaQueryList;
+
+const mounted: { dispose(): void }[] = [];
+afterEach(() => {
+  for (const m of mounted.splice(0)) m.dispose();
+});
 
 function mount(matches: Record<string, boolean> = {}) {
   const root = document.createElement('div');
@@ -29,6 +34,7 @@ function mount(matches: Record<string, boolean> = {}) {
       cancelAnimationFrame: raf.cancel,
     },
   });
+  mounted.push(shell);
   return { root, shell, audio, raf };
 }
 
@@ -57,5 +63,13 @@ describe('mountShell', () => {
     expect(root.childElementCount).toBe(0);
     audio.playhead.value = { step: 3, songIndex: -1 };
     expect(document.querySelector('.now')).toBeNull();
+  });
+  it('Tastaturkürzel wirken auf dem Desktop', () => {
+    const { audio, shell } = mount({ '(min-width: 768px)': true, '(min-width: 1024px)': true });
+    document.body.dispatchEvent(
+      new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+    );
+    expect(audio.start).toHaveBeenCalled();
+    shell.dispose();
   });
 });

@@ -5,6 +5,7 @@ import type { Store } from '../store/store.ts';
 import type { UiAudio, UiContext, UiFiles } from './context.ts';
 import { devices } from './devices.ts';
 import { createScope, h } from './dom.ts';
+import { installKeys, shortcutHelp } from './keys.ts';
 import { watchLayout, type Layout } from './layout.ts';
 import { brand } from './panels/brand.ts';
 import { deck } from './panels/deck.ts';
@@ -46,7 +47,7 @@ export function mountShell(
   };
   root.replaceChildren(
     h('main', { class: 'shell' }, [
-      brand(),
+      brand(shortcutHelp(c)),
       deck(c),
       slots(c),
       stepEditor(c),
@@ -55,6 +56,7 @@ export function mountShell(
       transport(c),
     ]),
   );
+  installKeys(c, layout, document);
   drivePlayhead(scope, deps.audio, {
     request: (fn) => deps.win.requestAnimationFrame(fn),
     cancel: (id) => {

@@ -123,4 +123,38 @@
   .slot.sel.has::after {
     background: var(--chassis);
   }
+  .help {
+    display: none;
+    margin-left: auto;
+  }
+  [data-layout='desktop'] .help {
+    display: block;
+  }
+  .keys-help {
+    min-width: 320px;
+    padding: 20px 24px;
+    border: 0;
+    border-radius: var(--radius-panel);
+    background: var(--panel);
+    color: var(--ink);
+  }
+  .keys-help::backdrop {
+    background: rgba(0, 0, 0, 0.6);
+  }
+  .keys-help h2 {
+    margin-bottom: 14px;
+    font: 700 20px var(--font-display);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .keys-help dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 18px;
+    margin-bottom: 16px;
+  }
+  .keys-help dt {
+    font-family: var(--font-lcd);
+    color: var(--acc);
+  }
 }
