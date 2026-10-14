@@ -39,4 +39,8 @@
   .inst {
     margin-top: 16px;
   }
+  .smp-row {
+    justify-content: center;
+    margin-top: 12px;
+  }
 }

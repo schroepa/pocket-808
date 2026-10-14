@@ -8,6 +8,7 @@ import { knob } from '../controls/knob.ts';
 import { markColumn } from '../controls/marker.ts';
 import { stepButton } from '../controls/step-button.ts';
 import { bind, h } from '../dom.ts';
+import { drumSampleRow } from './drum-sample.ts';
 import { subEditor } from './sub-editor.ts';
 import { drumOn, drumSub, selectedVoice, toggleWithAudition } from './voice.ts';
 import './step-editor.css';
@@ -147,7 +148,7 @@ export function stepEditor(c: UiContext, sub: Signal<EditorSub> = createEditorSu
         param('tune', 'Tune', fmtTune),
         param('decay', 'Decay', pct),
       ]),
-      h('div', { class: 'smp-slot' }),
+      drumSampleRow(c, voice),
     ],
   );
 }
