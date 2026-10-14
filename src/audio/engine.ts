@@ -33,7 +33,7 @@ export interface ScheduledStep {
 
 /** Echter oder Offline-Kontext; resume und outputLatency gibt es nur bei manchen. */
 export type EngineContext = BaseAudioContext &
-  Partial<Pick<AudioContext, 'resume' | 'outputLatency'>>;
+  Partial<Pick<AudioContext, 'resume' | 'close' | 'outputLatency'>>;
 
 export interface EngineOptions {
   store: Store;
@@ -46,13 +46,16 @@ export interface EngineOptions {
   drums?: Partial<Record<VoiceId, DrumSample>>;
   /** false: Drums nicht automatisch vorrendern (Tests rendern gezielt mit prerenderAll) */
   prerender?: boolean;
-  /** z. B. iOS-Entsperren aus platform, direkt im Tipp-Handler */
-  beforeStart?: () => void;
+  /** bei jeder Bedien-Geste (Start, Vorhören, Stutter), z. B. iOS-Entsperren aus platform */
+  onGesture?: () => void;
   onScheduled?: (s: ScheduledStep) => void;
 }
 
 export interface Engine {
+  /** Kontext und Graph anlegen (einmal); false, wenn der Aufbau scheitert oder nach dispose */
   prepare(): boolean;
+  /** Kontext wecken, falls er nicht läuft (iOS: bei jedem Pointerdown) */
+  resume(): void;
   prerenderAll(): Promise<void>;
   drumsReady(): boolean;
   readonly playing: ReadonlySignal<boolean>;
@@ -74,6 +77,7 @@ export interface Engine {
     note(part: Part, midi: number, time: number, duration: number): void;
     pad(pad: number, time: number): void;
   };
+  /** stoppt, löscht Zeitgeber und Effekte und schließt den Kontext; danach ist die Engine stumm */
   dispose(): void;
 }
 
@@ -97,7 +101,7 @@ export function createEngine(o: EngineOptions): Engine {
   let drums: DrumBank | null = null;
   let sampler: Sampler | null = null;
   const pads: (Float32Array | null)[] = [...(o.pads ?? [])];
-  const drumSamples: Partial<Record<VoiceId, DrumSample>> = { ...o.drums };
+  const drumSamples = new Map(Object.entries(o.drums ?? {}) as [VoiceId, DrumSample][]);
   const disposers: (() => void)[] = [];
   const synthLast: Partial<Record<Part, SynthVoice>> = {};
   const playing = signal(false);
@@ -109,6 +113,7 @@ export function createEngine(o: EngineOptions): Engine {
   let bar: { slot: Slot; fromSong: boolean } = { slot: 'A', fromSong: false };
   const queue: ScheduledStep[] = [];
   let irTimer: unknown = null;
+  let disposed = false;
 
   const now = (): number => (o.clock ? o.clock() : (ctx?.currentTime ?? 0));
   const state = (): State => store.state.peek();
@@ -120,7 +125,7 @@ export function createEngine(o: EngineOptions): Engine {
       const g = graph;
       if (!g) return;
       g.muteReverb(now());
-      timer.setTimeout(() => {
+      irTimer = timer.setTimeout(() => {
         const s = state();
         g.replaceReverb(
           impulseResponse(g.ctx.sampleRate, s.fx.size, s.fx.damp, random('ir')),
@@ -211,11 +216,23 @@ export function createEngine(o: EngineOptions): Engine {
     );
   };
 
+  const close = (c: EngineContext): void => {
+    c.close?.().catch(() => undefined);
+  };
+
   const prepare = (): boolean => {
+    if (disposed) return false;
     if (graph) return true;
     const c = o.createContext();
+    let g: Graph;
+    try {
+      g = createGraph(c, state(), audible.peek(), random);
+    } catch {
+      // z. B. fehlender StereoPanner: Kontext nicht liegen lassen, beim nächsten Tipp neu versuchen
+      close(c);
+      return false;
+    }
     ctx = c;
-    const g = createGraph(c, state(), audible.peek(), random);
     graph = g;
     drums = createDrumBank({
       graph: g,
@@ -233,6 +250,15 @@ export function createEngine(o: EngineOptions): Engine {
 
   const resume = (): void => {
     if (ctx?.resume && ctx.state !== 'running') ctx.resume().catch(() => undefined);
+  };
+
+  /** Bedien-Geste: Entsperren, Kontext anlegen und wecken (Legacy ensureAudio) */
+  const gesture = (): boolean => {
+    if (disposed) return false;
+    o.onGesture?.();
+    if (!prepare()) return false;
+    resume();
+    return true;
   };
 
   const scheduleDrum = (voice: VoiceId, t: number): void => {
@@ -307,6 +333,17 @@ export function createEngine(o: EngineOptions): Engine {
     }
   };
 
+  const stop = (): void => {
+    if (!playing.peek()) return;
+    timer.clearInterval(interval);
+    interval = null;
+    queue.length = 0;
+    batch(() => {
+      playing.value = false;
+      playhead.value = { step: -1, songIndex: -1 };
+    });
+  };
+
   return {
     prepare,
     prerenderAll: async () => {
@@ -316,11 +353,9 @@ export function createEngine(o: EngineOptions): Engine {
     drumsReady: () => VOICE_IDS.every((id) => drums?.ready(id) ?? false),
     playing,
     playhead,
+    resume,
     start() {
-      if (playing.peek()) return;
-      o.beforeStart?.();
-      prepare();
-      resume();
+      if (playing.peek() || !gesture()) return;
       playing.value = true;
       step = 0;
       cursor = songStart();
@@ -329,16 +364,7 @@ export function createEngine(o: EngineOptions): Engine {
       interval = timer.setInterval(pump, LOOKAHEAD_MS);
       pump();
     },
-    stop() {
-      if (!playing.peek()) return;
-      timer.clearInterval(interval);
-      interval = null;
-      queue.length = 0;
-      batch(() => {
-        playing.value = false;
-        playhead.value = { step: -1, songIndex: -1 };
-      });
-    },
+    stop,
     tick(at) {
       if (!playing.peek()) return;
       const t = at ?? now() - (ctx?.outputLatency ?? 0);
@@ -352,11 +378,11 @@ export function createEngine(o: EngineOptions): Engine {
       });
     },
     audition(voice) {
-      prepare();
+      if (!gesture()) return;
       scheduleDrum(voice, now() + 0.005);
     },
     auditionNote(part, degree, length = 1) {
-      prepare();
+      if (!gesture()) return;
       const s = state();
       scheduleNote(
         part,
@@ -366,11 +392,11 @@ export function createEngine(o: EngineOptions): Engine {
       );
     },
     auditionPad(pad) {
-      prepare();
+      if (!gesture()) return;
       if (sampler?.has(pad)) schedulePad(pad, now() + 0.005);
     },
     stutterOn(fraction) {
-      prepare();
+      if (!gesture()) return;
       graph?.stutterOn(now() + 0.01, stutterPeriod(state().tempo, fraction));
     },
     stutterOff() {
@@ -381,14 +407,23 @@ export function createEngine(o: EngineOptions): Engine {
       sampler?.setPcm(pad, pcm);
     },
     setDrumSample(voice, sample) {
-      if (sample) drumSamples[voice] = sample;
+      if (sample) drumSamples.set(voice, sample);
+      else drumSamples.delete(voice);
       drums?.setSample(voice, sample);
     },
     schedule: { drum: scheduleDrum, note: scheduleNote, pad: schedulePad },
     dispose() {
-      if (interval !== null) timer.clearInterval(interval);
+      if (disposed) return;
+      stop();
+      disposed = true;
       timer.clearTimeout(irTimer);
       for (const d of disposers.splice(0)) d();
+      drums?.dispose();
+      if (ctx) close(ctx);
+      ctx = null;
+      graph = null;
+      drums = null;
+      sampler = null;
     },
   };
 }

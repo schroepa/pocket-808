@@ -13,6 +13,7 @@ const EXPECTED = [
   'reverbWet',
   'reverbDry',
   'hatChoke',
+  'liveMix',
   'djLowpass',
   'djHighpass',
   'panRight',

@@ -24,6 +24,8 @@ export interface DrumBank {
   ready(voice: VoiceId): boolean;
   setSample(voice: VoiceId, sample: DrumSample | null): void;
   hit(voice: VoiceId, time: number, params: DrumParams): void;
+  /** Zeitgeber löschen, ausstehende Renderaufträge verwerfen */
+  dispose(): void;
 }
 
 export function createDrumBank(o: {
@@ -32,17 +34,21 @@ export function createDrumBank(o: {
   random: (tag: string) => Rng;
   timer: EngineTimer;
   params: () => Record<VoiceId, DrumParams>;
-  samples?: Partial<Record<VoiceId, DrumSample>>;
+  samples?: ReadonlyMap<VoiceId, DrumSample>;
 }): DrumBank {
   const { graph, timer } = o;
   const ctx = graph.ctx;
   const buffers: Partial<Record<VoiceId, AudioBuffer>> = {};
   const tokens: Partial<Record<VoiceId, number>> = {};
   const rerenderTimers: Partial<Record<VoiceId, unknown>> = {};
-  const samples = new Map(Object.entries(o.samples ?? {}) as [VoiceId, DrumSample][]);
+  const samples = new Map(o.samples);
   const sampleBuffers = new Map<VoiceId, AudioBuffer>();
   const last = new Map<VoiceId, Playing>();
   const choke = { gain: null as GainNode | null };
+  // Eine Warteschlange für alle Offline-Renderings: nie zwei gleichzeitig (iPhone)
+  let renders: Promise<void> = Promise.resolve();
+  let prerendering: Promise<void> | null = null;
+  let disposed = false;
 
   const render = async (voice: VoiceId): Promise<void> => {
     const tok = (tokens[voice] ?? 0) + 1;
@@ -66,6 +72,10 @@ export function createDrumBank(o: {
     new Promise((resolve) => {
       timer.setTimeout(resolve, ms);
     });
+  const enqueue = (job: () => Promise<void>): Promise<void> => {
+    renders = renders.then(() => (disposed ? undefined : job()));
+    return renders;
+  };
   const steal = (voice: VoiceId, t: number): void => {
     const l = last.get(voice);
     if (!l) return;
@@ -115,16 +125,21 @@ export function createDrumBank(o: {
   };
 
   return {
-    async prerenderAll() {
+    prerenderAll() {
       // nacheinander statt alle gleichzeitig; dazwischen kurz Luft für Audio-Thread und UI
-      for (const voice of RENDER_ORDER) {
-        await render(voice);
-        await pause(25);
-      }
+      prerendering ??= Promise.all(
+        RENDER_ORDER.map((voice) =>
+          enqueue(async () => {
+            await render(voice);
+            await pause(25);
+          }),
+        ),
+      ).then(() => undefined);
+      return prerendering;
     },
     rerender(voice) {
       timer.clearTimeout(rerenderTimers[voice]);
-      rerenderTimers[voice] = timer.setTimeout(() => void render(voice), 90);
+      rerenderTimers[voice] = timer.setTimeout(() => void enqueue(() => render(voice)), 90);
     },
     ready: (voice) => !!buffers[voice],
     setSample(voice, s) {
@@ -141,7 +156,8 @@ export function createDrumBank(o: {
       const dest = graph.chan[voice].in;
       const buf = buffers[voice];
       if (!buf) {
-        // noch nicht vorgerendert: live synthetisieren (Legacy-Rückfall)
+        // noch nicht vorgerendert: live synthetisieren (Legacy-Rückfall). Abwürgen und Stehlen
+        // greifen dabei nur unter Live-Stimmen (choke), nicht gegenüber Buffern – wie Legacy.
         VOICE_FN[voice](
           { ctx, out: dest, noise: graph.noise, kick: graph.kick, rnd: Math.random, choke },
           t,
@@ -159,6 +175,10 @@ export function createDrumBank(o: {
       g.connect(dest);
       src.start(t, 0);
       last.set(voice, { src, g, v: p.level });
+    },
+    dispose() {
+      disposed = true;
+      for (const id of VOICE_IDS) timer.clearTimeout(rerenderTimers[id]);
     },
   };
 }

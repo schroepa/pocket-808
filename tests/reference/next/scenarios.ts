@@ -143,10 +143,11 @@ interface EngineLike {
   stutterOn(f: number): void;
   stutterOff(): void;
 }
+type Change = (fn: (s: State) => State) => void;
 interface MixCase {
   seconds: number;
   setup: (s: State) => void;
-  events?: { at: number; run: (e: EngineLike) => void }[];
+  events?: { at: number; run: (e: EngineLike, change: Change) => void }[];
 }
 
 const MIX: Record<string, MixCase> = {
@@ -212,6 +213,33 @@ const MIX: Record<string, MixCase> = {
       s.fx.ret = 1;
       s.fx.size = 0.8;
     },
+  },
+  // Live während der Wiedergabe: Mute, DJ-Filter, Return, Pegel, Tempo und Solo
+  liveMix: {
+    seconds: 3,
+    setup: () => undefined,
+    events: [
+      {
+        at: 0.6,
+        run: (_e, change) => {
+          change((s) => ({
+            ...s,
+            mix: { ...s.mix, SD: { ...s.mix.SD, m: true } },
+            fx: { ...s.fx, dj: 0.25, ret: 0.5 },
+          }));
+        },
+      },
+      {
+        at: 1.4,
+        run: (_e, change) => {
+          change((s) => ({
+            ...s,
+            mix: { ...s.mix, BA: { ...s.mix.BA, v: 0.3 }, OH: { ...s.mix.OH, p: 0.9 } },
+            tempo: 120,
+          }));
+        },
+      },
+    ],
   },
   // Open Hat klingt aus, Closed Hat würgt sie ab (808-Verhalten)
   hatChoke: {
@@ -298,7 +326,7 @@ async function play(o: {
   seconds: number;
   playFor?: number;
   setup: (s: State) => void;
-  events?: { at: number; run: (e: EngineLike) => void }[];
+  events?: { at: number; run: (e: EngineLike, change: Change) => void }[];
   seed: number;
   instrument?: (c: OfflineAudioContext) => void;
   afterPrerender?: () => void;
@@ -345,7 +373,10 @@ async function play(o: {
   const pending = [...(o.events ?? [])];
   const end = o.playFor ?? o.seconds;
   for (now = 0; now < end; now += 0.025) {
-    while (pending[0] && pending[0].at <= now) pending.shift()?.run(engine);
+    while (pending[0] && pending[0].at <= now)
+      pending.shift()?.run(engine, (fn) => {
+        store.update(fn);
+      });
     if (o.each?.(now, store)) break;
     (pump as (() => void) | null)?.();
   }

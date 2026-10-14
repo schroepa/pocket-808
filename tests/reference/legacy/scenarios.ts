@@ -223,6 +223,31 @@ const MIX: Record<string, MixCase> = {
       t.state.fx.size = 0.8;
     },
   },
+  // Live während der Wiedergabe: Mute, DJ-Filter, Return, Pegel, Tempo und Solo
+  liveMix: {
+    seconds: 3,
+    setup: () => undefined,
+    events: [
+      {
+        at: 0.6,
+        run: (t) => {
+          mixOf(t, 'SD').m = true;
+          t.state.fx.dj = 0.25;
+          t.state.fx.ret = 0.5;
+          t.applyMixAll();
+        },
+      },
+      {
+        at: 1.4,
+        run: (t) => {
+          mixOf(t, 'BA').v = 0.3;
+          mixOf(t, 'OH').p = 0.9;
+          t.state.tempo = 120;
+          t.applyMixAll();
+        },
+      },
+    ],
+  },
   // Open Hat klingt aus, Closed Hat würgt sie ab (808-Verhalten)
   hatChoke: {
     seconds: 1,
