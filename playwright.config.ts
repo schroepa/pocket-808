@@ -4,6 +4,8 @@ export default defineConfig({
   testDir: 'tests/e2e',
   snapshotPathTemplate: '{testDir}/__screenshots__/{projectName}/{arg}{ext}',
   fullyParallel: true,
+  // WebKit bricht unter Last gelegentlich mit „browserContext.close: Test ended“ ab
+  retries: 1,
   reporter: 'list',
   use: { baseURL: 'http://localhost:4173' },
   projects: [

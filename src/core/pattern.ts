@@ -17,6 +17,7 @@ import { must } from './util.ts';
 export const currentPattern = (state: State): Pattern => state.patterns[state.cur];
 
 export function replacePattern(state: State, slot: Slot, pattern: Pattern): State {
+  if (state.patterns[slot] === pattern) return state;
   const patterns = { ...state.patterns };
   patterns[slot] = pattern;
   return { ...state, patterns };
@@ -25,9 +26,14 @@ export function replacePattern(state: State, slot: Slot, pattern: Pattern): Stat
 const updateCurrent = (state: State, fn: (p: Pattern) => Pattern): State =>
   replacePattern(state, state.cur, fn(currentPattern(state)));
 
-const setBit = (row: StepRow, i: number, b: Bit): StepRow => row.map((x, k) => (k === i ? b : x));
+const setBit = (row: StepRow, i: number, b: Bit): StepRow =>
+  row[i] === b ? row : row.map((x, k) => (k === i ? b : x));
+
+const sameRow = (a: StepRow | undefined, b: StepRow): boolean =>
+  !!a && a.length === b.length && a.every((x, i) => x === b[i]);
 
 function withRow(p: Pattern, voice: VoiceId, row: StepRow): Pattern {
+  if (p[voice] === row) return p;
   const next = { ...p };
   next[voice] = row;
   return next;
@@ -43,6 +49,8 @@ export const subStepsOf = (p: Pattern, key: SubKey, step: number): StepRow | nul
 
 /** Sub-Steps eines Steps ersetzen (row) oder entfernen (null); leere Einträge verschwinden. */
 function withSub(p: Pattern, key: SubKey, step: number, row: StepRow | null): Pattern {
+  const cur = p.sub[key]?.[step];
+  if (row ? sameRow(cur, row) : cur === undefined) return p;
   const steps = Object.fromEntries(
     Object.entries(p.sub[key] ?? {}).filter(([k]) => Number(k) !== step),
   ) as Partial<Record<number, StepRow>>;
@@ -123,37 +131,40 @@ export function placeNote(state: State, degree: number, step: number): State {
 export function clearNotes(state: State): State {
   const part = state.part;
   return updateCurrent(state, (q) => {
+    if (!q.notes[part].some(Boolean)) return q;
     const notes = { ...q.notes };
     notes[part] = new Array<null>(16).fill(null);
     return { ...q, notes };
   });
 }
 
-export const clearPattern = (state: State): State => ({
-  ...replacePattern(state, state.cur, blankPattern()),
-  preset: null,
-});
+export const clearPattern = (state: State): State =>
+  !patternHasContent(currentPattern(state)) && state.preset === null
+    ? state
+    : { ...replacePattern(state, state.cur, blankPattern()), preset: null };
 
 /** Spur der gewählten Drum-Stimme (state.sel) samt Sub-Steps leeren. */
 export function clearTrack(state: State): State {
   const voice = must(VOICE_IDS[state.sel], `Stimme ${state.sel}`);
   const next = updateCurrent(state, (q) => {
-    const sub = Object.fromEntries(Object.entries(q.sub).filter(([k]) => k !== voice)) as SubMap;
-    return { ...withRow(q, voice, emptyRow()), sub };
+    const row = q[voice].some(Boolean) ? emptyRow() : q[voice];
+    const sub =
+      voice in q.sub
+        ? (Object.fromEntries(Object.entries(q.sub).filter(([k]) => k !== voice)) as SubMap)
+        : q.sub;
+    return row === q[voice] && sub === q.sub ? q : { ...withRow(q, voice, row), sub };
   });
-  return { ...next, preset: null };
+  return next.preset === null ? next : { ...next, preset: null };
 }
 
-export const selectSlot = (state: State, slot: Slot): State => ({
-  ...state,
-  cur: slot,
-  preset: null,
-});
+export const selectSlot = (state: State, slot: Slot): State =>
+  state.cur === slot && state.preset === null ? state : { ...state, cur: slot, preset: null };
 
-export const copyPattern = (state: State): Pattern => structuredClone(currentPattern(state));
+/** Patterns sind unveränderlich: Die „Kopie“ ist das Pattern selbst. */
+export const copyPattern = (state: State): Pattern => currentPattern(state);
 
 export const pastePattern = (state: State, clip: Pattern): State => ({
-  ...replacePattern(state, state.cur, structuredClone(clip)),
+  ...replacePattern(state, state.cur, clip),
   preset: null,
 });
 

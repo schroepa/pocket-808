@@ -121,12 +121,11 @@ describe('Pattern als Ganzes', () => {
       preset: null,
     });
   });
-  it('kopieren und einfügen ergibt eine unabhängige Kopie', () => {
+  it('kopieren und einfügen übernimmt das Pattern', () => {
     const s = deepFreeze(toggleDrumStep(fresh(), 'CY', 9));
-    const clip = copyPattern(s);
-    const pasted = pastePattern(deepFreeze(selectSlot(s, 'D')), clip);
+    const pasted = pastePattern(deepFreeze(selectSlot(s, 'D')), copyPattern(s));
     expect(pasted.patterns.D).toEqual(s.patterns.A);
-    expect(pasted.patterns.D).not.toBe(clip);
+    expect(pasted.preset).toBeNull();
   });
   it('erkennt Inhalt in Drums, Noten, Sampler und Sub-Steps', () => {
     const b = fresh();
@@ -146,5 +145,32 @@ describe('Undo', () => {
     expect(back.cur).toBe('A');
     expect(back.patterns.A).toEqual(s0.patterns.A);
     expect([back.tempo, back.swing, back.preset]).toEqual([100, s0.swing, 'House']);
+    expect(snapshot(s0).pat).toBe(s0.patterns.A);
+    expect(back.patterns.A).toBe(snap.pat);
+  });
+});
+
+describe('Aktionen ohne Wirkung liefern dasselbe Objekt', () => {
+  it('leere Sub-Reihe auf leerem Step, leere Spur leeren, leere Noten leeren', () => {
+    const s = fresh();
+    expect(setSubSteps(s, 'BD', 3, SUB_PATTERNS.clear())).toBe(s);
+    expect(clearTrack(s)).toBe(s);
+    expect(clearNotes(s)).toBe(s);
+    expect(clearPattern(s)).toBe(s);
+    expect(selectSlot(s, 'A')).toBe(s);
+  });
+  it('gleiche Sub-Reihe erneut setzen ändert nichts', () => {
+    const s = deepFreeze(setSubSteps(fresh(), 'BD', 3, roll()));
+    expect(setSubSteps(s, 'BD', 3, roll())).toBe(s);
+  });
+  it('Sub-Steps löschen lässt eine schon leere Hauptreihe unangetastet', () => {
+    const s = deepFreeze(setSubSteps(fresh(), 'BD', 3, roll()));
+    expect(toggleDrumStep(s, 'BD', 3).patterns.A.BD).toBe(s.patterns.A.BD);
+  });
+  it('Kopieren und Einfügen teilen das unveränderliche Pattern', () => {
+    const s = deepFreeze(toggleDrumStep(fresh(), 'CY', 9));
+    const clip = copyPattern(s);
+    expect(clip).toBe(s.patterns.A);
+    expect(pastePattern(deepFreeze(selectSlot(s, 'D')), clip).patterns.D).toBe(clip);
   });
 });

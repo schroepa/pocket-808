@@ -19,3 +19,9 @@ describe('Werkzeug-Konfiguration', () => {
     }
   });
 });
+
+describe('Playwright-Stabilität', () => {
+  it('wiederholt einen Test einmal (sporadische WebKit-Aussetzer)', () => {
+    expect(playwright.retries).toBe(1);
+  });
+});

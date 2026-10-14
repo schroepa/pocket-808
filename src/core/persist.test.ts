@@ -238,11 +238,11 @@ describe('loadState', () => {
 });
 
 describe('serialize und clamp', () => {
-  it('serialize liefert eine unabhängige Kopie mit allen Feldern', () => {
+  it('serialize liefert alle Felder in Legacy-Reihenfolge und teilt Unterobjekte', () => {
     const s = serialize(base);
     expect(s).toEqual(base);
-    expect(s).not.toBe(base);
     expect(Object.keys(s)).toEqual(Object.keys(base));
+    expect(s.patterns).toBe(base.patterns);
   });
   it('clamp', () => {
     expect([clamp(-1, 0, 1), clamp(2, 0, 1), clamp(0.5, 0, 1)]).toEqual([0, 1, 0.5]);

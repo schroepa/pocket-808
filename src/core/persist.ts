@@ -197,9 +197,12 @@ export function loadState(src: unknown, base: State): State {
   return s;
 }
 
-/** Speicherbare, unabhängige Kopie in der Feldreihenfolge von Legacy serial(). */
+/**
+ * Sicht in der Feldreihenfolge von Legacy serial(); teilt Unterobjekte.
+ * JSON.stringify(serialize(s)) ist bytegleich zum Legacy-Speicherformat.
+ */
 export function serialize(state: State): State {
-  const c = structuredClone(state);
+  const c = state;
   return {
     tempo: c.tempo,
     swing: c.swing,

@@ -10,17 +10,17 @@ export interface Snapshot {
   preset: string | null;
 }
 
-export const snapshot = (s: State): Snapshot =>
-  structuredClone({
-    pat: s.patterns[s.cur],
-    cur: s.cur,
-    tempo: s.tempo,
-    swing: s.swing,
-    preset: s.preset,
-  });
+/** Zustände sind unveränderlich: Der Schnappschuss teilt das Pattern statt es zu kopieren. */
+export const snapshot = (s: State): Snapshot => ({
+  pat: s.patterns[s.cur],
+  cur: s.cur,
+  tempo: s.tempo,
+  swing: s.swing,
+  preset: s.preset,
+});
 
 export const restoreSnapshot = (s: State, u: Snapshot): State => ({
-  ...replacePattern(s, u.cur, structuredClone(u.pat)),
+  ...replacePattern(s, u.cur, u.pat),
   cur: u.cur,
   tempo: u.tempo,
   swing: u.swing,
