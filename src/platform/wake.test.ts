@@ -31,7 +31,7 @@ describe('createWakeLock', () => {
     expect(sentinel.release).toHaveBeenCalled();
   });
   it('fordert nach Rückkehr in den Vordergrund neu an, nur solange gehalten wird', async () => {
-    const { lock, request, fire, doc } = setup();
+    const { lock, request, fire, doc, sentinel } = setup();
     lock.hold();
     await tick();
     doc.visibilityState = 'hidden';
@@ -42,6 +42,7 @@ describe('createWakeLock', () => {
     fire();
     await tick();
     expect(request).toHaveBeenCalledTimes(2);
+    expect(sentinel.release).not.toHaveBeenCalled();
     lock.release();
     fire();
     await tick();
@@ -74,6 +75,27 @@ describe('createWakeLock', () => {
     lock.release();
     await tick();
     expect(sentinel.release).toHaveBeenCalledTimes(1);
+  });
+  it('halten, freigeben, halten während die erste Anfrage läuft: nur eine Sperre bleibt', async () => {
+    const first = { release: vi.fn(() => Promise.resolve()) };
+    const second = { release: vi.fn(() => Promise.resolve()) };
+    const request = vi
+      .fn<() => Promise<{ release(): Promise<void> }>>()
+      .mockResolvedValueOnce(first)
+      .mockResolvedValueOnce(second);
+    const doc = {
+      visibilityState: 'visible',
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    };
+    const lock = createWakeLock({ navigator: { wakeLock: { request } }, document: doc as never });
+    lock.hold();
+    lock.release();
+    lock.hold();
+    await tick();
+    lock.release();
+    await tick();
+    expect(first.release.mock.calls.length + second.release.mock.calls.length).toBe(2);
   });
   it('dispose entfernt den Listener', () => {
     const { lock, listeners } = setup();

@@ -71,6 +71,14 @@ describe('drumSampleRow', () => {
     expect(c.readout.text.value).toBe('NICHT LESBAR');
   });
 
+  it('Fehler beim Lesen der Datei: Meldung statt unbehandelter Ablehnung', async () => {
+    const { load, c, files } = setup();
+    files.pickAudio.mockImplementationOnce(() => Promise.reject(new Error('weg')));
+    load.click();
+    await flush();
+    expect(c.readout.text.value).toBe('NICHT LESBAR');
+  });
+
   it('steht im Step-Editor', () => {
     const { c } = makeContext();
     expect(

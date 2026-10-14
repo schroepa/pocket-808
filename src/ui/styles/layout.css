@@ -7,13 +7,16 @@
   gap: 20px;
   max-width: 520px;
   margin-inline: auto;
-  padding: 12px 16px calc(112px + env(safe-area-inset-bottom));
+  padding: 12px max(16px, env(safe-area-inset-right)) calc(112px + env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
 }
 [data-area='transport'] {
   position: fixed;
   inset: auto 0 0;
   z-index: 10;
-  padding: 16px max(16px, calc((100vw - 520px) / 2 + 16px)) calc(14px + env(safe-area-inset-bottom));
+  padding: 16px max(16px, calc((100vw - 520px) / 2 + 16px), env(safe-area-inset-right))
+    calc(14px + env(safe-area-inset-bottom))
+    max(16px, calc((100vw - 520px) / 2 + 16px), env(safe-area-inset-left));
   background: linear-gradient(to top, var(--chassis) 72%, transparent);
 }
 
@@ -60,10 +63,11 @@
 @media (orientation: portrait) {
   [data-layout='tablet'] .shell {
     max-width: 900px;
-    padding-inline: 24px;
+    padding-inline: max(24px, env(safe-area-inset-left)) max(24px, env(safe-area-inset-right));
   }
   [data-layout='tablet'] [data-area='transport'] {
-    padding-inline: max(24px, calc((100vw - 900px) / 2 + 24px));
+    padding-inline: max(24px, calc((100vw - 900px) / 2 + 24px), env(safe-area-inset-left))
+      max(24px, calc((100vw - 900px) / 2 + 24px), env(safe-area-inset-right));
   }
 }
 
@@ -80,7 +84,9 @@
     align-items: start;
     gap: 16px 20px;
     max-width: 1400px;
-    padding: 12px 24px 24px;
+    /* iPhone quer: Notch/Dynamic Island an den Seiten freihalten */
+    padding: 12px max(24px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom))
+      max(24px, env(safe-area-inset-left));
   }
   [data-layout='tablet'] [data-area='transport'] {
     position: static;

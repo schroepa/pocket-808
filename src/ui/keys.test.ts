@@ -115,6 +115,35 @@ describe('installKeys', () => {
   });
 });
 
+describe('installKeys: Dialog und Tastenwiederholung', () => {
+  it('bei offenem Dialog wirken keine Kürzel', () => {
+    const { press, audio, store, scope } = setup();
+    const d = h('dialog', { attrs: { open: '' } }, [h('button', { text: 'Schließen' })]);
+    document.body.append(d);
+    const btn = d.querySelector('button');
+    if (!btn) throw new Error('kein Knopf');
+    expect(press(' ', {}, btn).defaultPrevented).toBe(false);
+    press('3');
+    press('ArrowDown');
+    expect(audio.start).not.toHaveBeenCalled();
+    expect(store.state.value.cur).toBe('A');
+    expect(store.state.value.sel).toBe(0);
+    d.remove();
+    scope.dispose();
+  });
+  it('gehaltene Leertaste und Ziffern wiederholen nicht', () => {
+    const { press, audio, store, scope } = setup();
+    press(' ');
+    press(' ', { repeat: true });
+    press(' ', { repeat: true });
+    expect(audio.start).toHaveBeenCalledTimes(1);
+    expect(audio.stop).not.toHaveBeenCalled();
+    press('2', { repeat: true });
+    expect(store.state.value.cur).toBe('A');
+    scope.dispose();
+  });
+});
+
 describe('shortcutHelp', () => {
   it('öffnet den Dialog mit der Liste', () => {
     const { c } = makeContext();

@@ -10,10 +10,10 @@ export function drumSampleRow(c: UiContext, voice: ReadonlySignal<VoiceId>): HTM
   const { scope, samples, audio, readout, files } = c;
   const has = computed(() => samples.drums.value.has(voice.value));
   const load = async (): Promise<void> => {
-    const file = await files.pickAudio();
-    if (!file) return;
     const id = voice.peek();
     try {
+      const file = await files.pickAudio();
+      if (!file) return;
       const pcm = trimLeadingSilence(await audio.decode(file.data));
       samples.setDrum(id, { pcm, name: file.name });
       audio.audition(id);

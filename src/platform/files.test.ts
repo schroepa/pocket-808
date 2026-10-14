@@ -15,6 +15,7 @@ describe('pickAudioFile', () => {
   function capture() {
     let input: HTMLInputElement | null = null;
     const doc = {
+      body: document.body,
       createElement: (tag: string) => {
         const el = document.createElement(tag);
         if (el instanceof HTMLInputElement) {
@@ -57,6 +58,15 @@ describe('pickAudioFile', () => {
     b.get().dispatchEvent(new Event('change'));
     expect(await p2).toBeNull();
   });
+  it('das Eingabefeld hängt während der Auswahl (verborgen) im Dokument und wird danach entfernt', async () => {
+    const p = pickAudioFile(document);
+    const el = document.querySelector<HTMLInputElement>('input[type=file]');
+    expect(el?.hidden).toBe(true);
+    el?.dispatchEvent(new Event('cancel'));
+    await p;
+    expect(document.querySelector('input[type=file]')).toBeNull();
+  });
+
   it('Lesefehler lehnt ab', async () => {
     const { doc, get } = capture();
     const p = pickAudioFile(doc as never);

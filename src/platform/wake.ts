@@ -12,14 +12,18 @@ export function createWakeLock(env: WakeEnv): { hold(): void; release(): void; d
     if (!api) return;
     try {
       const s = await api.request('screen');
-      if (wanted) sentinel = s;
+      // nur eine Sperre halten: überzählige (Wettlauf halten/freigeben/halten) gleich zurückgeben
+      if (wanted && !sentinel) sentinel = s;
       else await s.release();
     } catch {
       /* verweigert (z. B. Energiesparmodus) */
     }
   };
   const onVisible = (): void => {
-    if (wanted && env.document.visibilityState === 'visible') void request();
+    if (!wanted || env.document.visibilityState !== 'visible') return;
+    // im Hintergrund gibt der Browser die Sperre selbst frei: neu anfordern
+    sentinel = null;
+    void request();
   };
   env.document.addEventListener('visibilitychange', onVisible);
   return {

@@ -26,16 +26,38 @@ test('richtiges Layout und kein horizontaler Scroll', async ({ page }, info) => 
   expect(overflow).toBeLessThanOrEqual(0);
 });
 
-test('Step setzen bleibt nach Neuladen erhalten', async ({ page }) => {
+test('Step, Spur, Pattern und Tempo bleiben nach Neuladen erhalten', async ({ page }) => {
+  await page.getByRole('button', { name: 'Pattern C' }).click();
+  await page.getByRole('button', { name: 'Snare Drum wählen und anhören' }).click();
   const step = page.locator('[data-area=editor] .steps .step').nth(1);
   await step.click();
   await expect(step).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('slider', { name: 'Tempo' }).press('End');
   await page.waitForTimeout(400);
   await page.reload();
   await expect(page.locator('[data-area=editor] .steps .step').nth(1)).toHaveAttribute(
     'aria-pressed',
     'true',
   );
+  await expect(page.getByRole('button', { name: 'Pattern C' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(page.locator('[data-area=editor] h2')).toContainText('SD');
+  await expect(page.locator('.lcd-digits')).toHaveText('200');
+});
+
+test('Änderung wird beim Wechsel in den Hintergrund sofort gespeichert', async ({ page }) => {
+  await page.locator('[data-area=editor] .steps .step').nth(2).click();
+  const saved = await page.evaluate(() => {
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    const s = JSON.parse(localStorage.getItem('pocket808.v1') ?? '{}') as {
+      patterns?: { A?: { BD?: number[] } };
+    };
+    return s.patterns?.A?.BD?.[2];
+  });
+  expect(saved).toBe(1);
 });
 
 test('Start lässt das Lauflicht laufen, Stopp beendet es', async ({ page, pageErrors }) => {

@@ -52,15 +52,15 @@
   .step.on.now {
     box-shadow: 0 0 30px color-mix(in srgb, var(--acc) 70%, transparent);
   }
-  /* Auswahlmarke im Sub-Modus: bewusst wie der Fokusring */
+  /* Auswahlmarke im Sub-Modus: heller Glow statt Kontur (Kontur ist dem Fokusring vorbehalten) */
   .step.subsel {
+    z-index: 1;
     filter: brightness(1.3);
-    outline: 2px solid var(--cream);
-    outline-offset: 2px;
+    box-shadow: 0 0 16px rgba(212, 212, 220, 0.5);
   }
   .sb {
     position: relative;
-    min-height: 36px;
+    min-height: var(--touch);
     border: 0;
     border-radius: 6px;
     background: var(--cell);

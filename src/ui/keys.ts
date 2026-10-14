@@ -24,14 +24,16 @@ export function installKeys(c: UiContext, layout: ReadonlySignal<Layout>, doc: D
   listen(c.scope, doc, 'keydown', (e) => {
     if (layout.peek() !== 'desktop' || e.defaultPrevented) return;
     const t = e.target instanceof Element ? e.target : doc.body;
-    if (t.closest(TEXT)) return;
+    // Texteingaben und ein offener (modaler) Dialog haben Vorrang
+    if (t.closest(TEXT) || doc.querySelector('dialog[open]')) return;
     const mod = e.metaKey || e.ctrlKey;
     const k = e.key.toLowerCase();
     if (e.key === ' ' && !mod) {
       e.preventDefault();
+      if (e.repeat) return;
       if (audio.playing.peek()) audio.stop();
       else audio.start();
-    } else if (!mod && !e.altKey && /^[1-8]$/.test(e.key)) {
+    } else if (!mod && !e.altKey && !e.repeat && /^[1-8]$/.test(e.key)) {
       store.selectSlot(must(SLOTS[Number(e.key) - 1], 'Slot'));
     } else if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !mod) {
       if (t.closest(OWN_ARROWS)) return;

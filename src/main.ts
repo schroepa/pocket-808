@@ -56,7 +56,7 @@ function boot(hostData: unknown): Store {
     hostState(hostData),
   );
   const store = createStore(booted.state);
-  persistState(store.state, storage);
+  const persist = persistState(store.state, storage);
   const samples = createSampleBank(storage, booted.drums);
 
   const unlock = createIosUnlock({
@@ -121,10 +121,15 @@ function boot(hostData: unknown): Store {
   watchLifecycle(document, {
     hidden: () => {
       engine.stop();
+      // iOS friert Zeitgeber im Hintergrund ein: Ausstehendes sofort speichern
+      persist.flush();
     },
     pointer: () => {
       engine.resume();
     },
+  });
+  window.addEventListener('pagehide', () => {
+    persist.flush();
   });
   return store;
 }
