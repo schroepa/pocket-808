@@ -1,1 +1,162 @@
-/* Layouts je data-layout: Task 17 */
+/* Drei Layouts über data-layout (layout.ts). Komponenten kennen keine Breakpoints. */
+
+/* Mobile (Grundform): eine Spalte, Startleiste fest unten */
+.shell {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 520px;
+  margin-inline: auto;
+  padding: 12px 16px calc(112px + env(safe-area-inset-bottom));
+}
+[data-area='transport'] {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 10;
+  padding: 16px max(16px, calc((100vw - 520px) / 2 + 16px)) calc(14px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--chassis) 72%, transparent);
+}
+
+/* Geräte als Akkordeon: Köpfe und Körper verschränkt */
+[data-layout='mobile'] :is(.dev-heads, .dev-bodies) {
+  display: contents;
+}
+[data-layout='mobile'] .dev-head:nth-child(1) {
+  order: 0;
+}
+[data-layout='mobile'] .dev-body:nth-child(1) {
+  order: 1;
+}
+[data-layout='mobile'] .dev-head:nth-child(2) {
+  order: 2;
+}
+[data-layout='mobile'] .dev-body:nth-child(2) {
+  order: 3;
+}
+[data-layout='mobile'] .dev-head:nth-child(3) {
+  order: 4;
+}
+[data-layout='mobile'] .dev-body:nth-child(3) {
+  order: 5;
+}
+[data-layout='mobile'] .dev-head:nth-child(4) {
+  order: 6;
+}
+[data-layout='mobile'] .dev-body:nth-child(4) {
+  order: 7;
+}
+
+/* Tablet: Geräte als Tabs nebeneinander */
+[data-layout='tablet'] .dev-heads {
+  display: grid;
+  grid-auto-flow: column;
+  gap: 6px;
+}
+[data-layout='tablet'] .dev-head[aria-selected='true'] {
+  background: var(--cell);
+}
+
+/* Tablet hochkant – Entwurf A: breite Spalte, Sequencer über die volle Breite */
+@media (orientation: portrait) {
+  [data-layout='tablet'] .shell {
+    max-width: 900px;
+    padding-inline: 24px;
+  }
+  [data-layout='tablet'] [data-area='transport'] {
+    padding-inline: max(24px, calc((100vw - 900px) / 2 + 24px));
+  }
+}
+
+/* Tablet quer – Entwurf B: Kopfleiste, links Sequencer, rechts Gerät mit eigenem Scroll */
+@media (orientation: landscape) {
+  [data-layout='tablet'] .shell {
+    display: grid;
+    grid-template-columns: 52fr 48fr;
+    grid-template-areas:
+      'brand deck'
+      'slots transport'
+      'editor devices'
+      'tracks devices';
+    align-items: start;
+    gap: 16px 20px;
+    max-width: 1400px;
+    padding: 12px 24px 24px;
+  }
+  [data-layout='tablet'] [data-area='transport'] {
+    position: static;
+    padding: 0;
+    background: none;
+  }
+  [data-layout='tablet'] [data-area='devices'] {
+    position: sticky;
+    top: 12px;
+    max-height: calc(100dvh - 24px);
+    overflow: auto;
+  }
+}
+
+/* Desktop – Entwurf C: Studio-Pult, Geräte in eigenen Bereichen */
+[data-layout='desktop'] .shell {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-areas:
+    'brand brand deck deck deck deck slots slots slots slots transport transport'
+    'editor editor editor editor synth synth synth synth mix mix mix mix'
+    'tracks tracks tracks tracks smp smp smp smp fx fx fx fx';
+  grid-template-rows: auto auto 1fr;
+  align-items: start;
+  gap: 16px;
+  max-width: 1920px;
+  min-height: 100dvh;
+  padding: 16px 24px;
+}
+[data-layout='desktop'] [data-area='transport'] {
+  position: static;
+  padding: 0;
+  background: none;
+}
+[data-layout='desktop'] :is(.devices, .dev-bodies) {
+  display: contents;
+}
+[data-layout='desktop'] .dev-name {
+  display: block;
+  margin-bottom: 12px;
+  font: 700 20px var(--font-display);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #a9a9b6;
+}
+
+[data-area='brand'] {
+  grid-area: brand;
+}
+[data-area='deck'] {
+  grid-area: deck;
+}
+[data-area='slots'] {
+  grid-area: slots;
+}
+[data-area='editor'] {
+  grid-area: editor;
+}
+[data-area='tracks'] {
+  grid-area: tracks;
+}
+[data-area='devices'] {
+  grid-area: devices;
+}
+[data-area='transport'] {
+  grid-area: transport;
+}
+[data-area='synth'] {
+  grid-area: synth;
+}
+[data-area='smp'] {
+  grid-area: smp;
+}
+[data-area='mix'] {
+  grid-area: mix;
+}
+[data-area='fx'] {
+  grid-area: fx;
+}
