@@ -12,6 +12,7 @@ const EXPECTED = [
   'master1',
   'reverbWet',
   'reverbDry',
+  'hatChoke',
   'djLowpass',
   'djHighpass',
   'panRight',

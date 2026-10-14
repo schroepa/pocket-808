@@ -223,6 +223,16 @@ const MIX: Record<string, MixCase> = {
       t.state.fx.size = 0.8;
     },
   },
+  // Open Hat klingt aus, Closed Hat würgt sie ab (808-Verhalten)
+  hatChoke: {
+    seconds: 1,
+    setup: (t) => {
+      isolate(t);
+      hits(t, { OH: [0], CH: [2] });
+      mixOf(t, 'OH').r = 0;
+      mixOf(t, 'CH').r = 0;
+    },
+  },
   djLowpass: {
     seconds: 1.4,
     setup: (t) => {
