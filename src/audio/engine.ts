@@ -223,7 +223,12 @@ export function createEngine(o: EngineOptions): Engine {
   const prepare = (): boolean => {
     if (disposed) return false;
     if (graph) return true;
-    const c = o.createContext();
+    let c: EngineContext;
+    try {
+      c = o.createContext();
+    } catch {
+      return false; // kein Web Audio
+    }
     let g: Graph;
     try {
       g = createGraph(c, state(), audible.peek(), random);

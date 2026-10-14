@@ -335,6 +335,24 @@ describe('createEngine', () => {
     engine.dispose();
   });
 
+  it('ohne Audio-Unterstützung meldet prepare false, statt zu werfen', () => {
+    const store = createStore(baseState());
+    const engine = createEngine({
+      store,
+      createContext: () => {
+        throw new Error('kein AudioContext');
+      },
+      prerender: false,
+    });
+    expect(engine.prepare()).toBe(false);
+    expect(() => {
+      engine.start();
+      engine.audition('BD');
+    }).not.toThrow();
+    expect(engine.playing.value).toBe(false);
+    engine.dispose();
+  });
+
   it('ein vor prepare entferntes Drum-Sample spielt nicht', () => {
     const store = createStore(baseState());
     const ctx = fakeContext();

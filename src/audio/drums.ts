@@ -73,7 +73,8 @@ export function createDrumBank(o: {
       timer.setTimeout(resolve, ms);
     });
   const enqueue = (job: () => Promise<void>): Promise<void> => {
-    renders = renders.then(() => (disposed ? undefined : job()));
+    // ein fehlgeschlagener Auftrag darf die Warteschlange nicht dauerhaft blockieren
+    renders = renders.then(() => (disposed ? undefined : job())).catch(() => undefined);
     return renders;
   };
   const steal = (voice: VoiceId, t: number): void => {

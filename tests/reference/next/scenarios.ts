@@ -214,7 +214,9 @@ const MIX: Record<string, MixCase> = {
       s.fx.size = 0.8;
     },
   },
-  // Live während der Wiedergabe: Mute, DJ-Filter, Return, Pegel, Tempo und Solo
+  // Live während der Wiedergabe: Mute, DJ-Filter, Return, Pegel, Pan und Tempo.
+  // Solo fehlt bewusst: node-web-audio-api rendert vorab geplante Solo-Automation in beiden
+  // Welten falsch (schon vor dem Ereignis); Solo prüft src/audio/engine.test.ts.
   liveMix: {
     seconds: 3,
     setup: () => undefined,
