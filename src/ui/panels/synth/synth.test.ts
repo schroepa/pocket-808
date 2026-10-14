@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { NOTE_NAMES, SCALES } from '../../../core/constants.ts';
-import { baseState } from '../../../core/defaults.ts';
+import { baseState, synthDefaults } from '../../../core/defaults.ts';
 import type { State } from '../../../core/types.ts';
 import { must } from '../../../core/util.ts';
-import { makeContext } from '../../test-utils.ts';
+import { makeContext, pointer } from '../../test-utils.ts';
 import { fmtTime, partName, synthSummary } from './format.ts';
 import { synthHead } from './head.ts';
+import { synthModules } from './modules.ts';
 import { pianoRoll } from './roll.ts';
 
 describe('format', () => {
@@ -140,5 +141,119 @@ describe('pianoRoll', () => {
     eighth?.click();
     expect(store.state.value.noteLen).toBe(2);
     expect(eighth?.getAttribute('aria-pressed')).toBe('true');
+  });
+});
+
+describe('synthModules', () => {
+  const key = (el: Element | null | undefined, k: string) => {
+    el?.dispatchEvent(new KeyboardEvent('keydown', { key: k }));
+  };
+
+  it('Regler schreiben den Patch des gewählten Parts und heben die Preset-Markierung auf', () => {
+    const { c, store, audio } = makeContext();
+    store.update((s) => ({ ...s, part: 'LD' }));
+    const el = synthModules(c);
+    key(el.querySelector('[role=slider][aria-label="Cutoff"]'), 'End');
+    expect(store.state.value.synth.LD.cut).toBe(1);
+    expect(store.state.value.synth.LD.preset).toBeNull();
+    expect(c.readout.text.value).toBe('LEAD Cutoff 100');
+    expect(store.state.value.synth.BA.cut).not.toBe(1);
+    expect(audio.auditionNote).not.toHaveBeenCalled();
+  });
+
+  it('jeder Knob schreibt seinen Schlüssel', () => {
+    const { c, store } = makeContext();
+    const el = synthModules(c);
+    const part = store.state.value.part;
+    const map = {
+      Detune: 'det',
+      Sub: 'sub',
+      Cutoff: 'cut',
+      Reso: 'res',
+      Env: 'env',
+      Delay: 'dly',
+      Level: 'lvl',
+    } as const;
+    for (const [label, k] of Object.entries(map)) {
+      key(el.querySelector(`[role=slider][aria-label="${label}"]`), 'Home');
+      expect(store.state.value.synth[part][k]).toBe(0);
+    }
+  });
+
+  it('Schieberegler mit Zeitformat; Hüllkurve folgt; alle acht ADSR-Regler', () => {
+    const { c, store } = makeContext();
+    const el = synthModules(c);
+    const part = store.state.value.part;
+    const line = () => el.querySelectorAll('.env-svg')[1]?.querySelector('.el')?.getAttribute('d');
+    const before = line();
+    key(el.querySelector('[aria-label="Amp Release"]'), 'End');
+    expect(store.state.value.synth[part].ar).toBe(1);
+    expect(c.readout.text.value).toMatch(/Amp Release 1\.22 s$/);
+    expect(line()).not.toBe(before);
+    key(el.querySelector('[aria-label="Filter Sustain"]'), 'Home');
+    expect(c.readout.text.value).toMatch(/Filter Sustain 0 %$/);
+    key(el.querySelector('[aria-label="Filter Attack"]'), 'Home');
+    expect(c.readout.text.value).toMatch(/Filter Attack 2 ms$/);
+    key(el.querySelector('[aria-label="Amp Decay"]'), 'Home');
+    expect(c.readout.text.value).toMatch(/Amp Decay 20 ms$/);
+    for (const k of ['fa', 'fd', 'fs', 'fr', 'aa', 'ad', 'as', 'ar'] as const) {
+      expect(typeof store.state.value.synth[part][k]).toBe('number');
+    }
+    expect(el.querySelectorAll('.sl-t')).toHaveLength(8);
+  });
+
+  it('Wellenform und Oktave hören vor; Oktave begrenzt, Preset bleibt bei Oktave', () => {
+    const { c, store, audio } = makeContext();
+    const el = synthModules(c);
+    const part = store.state.value.part;
+    const preset = store.state.value.synth[part].preset;
+    const plus = el.querySelector<HTMLButtonElement>('[aria-label="Oktave höher"]');
+    for (let i = 0; i < 4; i++) plus?.click();
+    expect(store.state.value.synth[part].oct).toBe(2);
+    expect(el.querySelector('.oct')?.textContent).toBe('Okt +2');
+    expect(store.state.value.synth[part].preset).toBe(preset);
+    expect(audio.auditionNote).toHaveBeenLastCalledWith(part, 0, 2);
+    const minus = el.querySelector<HTMLButtonElement>('[aria-label="Oktave tiefer"]');
+    for (let i = 0; i < 3; i++) minus?.click();
+    expect(el.querySelector('.oct')?.textContent).toBe('Okt -1');
+    const waves = [
+      ...el.querySelectorAll<HTMLButtonElement>('[aria-label="Wellenform"] [role=radio]'),
+    ];
+    expect(waves.map((w) => w.textContent)).toEqual(['Saw', 'Square', 'Tri', 'Sine']);
+    waves[3]?.click();
+    expect(store.state.value.synth[part].wave).toBe(3);
+    expect(store.state.value.synth[part].preset).toBeNull();
+  });
+
+  it('Part-Wechsel zeigt die Werte des anderen Parts', () => {
+    const { c, store } = makeContext();
+    store.update((s) => ({ ...s, part: 'BA' }));
+    const el = synthModules(c);
+    const cut = el.querySelector('[role=slider][aria-label="Cutoff"]');
+    store.update((s) => ({ ...s, part: 'LD' }));
+    expect(cut?.getAttribute('aria-valuenow')).toBe(
+      String(Math.round(store.state.value.synth.LD.cut * 100)),
+    );
+  });
+
+  it('Loslassen hört vor; Doppeltipp: Werkseinstellung des Parts (Knob und Schieberegler)', () => {
+    const { c, store, audio } = makeContext();
+    const el = synthModules(c);
+    const part = store.state.value.part;
+    const det = el.querySelector('[role=slider][aria-label="Detune"]');
+    key(det, 'End');
+    for (let i = 0; i < 2; i++) {
+      det?.dispatchEvent(pointer('pointerdown'));
+      det?.dispatchEvent(pointer('pointerup'));
+    }
+    expect(store.state.value.synth[part].det).toBe(synthDefaults()[part].det);
+    expect(audio.auditionNote).toHaveBeenCalledWith(part, 0, 2);
+    const fa = el.querySelector('[aria-label="Filter Attack"]');
+    key(fa, 'End');
+    for (let i = 0; i < 2; i++) {
+      fa?.dispatchEvent(pointer('pointerdown'));
+      fa?.dispatchEvent(pointer('pointerup'));
+    }
+    expect(store.state.value.synth[part].fa).toBe(synthDefaults()[part].fa);
   });
 });

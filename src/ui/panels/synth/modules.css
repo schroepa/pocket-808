@@ -1,0 +1,89 @@
+@layer components {
+  .synth-body {
+    container: synth / inline-size;
+  }
+  .sh {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .shm {
+    min-width: 0;
+    padding: 12px 8px 10px;
+    border-radius: 14px;
+    background: var(--cell);
+  }
+  .shm.w2 {
+    grid-column: 1 / -1;
+  }
+  @container synth (min-width: 640px) {
+    .sh {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    .shm.w2 {
+      grid-column: span 2;
+    }
+  }
+  .shm h4 {
+    margin: 0 0 10px 4px;
+    font: 600 11px var(--font-display);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+  .shm .knob {
+    background: var(--well);
+  }
+  .shk {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    gap: 6px;
+  }
+  .shs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .syn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-end;
+    margin-bottom: 12px;
+  }
+  .syn-row.mid {
+    align-items: center;
+  }
+  .oct-grp {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .oct {
+    min-width: 60px;
+    text-align: center;
+    font: 14px var(--font-lcd);
+    color: var(--ink);
+  }
+  .env-svg {
+    display: block;
+    width: calc(100% - 8px);
+    height: 38px;
+    margin: 0 4px 8px;
+  }
+  .env-svg path {
+    vector-effect: non-scaling-stroke;
+  }
+  .env-svg .ef {
+    fill: color-mix(in srgb, var(--acc) 14%, transparent);
+    stroke: none;
+  }
+  .env-svg .el {
+    fill: none;
+    stroke: var(--acc);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+}
