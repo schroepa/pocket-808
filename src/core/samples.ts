@@ -1,4 +1,4 @@
-import { PAD_COUNT, VOICE_IDS } from './constants.ts';
+import { PAD_COUNT, SMP_MAX, SMP_RATE, VOICE_IDS } from './constants.ts';
 import type { State, VoiceId } from './types.ts';
 
 export interface DrumSample {
@@ -91,4 +91,39 @@ export function applySampleStore(
       }
     : state;
   return { state: out, pads, drums };
+}
+
+/**
+ * Dekodiertes Audio → Sample-Format (Legacy toPcm): mono gemischt, auf SMP_MAX Sekunden gekürzt,
+ * per Mittelwert auf SMP_RATE umgerechnet und auf Spitze 0,9 normalisiert. Rechnet wie Legacy in Float32.
+ */
+export function toPcm(channels: readonly Float32Array[], sampleRate: number): Float32Array {
+  const n = Math.min(channels[0]?.length ?? 0, Math.floor(sampleRate * SMP_MAX));
+  const mono = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    let v = 0;
+    for (const d of channels) v = Math.fround(v + (d[i] ?? 0) / channels.length);
+    mono[i] = v;
+  }
+  const r = sampleRate / SMP_RATE;
+  const m = Math.max(1, Math.floor(n / r));
+  const out = new Float32Array(m);
+  let peak = 0;
+  for (let i = 0; i < m; i++) {
+    const j = Math.floor(i * r);
+    const e = Math.min(n, Math.max(j + 1, Math.floor((i + 1) * r)));
+    let sum = 0;
+    for (const x of mono.subarray(j, e)) sum += x;
+    const v = Math.fround(sum / Math.max(1, e - j));
+    out[i] = v;
+    peak = Math.max(peak, Math.abs(v));
+  }
+  const g = peak > 0.0001 ? 0.9 / peak : 1;
+  return out.map((x) => x * g);
+}
+
+/** Stille am Anfang abschneiden (Schwelle 0,02), 40 Samples Vorlauf bleiben (Legacy loadDrumSample). */
+export function trimLeadingSilence(pcm: Float32Array): Float32Array {
+  const a = pcm.findIndex((x) => Math.abs(x) >= 0.02);
+  return pcm.subarray(Math.max(0, (a < 0 ? pcm.length : a) - 40));
 }

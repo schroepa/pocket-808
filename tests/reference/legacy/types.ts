@@ -84,6 +84,12 @@ export interface LegacyHooks {
   SMP_KEY: string;
   FACTORY: readonly { name: string }[];
   mkCurve(k: number, norm: boolean): Float32Array;
+  toPcm(ab: {
+    numberOfChannels: number;
+    length: number;
+    sampleRate: number;
+    getChannelData(c: number): Float32Array;
+  }): Float32Array;
   buildIR(
     c: {
       sampleRate: number;
