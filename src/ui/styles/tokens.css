@@ -1,0 +1,23 @@
+:root {
+  --chassis: #08080b;
+  --panel: #121217;
+  --well: #0c0c10;
+  --cell: #1b1b23;
+  --ink: #f0f0f6;
+  --ink-dim: #7d7d8c;
+  --acc: #d3925a;
+  --cream: #d4d4dc;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --font-lcd: 'Share Tech Mono', ui-monospace, Menlo, Consolas, monospace;
+  --gap: 12px;
+  --pad: 14px;
+  --radius: 10px;
+  --radius-panel: 16px;
+  --touch: 44px;
+  --glow-acc: 0 0 22px color-mix(in srgb, var(--acc) 48%, transparent);
+  --glow-cream: 0 0 12px rgba(212, 212, 220, 0.22);
+  color-scheme: dark;
+}
+[data-layout='desktop'] {
+  --touch: 32px;
+}
