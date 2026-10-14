@@ -1,5 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
-import { batch, computed, effect, observerCount, signal, type ReadonlySignal } from './signals.ts';
+import {
+  batch,
+  computed,
+  effect,
+  observerCount,
+  signal,
+  type ReadonlySignal,
+  untracked,
+} from './signals.ts';
 
 /** liest einen Wert nur, um eine Abhängigkeit anzulegen */
 const read = (value: unknown): unknown => value;
@@ -338,5 +346,20 @@ describe('Regressionen aus dem Review', () => {
     expect(() => {
       s.value = 1;
     }).not.toThrow();
+  });
+});
+
+describe('untracked', () => {
+  it('liest, ohne eine Abhängigkeit anzulegen', () => {
+    const a = signal(1);
+    const b = signal(10);
+    const seen: number[] = [];
+    const stop = effect(() => {
+      seen.push(a.value + untracked(() => b.value));
+    });
+    b.value = 20;
+    a.value = 2;
+    expect(seen).toEqual([11, 22]);
+    stop();
   });
 });

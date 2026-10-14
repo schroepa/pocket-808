@@ -301,6 +301,17 @@ export function effect(fn: EffectFn): () => void {
   };
 }
 
+/** Führt fn aus, ohne gelesene Signale als Abhängigkeit des laufenden Effekts zu erfassen. */
+export function untracked<T>(fn: () => T): T {
+  const prev = tracking;
+  tracking = null;
+  try {
+    return fn();
+  } finally {
+    tracking = prev;
+  }
+}
+
 /** Nur für Tests: Anzahl der aktiven Beobachter einer Quelle. */
 export function observerCount(s: ReadonlySignal<unknown>): number {
   return s instanceof SignalNode || s instanceof ComputedNode ? s.observers.size : 0;
