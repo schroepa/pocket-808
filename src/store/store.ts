@@ -60,10 +60,10 @@ export interface Store {
 /**
  * Zustand der App als ein Wurzel-Signal. Änderungen laufen nur über core-Funktionen; weil core
  * unveränderte Teile teilt, benachrichtigen feine Auswahl-Signale (select) nur bei echter Änderung.
- * Im Entwicklungsmodus wird jeder neue Zustand eingefroren.
+ * Jeder neue Zustand wird eingefroren (Entscheidung 2026-10-14: auch im Build), außer mit `freeze: false`.
  */
 export function createStore(initial: State, opts: { freeze?: boolean } = {}): Store {
-  const freeze = opts.freeze ?? import.meta.env.DEV;
+  const freeze = opts.freeze ?? true;
   const prepare = (s: State): State => (freeze ? deepFreeze(s) : s);
   const state = signal(prepare(initial));
   const undoSnap = signal<Snapshot | null>(null);

@@ -23,8 +23,13 @@ describe('createStore', () => {
     expect(Object.isFrozen(store.state.value)).toBe(false);
   });
 
-  it('friert im Testlauf (Entwicklungsmodus) standardmäßig ein', () => {
-    expect(Object.isFrozen(createStore(baseState()).state.value)).toBe(true);
+  it('friert standardmäßig immer ein (nicht nur im Entwicklungsmodus)', () => {
+    vi.stubEnv('DEV', false);
+    try {
+      expect(Object.isFrozen(createStore(baseState()).state.value)).toBe(true);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it('update mit unverändertem Zustand löst nichts aus', () => {
