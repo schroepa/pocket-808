@@ -1,0 +1,24 @@
+@layer components {
+  .fld {
+    display: grid;
+    gap: 4px;
+    flex: 1 1 110px;
+    min-width: 0;
+  }
+  .fld span {
+    font: 600 12px var(--font-display);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+  .fld select {
+    width: 100%;
+    min-height: var(--touch);
+    padding: 0 8px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--cell);
+    color: var(--ink);
+    font: 600 15px var(--font-display);
+  }
+}
