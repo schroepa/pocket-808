@@ -108,8 +108,10 @@
   grid-template-areas:
     'brand brand deck deck deck deck slots slots slots transport transport transport'
     'editor editor editor editor synth synth synth synth mix mix mix mix'
-    'tracks tracks tracks tracks smp smp smp smp fx fx fx fx';
-  grid-template-rows: auto auto 1fr;
+    'tracks tracks tracks tracks synth synth synth synth mix mix mix mix'
+    '. . . . smp smp smp smp fx fx fx fx';
+  /* Spalten wachsen unabhängig: der hohe Synth läuft über zwei Zeilen, Spuren folgen dem Editor */
+  grid-template-rows: auto auto 1fr auto;
   align-items: start;
   gap: 16px;
   max-width: 1920px;
@@ -163,15 +165,16 @@
 [data-area='transport'] {
   grid-area: transport;
 }
-[data-area='synth'] {
+/* Geräte-Bereiche nur im Desktop-Raster: anderswo legte ein unbekannter Bereichsname eine Extraspalte an */
+[data-layout='desktop'] [data-area='synth'] {
   grid-area: synth;
 }
-[data-area='smp'] {
+[data-layout='desktop'] [data-area='smp'] {
   grid-area: smp;
 }
-[data-area='mix'] {
+[data-layout='desktop'] [data-area='mix'] {
   grid-area: mix;
 }
-[data-area='fx'] {
+[data-layout='desktop'] [data-area='fx'] {
   grid-area: fx;
 }

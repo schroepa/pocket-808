@@ -14,14 +14,22 @@
     border-radius: 14px;
     background: var(--cell);
   }
-  .shm.w2 {
+  /* schmal: jedes Modul über die volle Breite (vier ADSR-Regler brauchen ≥ 4 × 44 px) */
+  .shm.w2,
+  .shm.env {
     grid-column: 1 / -1;
+  }
+  @container synth (min-width: 480px) {
+    .shm.env {
+      grid-column: auto;
+    }
   }
   @container synth (min-width: 640px) {
     .sh {
       grid-template-columns: repeat(4, 1fr);
     }
-    .shm.w2 {
+    .shm.w2,
+    .shm.env {
       grid-column: span 2;
     }
   }

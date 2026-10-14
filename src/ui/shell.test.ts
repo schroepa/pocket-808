@@ -42,7 +42,25 @@ describe('mountShell', () => {
   it('baut die Bereiche in Lesereihenfolge', () => {
     const { root } = mount();
     const areas = [...root.querySelectorAll('[data-area]')].map((e) => e.getAttribute('data-area'));
-    expect(areas).toEqual(['brand', 'deck', 'slots', 'editor', 'tracks', 'devices', 'transport']);
+    expect(areas).toEqual([
+      'brand',
+      'deck',
+      'slots',
+      'editor',
+      'tracks',
+      'devices',
+      'synth',
+      'transport',
+    ]);
+  });
+  it('der Synth ist ein Gerät; auf Mobile per Kopf aufklappbar', () => {
+    const { root } = mount();
+    const head = root.querySelector<HTMLButtonElement>('#dev-head-synth');
+    expect(head?.textContent).toContain('Synth');
+    const body = root.querySelector<HTMLElement>('#dev-synth');
+    const before = body?.hidden;
+    head?.click();
+    expect(body?.hidden).toBe(!before);
   });
   it('setzt data-layout am Dokument', () => {
     const { shell } = mount({ '(min-width: 768px)': true, '(min-width: 1024px)': true });

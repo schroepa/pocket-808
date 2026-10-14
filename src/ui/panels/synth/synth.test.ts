@@ -5,6 +5,7 @@ import type { State } from '../../../core/types.ts';
 import { must } from '../../../core/util.ts';
 import { makeContext, pointer } from '../../test-utils.ts';
 import { fmtTime, partName, synthSummary } from './format.ts';
+import { synthDevice } from './device.ts';
 import { synthHead } from './head.ts';
 import { synthModules } from './modules.ts';
 import { synthPresets } from './presets.ts';
@@ -285,5 +286,21 @@ describe('synthPresets', () => {
     const s = store.state.value;
     expect(s.patterns[s.cur].notes[s.part].every((n) => n === null)).toBe(true);
     expect(store.canUndo.value).toBe(true);
+  });
+});
+
+describe('synthDevice', () => {
+  it('Zusammenfassung folgt dem Zustand; Körper enthält alle Teile', () => {
+    const { c, store } = makeContext();
+    const d = synthDevice(c);
+    expect(d.id).toBe('synth');
+    expect(d.name).toBe('Synth');
+    expect(d.summary.value).toBe(synthSummary(store.state.value));
+    store.update((s) => ({ ...s, key: (s.key + 1) % 12 }));
+    expect(d.summary.value).toBe(synthSummary(store.state.value));
+    const body = d.body(c.scope);
+    for (const sel of ['.syn-head', '.roll', '.sh', '.syn-presets']) {
+      expect(body.querySelector(sel)).not.toBeNull();
+    }
   });
 });

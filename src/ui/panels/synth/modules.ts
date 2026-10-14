@@ -73,7 +73,7 @@ export function synthModules(c: UiContext): HTMLElement {
         onEnd: hear,
       });
     });
-    return h('div', { class: 'shm' }, [
+    return h('div', { class: 'shm env' }, [
       h('h4', { text: `${name}-Env` }),
       view,
       h('div', { class: 'shs' }, sliders),
