@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { NOTE_NAMES, SCALES } from '../../../core/constants.ts';
+import { NOTE_NAMES, SCALES, SYN_PRESETS } from '../../../core/constants.ts';
 import { baseState, synthDefaults } from '../../../core/defaults.ts';
 import type { State } from '../../../core/types.ts';
 import { must } from '../../../core/util.ts';
@@ -7,6 +7,7 @@ import { makeContext, pointer } from '../../test-utils.ts';
 import { fmtTime, partName, synthSummary } from './format.ts';
 import { synthHead } from './head.ts';
 import { synthModules } from './modules.ts';
+import { synthPresets } from './presets.ts';
 import { pianoRoll } from './roll.ts';
 
 describe('format', () => {
@@ -255,5 +256,34 @@ describe('synthModules', () => {
       fa?.dispatchEvent(pointer('pointerup'));
     }
     expect(store.state.value.synth[part].fa).toBe(synthDefaults()[part].fa);
+  });
+});
+
+describe('synthPresets', () => {
+  it('zeigt die Presets des Parts, lädt und markiert; Wechsel des Parts baut neu', () => {
+    const { c, store, audio } = makeContext();
+    store.update((s) => ({ ...s, part: 'BA' }));
+    const el = synthPresets(c);
+    const chips = () => [...el.querySelectorAll<HTMLButtonElement>('.syn-presets .chip')];
+    expect(chips().map((b) => b.textContent)).toEqual(SYN_PRESETS.BA.map((p) => p.name));
+    chips()[0]?.click();
+    expect(store.state.value.synth.BA.preset).toBe(SYN_PRESETS.BA[0]?.name);
+    expect(chips()[0]?.getAttribute('aria-pressed')).toBe('true');
+    expect(audio.auditionNote).toHaveBeenCalledWith('BA', 0, 2);
+    store.update((s) => ({ ...s, part: 'LD' }));
+    expect(chips().map((b) => b.textContent)).toEqual(SYN_PRESETS.LD.map((p) => p.name));
+    c.scope.dispose();
+  });
+
+  it('„Stimme leeren“ leert die Noten des Parts mit Zurück', () => {
+    const { c, store } = makeContext();
+    store.placeNote(0, 0);
+    const el = synthPresets(c);
+    [...el.querySelectorAll<HTMLButtonElement>('.chip')]
+      .find((b) => b.textContent === 'Stimme leeren')
+      ?.click();
+    const s = store.state.value;
+    expect(s.patterns[s.cur].notes[s.part].every((n) => n === null)).toBe(true);
+    expect(store.canUndo.value).toBe(true);
   });
 });
