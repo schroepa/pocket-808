@@ -43,6 +43,10 @@
   .shm .knob {
     background: var(--well);
   }
+  /* Kontrast ≥ 4,5:1 auf --cell (axe): --ink-dim reicht dort nicht */
+  .shm :is(h4, .knob-label, .sl-l) {
+    color: color-mix(in srgb, var(--ink) 72%, var(--cell));
+  }
   .shk {
     display: flex;
     flex-wrap: wrap;
