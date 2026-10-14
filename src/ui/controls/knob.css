@@ -1,0 +1,54 @@
+@layer components {
+  .knob-wrap {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    width: 60px;
+  }
+  .knob {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    margin: 6px;
+    border-radius: 50%;
+    background: var(--cell);
+    touch-action: none;
+    cursor: ns-resize;
+  }
+  .knob .ring {
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    pointer-events: none;
+    background: conic-gradient(
+      from 225deg,
+      var(--acc) calc(var(--v, 0) * 270deg),
+      #2a2a34 calc(var(--v, 0) * 270deg) 270deg,
+      transparent 270deg
+    );
+    mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  }
+  .knob .dial {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    transform: rotate(var(--rot, -135deg));
+  }
+  .knob .dial::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 5px;
+    width: 3px;
+    height: 14px;
+    margin-left: -1.5px;
+    border-radius: 2px;
+    background: var(--ink);
+  }
+  .knob-label {
+    font: 600 12px var(--font-display);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+}
