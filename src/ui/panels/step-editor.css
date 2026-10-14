@@ -1,0 +1,42 @@
+@layer components {
+  .ed-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .ed-head h2 {
+    font: 700 22px/1 var(--font-display);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .ed-head h2 small {
+    margin-left: 8px;
+    font: 500 13px var(--font-display);
+    letter-spacing: 0.16em;
+    color: var(--ink-dim);
+  }
+  .editor {
+    container: editor / inline-size;
+  }
+  .steps {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 12px;
+  }
+  .group {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+  }
+  /* breit genug: alle 16 Steps in einer Reihe */
+  @container editor (min-width: 640px) {
+    .steps {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+  .inst {
+    margin-top: 16px;
+  }
+}
