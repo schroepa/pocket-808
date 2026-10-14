@@ -1,10 +1,10 @@
 {
  "sampleRate": 44100,
  "length": 11025,
- "peak": 0.71468,
+ "peak": 0.71929,
  "nonFinite": 0,
  "rmsDb": [
-  -11.73,
+  -11.7,
   -28.4,
   -46.35,
   -64.18,
@@ -30,6 +30,6 @@
   -180,
   -180
  ],
- "centroidHz": 1679.8,
+ "centroidHz": 1680,
  "lowCentroidHz": 1651.7
 }
