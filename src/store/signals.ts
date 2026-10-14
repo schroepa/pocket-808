@@ -3,8 +3,9 @@
  * - Quellen zählen eine Version hoch, wenn sich ihr Wert ändert.
  * - Verbraucher merken sich die gesehenen Versionen und rechnen nur neu, wenn sich eine geändert hat.
  * - Computeds abonnieren ihre Quellen nur, solange sie selbst beobachtet werden (keine Lecks);
- *   unbeobachtet prüfen sie beim Lesen die Versionen (Pull).
- * - Effekte laufen nach Abschluss des äußersten Batches, jeder höchstens einmal pro Welle.
+ *   unbeobachtet prüfen sie beim Lesen die Versionen (Pull). Fehler werden wie Werte zwischengespeichert.
+ * - Effekte laufen nach Abschluss des äußersten Batches. Ein Fehler in einem Effekt hält die übrigen
+ *   nicht auf; er wird nach der Welle weitergeworfen.
  */
 
 export type Equals<T> = (a: T, b: T) => boolean;
@@ -29,9 +30,11 @@ interface Consumer {
   mark(): void;
 }
 
-const MAX_EFFECT_RUNS = 10_000;
+/** Läufe eines einzelnen Effekts pro Welle, ab denen eine Endlosschleife angenommen wird */
+const MAX_RUNS_PER_EFFECT = 1000;
 let tracking: Consumer | null = null;
 let batchDepth = 0;
+let flushing = false;
 const pending: EffectNode[] = [];
 
 function track(p: Producer): void {
@@ -39,21 +42,28 @@ function track(p: Producer): void {
 }
 
 function isWatched(c: Consumer): boolean {
-  return c instanceof EffectNode || (c instanceof ComputedNode && c.observers.size > 0);
+  if (c instanceof EffectNode) return !c.disposed;
+  return c instanceof ComputedNode && c.observers.size > 0;
 }
 
 function link(p: Producer, c: Consumer): void {
+  if (p.observers.has(c)) return;
   p.observers.add(c);
   if (p instanceof ComputedNode && p.observers.size === 1) p.watch();
 }
 
 function unlink(p: Producer, c: Consumer): void {
-  p.observers.delete(c);
-  if (p instanceof ComputedNode && p.observers.size === 0) p.unwatch();
+  if (p.observers.delete(c) && p instanceof ComputedNode && p.observers.size === 0) p.unwatch();
 }
 
-/** Abos an neue Abhängigkeiten anpassen (nur für beobachtete Verbraucher). */
+/** Abos an neue Abhängigkeiten anpassen; ein beendeter Effekt verliert alle Abos. */
 function resubscribe(c: Consumer, old: Map<Producer, number>): void {
+  if (c instanceof EffectNode && c.disposed) {
+    for (const p of old.keys()) unlink(p, c);
+    for (const p of c.sources.keys()) unlink(p, c);
+    c.sources.clear();
+    return;
+  }
   if (!isWatched(c)) return;
   for (const p of old.keys()) if (!c.sources.has(p)) unlink(p, c);
   for (const p of c.sources.keys()) if (!old.has(p)) link(p, c);
@@ -81,26 +91,38 @@ function runTracked<T>(c: Consumer, fn: () => T): T {
   }
 }
 
-let flushing = false;
-
 /** Arbeitet eingeplante Effekte ab; Schreiben innerhalb eines Effekts startet keine zweite Schleife. */
 function flush(): void {
   if (flushing) return;
   flushing = true;
+  const runs = new Map<EffectNode, number>();
+  let failed = false;
+  let firstError: unknown;
   try {
-    let runs = 0;
-    while (pending.length) {
-      if (++runs > MAX_EFFECT_RUNS) {
+    for (let e = pending.shift(); e; e = pending.shift()) {
+      const n = (runs.get(e) ?? 0) + 1;
+      runs.set(e, n);
+      if (n > MAX_RUNS_PER_EFFECT) {
+        e.dispose();
+        for (const other of pending) other.queued = false;
         pending.length = 0;
         throw new Error(
-          'Effekt-Schleife: Ein Effekt schreibt fortlaufend Signale, die er selbst liest.',
+          'Effekt-Schleife: Ein Effekt schreibt fortlaufend Signale, die er selbst liest. Er wurde beendet.',
         );
       }
-      pending.shift()?.runIfStale();
+      try {
+        e.runIfStale();
+      } catch (err) {
+        if (!failed) {
+          failed = true;
+          firstError = err;
+        }
+      }
     }
   } finally {
     flushing = false;
   }
+  if (failed) throw firstError;
 }
 
 export function batch<T>(fn: () => T): T {
@@ -152,6 +174,8 @@ class ComputedNode<T> implements Producer, Consumer, ReadonlySignal<T> {
   private computing = false;
   private initialized = false;
   private current: T | undefined;
+  private hasError = false;
+  private error: unknown;
   private readonly fn: () => T;
   private readonly equals: Equals<T>;
   constructor(fn: () => T, equals: Equals<T>) {
@@ -164,10 +188,11 @@ class ComputedNode<T> implements Producer, Consumer, ReadonlySignal<T> {
     this.state = CHECK;
     for (const o of this.observers) o.mark();
   }
-  /** Wird beobachtet, direkt nachdem es gelesen wurde – ist also aktuell. */
+  /** Ab jetzt beobachtet: Quellen abonnieren und prüfen – sie können sich seit dem Lesen geändert haben. */
   watch(): void {
-    this.state = this.initialized ? CLEAN : CHECK;
     for (const p of this.sources.keys()) link(p, this);
+    this.state = CHECK;
+    this.refresh();
   }
   unwatch(): void {
     for (const p of this.sources.keys()) unlink(p, this);
@@ -182,31 +207,40 @@ class ComputedNode<T> implements Producer, Consumer, ReadonlySignal<T> {
     this.computing = true;
     try {
       const next = runTracked(this, this.fn);
-      if (!this.initialized || !this.equals(this.current as T, next)) {
+      if (!this.initialized || this.hasError || !this.equals(this.current as T, next)) {
         this.current = next;
         this.version++;
       }
-      this.initialized = true;
-      this.state = CLEAN;
+      this.hasError = false;
+    } catch (err) {
+      this.hasError = true;
+      this.error = err;
+      this.version++;
     } finally {
       this.computing = false;
+      this.initialized = true;
+      this.state = CLEAN;
     }
+  }
+  private read(): T {
+    if (this.hasError) throw this.error;
+    return this.current as T;
   }
   get value(): T {
     this.refresh();
     track(this);
-    return this.current as T;
+    return this.read();
   }
   peek(): T {
     this.refresh();
-    return this.current as T;
+    return this.read();
   }
 }
 
 class EffectNode implements Consumer {
   sources = new Map<Producer, number>();
-  private queued = false;
-  private disposed = false;
+  queued = false;
+  disposed = false;
   private cleanup: (() => void) | undefined;
   private readonly fn: EffectFn;
   constructor(fn: EffectFn) {
@@ -219,16 +253,18 @@ class EffectNode implements Consumer {
     pending.push(this);
   }
   run(): void {
-    this.cleanup?.();
+    const previous = this.cleanup;
+    this.cleanup = undefined;
+    previous?.();
     const result = runTracked(this, this.fn);
-    this.cleanup = typeof result === 'function' ? (result as () => void) : undefined;
-    // während des Laufs geschrieben, was er gelesen hat: erneut einplanen (Schleifensperre in flush)
-    for (const [p, seen] of this.sources) {
-      if (p.version !== seen) {
-        this.mark();
-        break;
-      }
+    const cleanup = typeof result === 'function' ? (result as () => void) : undefined;
+    if (this.disposed) {
+      cleanup?.();
+      return;
     }
+    this.cleanup = cleanup;
+    // während des Laufs geändert, was er gelesen hat (auch über Computeds): erneut einplanen
+    if (stale(this)) this.mark();
   }
   runIfStale(): void {
     this.queued = false;
@@ -238,8 +274,9 @@ class EffectNode implements Consumer {
     this.disposed = true;
     for (const p of this.sources.keys()) unlink(p, this);
     this.sources.clear();
-    this.cleanup?.();
+    const previous = this.cleanup;
     this.cleanup = undefined;
+    previous?.();
   }
 }
 
@@ -252,7 +289,12 @@ export const computed = <T>(fn: () => T, equals: Equals<T> = Object.is): Readonl
 export function effect(fn: EffectFn): () => void {
   const e = new EffectNode(fn);
   batch(() => {
-    e.run();
+    try {
+      e.run();
+    } catch (err) {
+      e.dispose();
+      throw err;
+    }
   });
   return () => {
     e.dispose();
