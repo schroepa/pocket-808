@@ -4,6 +4,7 @@ node_modules/
 *.png
 !tests/e2e/__screenshots__/**/*.png
 dist/
+dist-next/
 coverage/
 playwright-report/
 test-results/

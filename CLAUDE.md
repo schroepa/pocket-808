@@ -49,8 +49,10 @@ npm run test:ref      # Referenz: Klang-Fingerabdrücke und Speicherstände gege
 npm run test:e2e      # Playwright auf Mobile, Tablet, Desktop
 npm run bench         # Performance-Budget (Knoten/s, Renderzeit)
 npm run lint && npm run typecheck
-npm run dev           # Vite-Dev-Server
-npm run build         # dist/index.html (eine Datei)
+npm run dev           # Vite-Dev-Server der neuen App (Schritt 5)
+npm run dev:legacy    # Dev-Server der alten App
+npm run build         # dist/index.html (Legacy) + dist/next/index.html (neue App)
+npm run build:next    # nur die neue App nach dist-next/ (E2E-Projekte next-*)
 ```
 
 - Referenzen neu erzeugen nur bewusst: `npm run ref:update`, `npm run bench:update`, `AXE_UPDATE=1 npx playwright test a11y`, `npx playwright test layout --update-snapshots`. Danach den Diff prüfen.

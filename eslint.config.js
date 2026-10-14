@@ -30,6 +30,7 @@ export default defineConfig(
   {
     ignores: [
       'dist/',
+      'dist-next/',
       'legacy/',
       'coverage/',
       'playwright-report/',
@@ -105,8 +106,8 @@ export default defineConfig(
   ),
   forbid(
     ['src/ui/**/*.ts'],
-    ['audio', 'main'],
-    'audio und ui kennen einander nicht. Verbindung nur über main.ts.',
+    ['audio', 'platform', 'main'],
+    'ui kennt nur core und store. Audio und Plattform kommen über UiContext (main.ts).',
   ),
   forbid(
     ['src/platform/**/*.ts'],
