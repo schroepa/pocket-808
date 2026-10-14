@@ -1,0 +1,78 @@
+@layer components {
+  .step {
+    position: relative;
+    height: 58px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--acc) 9%, var(--cell));
+  }
+  .step span {
+    position: absolute;
+    inset: auto 0 5px;
+    font: 12px var(--font-lcd);
+    color: color-mix(in srgb, var(--acc) 40%, var(--cell));
+  }
+  .step::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 6px;
+    height: 6px;
+    margin-left: -3px;
+    border-radius: 50%;
+  }
+  .step.on {
+    z-index: 1;
+    background: var(--acc);
+    box-shadow: var(--glow-acc);
+  }
+  .step.on span {
+    color: rgba(0, 0, 0, 0.55);
+  }
+  .step.on::before {
+    background: #fff;
+  }
+  .step.sub::before {
+    width: 16px;
+    height: 4px;
+    margin-left: -8px;
+    border-radius: 2px;
+    background: repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.35) 0 2px,
+      transparent 2px 4px
+    );
+  }
+  .step.now {
+    filter: brightness(1.7);
+  }
+  .step.on.now {
+    box-shadow: 0 0 30px color-mix(in srgb, var(--acc) 70%, transparent);
+  }
+  /* Auswahlmarke im Sub-Modus: bewusst wie der Fokusring */
+  .step.subsel {
+    filter: brightness(1.3);
+    outline: 2px solid var(--cream);
+    outline-offset: 2px;
+  }
+  .sb {
+    position: relative;
+    min-height: 36px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--cell);
+    font: 12px var(--font-lcd);
+    color: var(--ink-dim);
+  }
+  .sb.q {
+    background: #23232d;
+  }
+  .sb.on {
+    z-index: 1;
+    background: var(--acc);
+    color: var(--chassis);
+    box-shadow: 0 0 14px rgba(211, 146, 90, 0.42);
+  }
+}

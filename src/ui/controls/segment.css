@@ -1,0 +1,26 @@
+@layer components {
+  .seg {
+    display: inline-flex;
+    padding: 3px;
+    border-radius: var(--radius);
+    background: var(--cell);
+  }
+  .seg button {
+    position: relative;
+    min-height: var(--touch);
+    padding: 0 14px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    font: 600 13px var(--font-display);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+  .seg button[aria-checked='true'] {
+    z-index: 1;
+    background: var(--cream);
+    color: var(--chassis);
+    box-shadow: var(--glow-cream);
+  }
+}
