@@ -91,6 +91,14 @@ function fakeContext() {
     createOscillator: vi.fn(node),
     createBufferSource: vi.fn(node),
     createBuffer: vi.fn((_c: number, n: number) => buffer(n)),
+    decodeAudioData: vi.fn(() =>
+      Promise.resolve({
+        numberOfChannels: 1,
+        sampleRate: 44100,
+        length: 4,
+        getChannelData: () => Float32Array.from([0, 0.25, 0.5, 0.25]),
+      }),
+    ),
   };
 }
 
@@ -350,6 +358,30 @@ describe('createEngine', () => {
       engine.audition('BD');
     }).not.toThrow();
     expect(engine.playing.value).toBe(false);
+    engine.dispose();
+  });
+
+  it('decode dekodiert über den Kontext und rechnet ins Sample-Format um', async () => {
+    const store = createStore(baseState());
+    const ctx = fakeContext();
+    const engine = createEngine({ store, createContext: () => ctx as never, prerender: false });
+    const pcm = await engine.decode(new ArrayBuffer(8));
+    expect(ctx.decodeAudioData).toHaveBeenCalledTimes(1);
+    expect(pcm.length).toBe(2);
+    expect(Math.max(...pcm)).toBeCloseTo(0.9, 5);
+    engine.dispose();
+  });
+
+  it('decode ohne Audio lehnt ab', async () => {
+    const store = createStore(baseState());
+    const engine = createEngine({
+      store,
+      createContext: () => {
+        throw new Error('kein AudioContext');
+      },
+      prerender: false,
+    });
+    await expect(engine.decode(new ArrayBuffer(8))).rejects.toThrow('Kein Audio');
     engine.dispose();
   });
 

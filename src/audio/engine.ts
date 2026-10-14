@@ -3,7 +3,7 @@ import { audibleChannels } from '../core/mix.ts';
 import { degreeToMidi, effectiveLength } from '../core/music.ts';
 import { subStepsOf } from '../core/pattern.ts';
 import type { Rng } from '../core/random.ts';
-import type { DrumSample } from '../core/samples.ts';
+import { toPcm, type DrumSample } from '../core/samples.ts';
 import { nextBar, songStart, stepSlot, type SongCursor } from '../core/song.ts';
 import { stepDuration, subStepOffset, swingDelay } from '../core/timing.ts';
 import type { ChannelId, Part, Slot, State, SubKey, VoiceId } from '../core/types.ts';
@@ -71,6 +71,8 @@ export interface Engine {
   stutterOff(): void;
   setPadSample(pad: number, pcm: Float32Array | null): void;
   setDrumSample(voice: VoiceId, sample: DrumSample | null): void;
+  /** Datei dekodieren und ins Sample-Format (22,05 kHz mono) umrechnen */
+  decode(data: ArrayBuffer): Promise<Float32Array>;
   /** Klänge zu einem festen Zeitpunkt planen (Scheduler, Tests, später Live-Aufnahme) */
   readonly schedule: {
     drum(voice: VoiceId, time: number): void;
@@ -415,6 +417,16 @@ export function createEngine(o: EngineOptions): Engine {
       if (sample) drumSamples.set(voice, sample);
       else drumSamples.delete(voice);
       drums?.setSample(voice, sample);
+    },
+    async decode(data) {
+      if (!prepare()) throw new Error('Kein Audio');
+      const c = ctx;
+      if (!c) throw new Error('Kein Audio');
+      const buf = await c.decodeAudioData(data);
+      return toPcm(
+        Array.from({ length: buf.numberOfChannels }, (_, i) => buf.getChannelData(i)),
+        buf.sampleRate,
+      );
     },
     schedule: { drum: scheduleDrum, note: scheduleNote, pad: schedulePad },
     dispose() {

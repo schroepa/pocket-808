@@ -4,8 +4,8 @@ export default defineConfig({
   test: {
     coverage: {
       provider: 'v8',
-      include: ['src/core/**/*.ts', 'src/store/**/*.ts'],
-      exclude: ['**/*.test.ts', 'src/core/test-utils.ts'],
+      include: ['src/core/**/*.ts', 'src/store/**/*.ts', 'src/ui/**/*.ts', 'src/platform/**/*.ts'],
+      exclude: ['**/*.test.ts', 'src/core/test-utils.ts', 'src/ui/test-utils.ts'],
       thresholds: { lines: 90, branches: 90, functions: 90, statements: 90, perFile: true },
     },
     projects: [
@@ -13,6 +13,7 @@ export default defineConfig({
         test: {
           name: 'unit',
           environment: 'node',
+          exclude: ['src/ui/**', 'src/platform/**'],
           include: [
             'src/**/*.test.ts',
             'tests/support/**/*.test.ts',
@@ -20,6 +21,13 @@ export default defineConfig({
             'tests/reference/legacy/**/*.test.ts',
             'tests/reference/golden.test.ts',
           ],
+        },
+      },
+      {
+        test: {
+          name: 'ui',
+          environment: 'jsdom',
+          include: ['src/ui/**/*.test.ts', 'src/platform/**/*.test.ts'],
         },
       },
       {

@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { baseState } from './defaults.ts';
-import { applySampleStore, decodePcm, encodePcm, parseSampleStore } from './samples.ts';
+import { SMP_MAX, SMP_RATE } from './constants.ts';
+import {
+  applySampleStore,
+  decodePcm,
+  encodePcm,
+  parseSampleStore,
+  toPcm,
+  trimLeadingSilence,
+} from './samples.ts';
 import { deepFreeze } from './test-utils.ts';
 
 const b64 = (xs: number[]) => Buffer.from(Int16Array.from(xs).buffer).toString('base64');
@@ -90,5 +98,50 @@ describe('applySampleStore', () => {
     expect(Object.keys(r.drums).sort()).toEqual(['BD', 'SD']);
     expect(r.drums.BD?.name).toBe('Kick');
     expect(r.drums.SD?.name).toBe('Sample');
+  });
+});
+
+describe('toPcm', () => {
+  it('mischt Kanäle zu mono, rechnet auf 22,05 kHz um und normalisiert auf 0,9', () => {
+    const l = new Float32Array(44100).fill(0.5);
+    const r = new Float32Array(44100).fill(-0.1);
+    const out = toPcm([l, r], 44100);
+    expect(out.length).toBe(SMP_RATE);
+    expect(Math.max(...out.map(Math.abs))).toBeCloseTo(0.9, 5);
+  });
+  it('kürzt auf höchstens SMP_MAX Sekunden', () => {
+    const out = toPcm([new Float32Array(48000 * 10).fill(0.2)], 48000);
+    expect(out.length).toBe(Math.floor((48000 * SMP_MAX) / (48000 / SMP_RATE)));
+  });
+  it('lässt Stille unverstärkt', () => {
+    const out = toPcm([new Float32Array(1000)], 22050);
+    expect(out.every((x) => x === 0)).toBe(true);
+  });
+  it('liefert mindestens ein Sample', () => {
+    expect(toPcm([new Float32Array(0)], 44100).length).toBe(1);
+  });
+  it('ohne Kanäle: ein stilles Sample', () => {
+    expect(Array.from(toPcm([], 44100))).toEqual([0]);
+  });
+  it('kürzere Kanäle zählen als Stille', () => {
+    const out = toPcm([Float32Array.from([0.5, 0.5]), Float32Array.from([0.5])], 22050);
+    expect(out[1]).toBeCloseTo(0.45, 5);
+  });
+});
+
+describe('trimLeadingSilence', () => {
+  it('schneidet Stille ab und lässt 40 Samples Vorlauf', () => {
+    const pcm = new Float32Array(200);
+    pcm[100] = 0.5;
+    const out = trimLeadingSilence(pcm);
+    expect(out.length).toBe(140);
+    expect(out[40]).toBeCloseTo(0.5);
+  });
+  it('nur Stille: bleiben die letzten 40 Samples', () => {
+    expect(trimLeadingSilence(new Float32Array(100)).length).toBe(40);
+  });
+  it('lässt einen Anfang innerhalb der ersten 40 Samples unverändert', () => {
+    const pcm = new Float32Array(10).fill(0.3);
+    expect(trimLeadingSilence(pcm).length).toBe(10);
   });
 });

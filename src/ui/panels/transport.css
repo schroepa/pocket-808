@@ -1,0 +1,29 @@
+@layer components {
+  .transport {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .play {
+    position: relative;
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 52px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--cream);
+    color: var(--chassis);
+    font: 700 20px var(--font-display);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    box-shadow: var(--glow-cream);
+  }
+  .play.on {
+    z-index: 1;
+    background: var(--acc);
+    box-shadow: 0 0 18px rgba(211, 146, 90, 0.35);
+  }
+}

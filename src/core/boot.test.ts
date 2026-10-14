@@ -18,4 +18,14 @@ describe('bootState', () => {
     const r = bootState(null, null, [null, null, null, null, null, null, null, null]);
     expect(r.state.preset).toBe('Hip-Hop');
   });
+  it('übernimmt den Host-Zustand nach dem gespeicherten (Legacy init: data.state zuletzt)', () => {
+    const stored = JSON.stringify({ tempo: 100, swing: 0.3 });
+    const { state } = bootState(stored, null, [], { tempo: 140 });
+    expect(state.tempo).toBe(140);
+    expect(state.swing).toBe(0.3);
+  });
+  it('ohne Host-Zustand bleibt alles wie gespeichert', () => {
+    const { state } = bootState(JSON.stringify({ tempo: 100 }), null, []);
+    expect(state.tempo).toBe(100);
+  });
 });

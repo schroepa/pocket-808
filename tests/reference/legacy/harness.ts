@@ -17,7 +17,7 @@ const HOOK =
   'window.__t={state,serial,ensureAudio,applyMixAll,stutterOn,stutterOff,synthNote,smpPlay,' +
   'renderVoice,prerenderAll,pump,voiceBuf,smpPcm,drumPcm,drumName,queue,VOICES,SYN_PRESETS,' +
   'DEFAULTS,PRESETS,SLOTS,SEED_B,SEED_NOTES,PARTS,PART_INFO,NAMES,SCALES,WAVES,ROWS,SYN_KEYS,' +
-  'SMP_RATE,SMP_MAX,SMP_DEF,CHS,CH_FULL,KEY,SMP_KEY,FACTORY,mkCurve,buildIR,' +
+  'SMP_RATE,SMP_MAX,SMP_DEF,CHS,CH_FULL,KEY,SMP_KEY,FACTORY,mkCurve,buildIR,toPcm,' +
   'degMidi,degName,effLen,calcAud,aud,tA,tD,tR,mastGain,' +
   'toggle,placeNote,toggleSub,setSub,clearTrack,clearAll,loadPreset,viewPattern,copyPattern,' +
   'pastePattern,snap,undoLast,get ctx(){return ctx;},' +

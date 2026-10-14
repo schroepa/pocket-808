@@ -1,0 +1,25 @@
+@layer components {
+  .sub-ed {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: var(--radius);
+    background: var(--well);
+  }
+  /* Touch-Ziele ≥ 44 px: schmal 4, mittel 8, breit (Desktop-Editor) 16 Spalten */
+  .sub-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    margin: 8px 0 10px;
+  }
+  @container editor (min-width: 420px) {
+    .sub-grid {
+      grid-template-columns: repeat(8, 1fr);
+    }
+  }
+  @container editor (min-width: 760px) {
+    .sub-grid {
+      grid-template-columns: repeat(16, 1fr);
+    }
+  }
+}
