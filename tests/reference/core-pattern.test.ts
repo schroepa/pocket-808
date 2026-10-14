@@ -20,6 +20,7 @@ import { serialize } from '../../src/core/persist.ts';
 import { applyPreset } from '../../src/core/presets.ts';
 import type { Part, Pattern, Slot, State, SubKey } from '../../src/core/types.ts';
 import { restoreSnapshot, snapshot, type Snapshot } from '../../src/core/undo.ts';
+import { createStore, type Store } from '../../src/store/store.ts';
 import { loadLegacy, type LegacyPage } from './legacy/harness.ts';
 
 type Op =
@@ -159,6 +160,54 @@ function applyCore(m: Model, op: Op): Model {
   }
 }
 
+function applyStore(store: Store, op: Op): void {
+  switch (op.k) {
+    case 'toggle':
+      store.toggleStep(VOICE_IDS[op.v]!, op.s);
+      break;
+    case 'smp':
+      store.update((s) => ({ ...s, smp: { ...s.smp, sel: op.pad } }));
+      store.toggleSampleStep(op.pad, op.s);
+      break;
+    case 'note':
+      store.update((s) => ({ ...s, part: op.part, noteLen: op.len }));
+      store.placeNote(op.d, op.s);
+      break;
+    case 'sub':
+      store.toggleSubStep(op.key, op.s, op.i);
+      break;
+    case 'subPreset':
+      store.applySubPattern(op.key, op.s, op.kind);
+      break;
+    case 'clearTrack':
+      store.update((s) => ({ ...s, sel: op.v }));
+      store.clearTrack();
+      break;
+    case 'clearAll':
+      store.clearPattern();
+      break;
+    case 'clearNotes':
+      store.update((s) => ({ ...s, part: op.part }));
+      store.clearNotes();
+      break;
+    case 'preset':
+      store.loadPreset(PRESETS[op.i]!);
+      break;
+    case 'slot':
+      store.selectSlot(op.slot);
+      break;
+    case 'copy':
+      store.copy();
+      break;
+    case 'paste':
+      store.paste();
+      break;
+    case 'undo':
+      store.undo();
+      break;
+  }
+}
+
 function applyLegacy(p: LegacyPage, op: Op): void {
   const t = p.t;
   switch (op.k) {
@@ -238,6 +287,28 @@ describe('core Pattern-Bearbeitung = Legacy (Modelltest)', () => {
             ).toBe(JSON.stringify(page.t.serial()));
           }
           expect(page.errors).toEqual([]);
+        } finally {
+          page.close();
+        }
+      }),
+      { numRuns: 100, seed: 808 },
+    );
+  });
+
+  it('Store-Befehle führen zum selben Zustand wie Legacy', () => {
+    fc.assert(
+      fc.property(fc.array(opArb, { minLength: 10, maxLength: 40, size: 'max' }), (ops) => {
+        const page = loadLegacy();
+        try {
+          const store = createStore(initialState(), { freeze: true });
+          for (const [i, op] of ops.entries()) {
+            applyStore(store, op);
+            applyLegacy(page, op);
+            expect(
+              JSON.stringify(serialize(store.state.value)),
+              `nach Schritt ${i}: ${JSON.stringify(op)}`,
+            ).toBe(JSON.stringify(page.t.serial()));
+          }
         } finally {
           page.close();
         }
