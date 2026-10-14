@@ -8,6 +8,11 @@ Pocket 808 bekommt ein modernes, zukunftssicheres und durchgehend getestetes Fun
 
 **Teilprojekt 1 ändert nichts Sichtbares und nichts Hörbares.** Klang, Verhalten, Aussehen und Speicherstände bleiben identisch. So lässt sich jede Abweichung eindeutig dem Umbau zuordnen.
 
+> **Änderung vom 2026-10-14 (Entscheidung des Besitzers):**
+> - Schritt 5 (UI) und Teilprojekt 2 (drei Layouts) werden **zusammengelegt**: Die Oberfläche wird direkt in TypeScript mit den Layouts für Desktop, Tablet und Mobile gebaut, ohne vorherigen 1:1-Port. Der Pixel-Vergleich mit Legacy entfällt; Funktions-, Barrierefreiheits- und Screenshot-Tests je Breakpoint bleiben. Für Schritt 5 gibt es eine eigene Spezifikation (Layouts).
+> - **Rauschen beheben:** Legacy startet den Rauschpuffer bei einem zufälligen Bruchteil-Versatz; durch Interpolation klingen Snare, Clap und Rim Shot pro Seitenaufruf zufällig heller oder dumpfer (bis ~3 dB). Die neue Engine startet sample-genau. Nur die Klang-Referenzen dieser drei Stimmen und davon abhängige Mix-Szenarien werden bewusst neu erzeugt; hier gilt „hörbar gleich“ nicht.
+> - **Store friert den Zustand immer ein**, nicht nur im Entwicklungsmodus.
+
 Einordnung in das Gesamtvorhaben:
 
 1. **Technisches Fundament** (dieses Dokument)
@@ -145,7 +150,7 @@ Alle Arbeit auf dem Branch `fundament`. Bis Schritt 6 bleibt die alte `index.htm
 | 2. core | Konstanten, Typen, Defaults, `merge()` + Migrationen, Pattern-Operationen, Musiktheorie, Timing | Unit-Tests, `merge()` identisch zu legacy |
 | 3. store | Signals-Store, Persistenz mit unveränderten Schlüsseln und Format | Unit-Tests, Kompatibilität mit alten Speicherständen |
 | 4. audio | Master-Kette, Kanalzüge, Drum-Rendering, Synth, Sampler, FX, Scheduler | Engine-Tests, Klang-Fingerabdrücke gleich legacy, Bench nicht schlechter |
-| 5. ui + platform | Komponente für Komponente, gleiches Aussehen wie heute | Komponententests, Screenshot-Vergleich mit legacy |
+| 5. ui + platform | Oberfläche direkt mit drei Layouts (siehe Änderung vom 2026-10-14, eigene Spezifikation) | Komponententests, E2E und Screenshots je Breakpoint, axe |
 | 6. Umstellung | `dist/index.html` wird die App. `legacy/` und alte Tests entfernen. CLAUDE.md und README aktualisieren, Artifact neu veröffentlichen. | gesamte Suite, Bench, Test auf dem iPhone |
 
 ## Abnahmekriterien
