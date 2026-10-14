@@ -137,7 +137,7 @@ Die Oberfläche bekommt gerade **drei eigene Layouts**. Welches gilt, entscheide
 
 | Layout | Bedingung |
 |---|---|
-| Mobile | schmaler als 768 px |
+| Mobile | schmaler als 768 px, oder ein Telefon im Querformat |
 | Tablet | ab 768 px mit Touch (auch ein iPad quer) oder schmaler als 1024 px |
 | Desktop | ab 1024 px mit Maus oder Trackpad |
 

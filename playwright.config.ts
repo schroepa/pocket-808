@@ -33,6 +33,15 @@ export default defineConfig({
       use: { ...devices['iPhone 14'], viewport: { width: 390, height: 844 }, baseURL: NEXT },
     },
     {
+      name: 'next-mobile-quer',
+      testDir: 'tests/e2e-next',
+      use: {
+        ...devices['iPhone 14 landscape'],
+        viewport: { width: 844, height: 390 },
+        baseURL: NEXT,
+      },
+    },
+    {
       name: 'next-tablet',
       testDir: 'tests/e2e-next',
       use: { ...devices['iPad Pro 11'], viewport: { width: 820, height: 1180 }, baseURL: NEXT },

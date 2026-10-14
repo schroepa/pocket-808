@@ -4,12 +4,15 @@ import { layoutFor, QUERIES, watchLayout } from './layout.ts';
 
 describe('layoutFor', () => {
   it.each([
-    [{ tablet: false, desktop: false, coarse: true }, 'mobile'], // iPhone
-    [{ tablet: false, desktop: false, coarse: false }, 'mobile'], // schmales Fenster
-    [{ tablet: true, desktop: false, coarse: true }, 'tablet'], // iPad hochkant
-    [{ tablet: true, desktop: true, coarse: true }, 'tablet'], // iPad quer: bleibt Tablet
-    [{ tablet: true, desktop: false, coarse: false }, 'tablet'], // Desktop-Fenster 768–1023
-    [{ tablet: true, desktop: true, coarse: false }, 'desktop'],
+    [{ tablet: false, desktop: false, coarse: true, short: false }, 'mobile'], // iPhone
+    [{ tablet: true, desktop: false, coarse: true, short: true }, 'mobile'], // iPhone quer (844 × 390)
+    [{ tablet: true, desktop: true, coarse: true, short: true }, 'mobile'], // großes iPhone quer (932 × 430)
+    [{ tablet: true, desktop: true, coarse: false, short: true }, 'desktop'], // niedriges Desktop-Fenster
+    [{ tablet: false, desktop: false, coarse: false, short: false }, 'mobile'], // schmales Fenster
+    [{ tablet: true, desktop: false, coarse: true, short: false }, 'tablet'], // iPad hochkant
+    [{ tablet: true, desktop: true, coarse: true, short: false }, 'tablet'], // iPad quer: bleibt Tablet
+    [{ tablet: true, desktop: false, coarse: false, short: false }, 'tablet'], // Desktop-Fenster 768–1023
+    [{ tablet: true, desktop: true, coarse: false, short: false }, 'desktop'],
   ] as const)('%o → %s', (m, expected) => {
     expect(layoutFor(m)).toBe(expected);
   });
@@ -46,6 +49,10 @@ describe('watchLayout', () => {
     const root = document.createElement('html');
     const layout = watchLayout(scope, win, root);
     expect(layout.value).toBe('tablet');
+    expect(root.dataset.layout).toBe('tablet');
+    win.set(QUERIES.short, true);
+    expect(root.dataset.layout).toBe('mobile');
+    win.set(QUERIES.short, false);
     expect(root.dataset.layout).toBe('tablet');
     win.set(QUERIES.tablet, false);
     expect(root.dataset.layout).toBe('mobile');

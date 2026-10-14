@@ -37,7 +37,7 @@ Die Oberfläche von Pocket 808 wird neu in TypeScript gebaut. Jedes Gerät bekom
 
 | Layout | Bedingung |
 |---|---|
-| `mobile` | Breite < 768 px |
+| `mobile` | Breite < 768 px, **oder** `pointer: coarse` und Höhe < 600 px (Telefon quer, Entscheidung 2026-10-14) |
 | `tablet` | Breite ≥ 768 px **und** (`pointer: coarse` **oder** Breite < 1024 px) |
 | `desktop` | Breite ≥ 1024 px **und** `pointer: fine` |
 
