@@ -1,0 +1,79 @@
+@layer components {
+  .roll-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .chip.now {
+    color: var(--ink);
+    box-shadow: 0 0 10px var(--acc);
+  }
+  .chip.active.now {
+    box-shadow: 0 0 16px var(--cream);
+  }
+  .roll {
+    display: grid;
+    gap: 2px;
+    margin-bottom: 18px;
+    padding: 6px;
+    border-radius: 10px;
+    background: var(--well);
+  }
+  .rr {
+    display: grid;
+    grid-template-columns: 34px repeat(8, 1fr);
+    gap: 2px;
+    align-items: center;
+  }
+  .rr.hd span {
+    text-align: center;
+    font: 12px var(--font-lcd);
+    color: var(--ink-dim);
+  }
+  .rl {
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 3px;
+    background: transparent;
+    font: 12px var(--font-lcd);
+    color: color-mix(in srgb, var(--ink) 72%, var(--well));
+  }
+  .rr.root .rl {
+    color: var(--ink);
+  }
+  .pc {
+    position: relative;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 5px;
+    background: color-mix(in srgb, var(--ink) 5%, var(--well));
+  }
+  .pc.q {
+    background: color-mix(in srgb, var(--ink) 9%, var(--well));
+  }
+  .rr.root .pc {
+    background: color-mix(in srgb, var(--ink) 9%, var(--well));
+  }
+  .rr.root .pc.q {
+    background: color-mix(in srgb, var(--ink) 14%, var(--well));
+  }
+  .rr .pc.tail {
+    background: color-mix(in srgb, var(--acc) 42%, var(--well));
+  }
+  .rr .pc.on {
+    z-index: 1;
+    background: var(--acc);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--acc) 28%, transparent);
+  }
+  .pc.now {
+    filter: brightness(1.9);
+  }
+  [data-layout='mobile'] :is(.rl, .pc),
+  [data-layout='tablet'] :is(.rl, .pc) {
+    height: 34px;
+  }
+}

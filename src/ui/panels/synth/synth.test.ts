@@ -6,6 +6,7 @@ import { must } from '../../../core/util.ts';
 import { makeContext } from '../../test-utils.ts';
 import { fmtTime, partName, synthSummary } from './format.ts';
 import { synthHead } from './head.ts';
+import { pianoRoll } from './roll.ts';
 
 describe('format', () => {
   it('fmtTime wie Legacy', () => {
@@ -58,5 +59,86 @@ describe('synthHead', () => {
     scale.dispatchEvent(new Event('change'));
     expect(store.state.value.key).toBe(9);
     expect(store.state.value.scale).toBe(4);
+  });
+});
+
+describe('pianoRoll', () => {
+  const cell = (el: HTMLElement, d: number, col: number) =>
+    el.querySelectorAll('.rr:not(.hd)')[11 - d]?.querySelectorAll<HTMLButtonElement>('.pc')[col];
+
+  it('12 Zeilen, Grundton-Zeilen, Notennamen, Viertelschläge', () => {
+    const { c, store } = makeContext();
+    store.update((s) => ({ ...s, key: 0, scale: 0 }));
+    const el = pianoRoll(c);
+    const rows = [...el.querySelectorAll('.rr:not(.hd)')];
+    expect(rows).toHaveLength(12);
+    expect(rows[11]?.classList.contains('root')).toBe(true); // Stufe 0
+    expect(rows[4]?.classList.contains('root')).toBe(true); // Stufe 7 (Moll: 7 Stufen)
+    expect(rows[10]?.classList.contains('root')).toBe(false);
+    expect(rows[11]?.querySelector('.rl')?.textContent).toBe('C');
+    expect(rows[11]?.querySelector('.rl')?.getAttribute('aria-label')).toBe('Ton C anhören');
+    expect(cell(el, 0, 0)?.classList.contains('q')).toBe(true);
+    expect(cell(el, 0, 1)?.classList.contains('q')).toBe(false);
+    store.update((s) => ({ ...s, scale: 4 })); // Moll-Pentatonik: 5 Stufen
+    expect(rows[6]?.classList.contains('root')).toBe(true); // Stufe 5
+    expect(cell(el, 1, 2)?.getAttribute('aria-label')).toBe('D# Step 3');
+  });
+
+  it('Note setzen hört im Stand vor; Ausklang tippt die Note weg; während der Wiedergabe still', () => {
+    const { c, store, audio } = makeContext();
+    store.update((s) => ({ ...s, part: 'BA', noteLen: 4 }));
+    store.clearNotes();
+    const el = pianoRoll(c);
+    cell(el, 3, 0)?.click();
+    expect(audio.auditionNote).toHaveBeenCalledWith('BA', 3, 4);
+    expect(cell(el, 3, 0)?.classList.contains('on')).toBe(true);
+    expect(cell(el, 3, 0)?.getAttribute('aria-pressed')).toBe('true');
+    expect(cell(el, 3, 2)?.classList.contains('tail')).toBe(true);
+    expect(cell(el, 3, 2)?.getAttribute('aria-pressed')).toBe('false');
+    cell(el, 3, 2)?.click();
+    const st = store.state.value;
+    expect(st.patterns[st.cur].notes.BA[0]).toBeNull();
+    expect(audio.auditionNote).toHaveBeenCalledTimes(1);
+    audio.playing.value = true;
+    cell(el, 5, 1)?.click();
+    expect(cell(el, 5, 1)?.classList.contains('on')).toBe(true);
+    expect(audio.auditionNote).toHaveBeenCalledTimes(1);
+  });
+
+  it('Label hört die Stufe vor, auch während der Wiedergabe', () => {
+    const { c, audio, store } = makeContext();
+    audio.playing.value = true;
+    const el = pianoRoll(c);
+    el.querySelectorAll<HTMLButtonElement>('.rl')[11]?.click();
+    expect(audio.auditionNote).toHaveBeenCalledWith(store.state.value.part, 0, 1);
+  });
+
+  it('Takthälfte 9–16, Lauflicht nur auf der sichtbaren Hälfte', () => {
+    const { c, audio } = makeContext();
+    const el = pianoRoll(c);
+    const pages = [...el.querySelectorAll<HTMLButtonElement>('[aria-label^="Steps"]')];
+    expect(pages[0]?.getAttribute('aria-pressed')).toBe('true');
+    audio.playhead.value = { step: 9, songIndex: -1 };
+    expect(el.querySelectorAll('.pc.now')).toHaveLength(0);
+    expect(pages[1]?.classList.contains('now')).toBe(true);
+    expect(pages[0]?.classList.contains('now')).toBe(false);
+    pages[1]?.click();
+    expect(pages[1]?.getAttribute('aria-pressed')).toBe('true');
+    expect(el.querySelector('.rr.hd')?.textContent).toBe('910111213141516');
+    expect(el.querySelectorAll('.pc.now')).toHaveLength(12);
+    expect(cell(el, 0, 1)?.classList.contains('now')).toBe(true);
+    expect(cell(el, 0, 0)?.classList.contains('q')).toBe(true);
+    audio.playhead.value = { step: -1, songIndex: -1 };
+    expect(el.querySelectorAll('.pc.now')).toHaveLength(0);
+    expect(pages[1]?.classList.contains('now')).toBe(false);
+  });
+
+  it('Notenlänge wählen', () => {
+    const { c, store } = makeContext();
+    const el = pianoRoll(c);
+    const eighth = el.querySelector<HTMLButtonElement>('[aria-label="Notenlänge 1/8"]');
+    eighth?.click();
+    expect(store.state.value.noteLen).toBe(2);
+    expect(eighth?.getAttribute('aria-pressed')).toBe('true');
   });
 });
