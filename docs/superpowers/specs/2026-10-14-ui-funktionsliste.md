@@ -83,19 +83,19 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 |---|---|---|---|
 | Rack auf/zu (Mobile) bzw. Tab (Tablet) | Synth zeigen, Zusammenfassung „Bass · A Moll · 4 Noten“ | ✅ | `synth.test.ts`, `synth.spec.ts` |
 | Bass / Lead | Stimme wählen | ✅ | `synth.test.ts`, `synth.spec.ts` |
-| Stumm | Stimme stumm (Mixer) | ✅ | `synth.test.ts`, `synth.spec.ts` |
-| Tonart, Skala | Auswahl | ✅ | `synth.test.ts`, `synth.spec.ts` |
-| Takthälfte 1–8 / 9–16 | Seite der Piano-Roll | ✅ | `synth.test.ts`, `synth.spec.ts` |
-| Notenlänge 1/16, 1/8, 1/4 | Länge neuer Noten | ✅ | `synth.test.ts`, `synth.spec.ts` |
+| Stumm | Stimme stumm (Mixer) | ✅ | `synth.test.ts` |
+| Tonart, Skala | Auswahl | ✅ | `synth.test.ts` |
+| Takthälfte 1–8 / 9–16 | Seite der Piano-Roll | ✅ | `synth.test.ts` |
+| Notenlänge 1/16, 1/8, 1/4 | Länge neuer Noten | ✅ | `synth.test.ts` |
 | Roll-Zelle tippen | Note setzen bzw. löschen, vorhören | ✅ | `synth.test.ts`, `synth.spec.ts` |
-| Roll-Label tippen | Ton vorhören | ✅ | `synth.test.ts`, `synth.spec.ts` |
+| Roll-Label tippen | Ton vorhören | ✅ | `synth.test.ts` |
 | Lauflicht in der Roll | aktueller Step | ✅ | `synth.test.ts`, `synth.spec.ts` |
-| Wellenform (Saw, Square, Tri, Sine) | Oszillator | ✅ | `synth.test.ts`, `synth.spec.ts` |
-| Oktave − / + | Oktave | ✅ | `synth.test.ts`, `synth.spec.ts` |
-| Detune, Sub, Cutoff, Reso, Env, Delay, Level | Regler | ✅ | `synth.test.ts`, `synth.spec.ts` |
-| Filter-Env und Amp-Env (Attack, Decay, Sustain, Release) | Schieberegler mit Hüllkurvenanzeige | ✅ | `synth.test.ts`, `synth.spec.ts` |
+| Wellenform (Saw, Square, Tri, Sine) | Oszillator | ✅ | `synth.test.ts` |
+| Oktave − / + | Oktave | ✅ | `synth.test.ts` |
+| Detune, Sub, Cutoff, Reso, Env, Delay, Level | Regler | ✅ | `synth.test.ts` |
+| Filter-Env und Amp-Env (Attack, Decay, Sustain, Release) | Schieberegler mit Hüllkurvenanzeige | ✅ | `synth.test.ts` |
 | Presets | Patch laden, Markierung | ✅ | `synth.test.ts`, `synth.spec.ts` |
-| „Stimme leeren“ | Noten der Stimme löschen (mit Zurück) | ✅ | `synth.test.ts`, `synth.spec.ts` |
+| „Stimme leeren“ | Noten der Stimme löschen (mit Zurück) | ✅ | `synth.test.ts` |
 
 ## Sampler (5c)
 

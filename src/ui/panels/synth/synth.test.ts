@@ -108,6 +108,18 @@ describe('pianoRoll', () => {
     expect(audio.auditionNote).toHaveBeenCalledTimes(1);
   });
 
+  it('andere Stufe im Ausklang setzt eine neue Note und kürzt die alte', () => {
+    const { c, store } = makeContext();
+    store.update((s) => ({ ...s, part: 'BA', noteLen: 4 }));
+    store.clearNotes();
+    const el = pianoRoll(c);
+    cell(el, 3, 0)?.click();
+    cell(el, 5, 2)?.click();
+    expect(cell(el, 3, 1)?.classList.contains('tail')).toBe(true);
+    expect(cell(el, 3, 2)?.classList.contains('tail')).toBe(false);
+    expect(cell(el, 5, 2)?.classList.contains('on')).toBe(true);
+  });
+
   it('Label hört die Stufe vor, auch während der Wiedergabe', () => {
     const { c, audio, store } = makeContext();
     audio.playing.value = true;

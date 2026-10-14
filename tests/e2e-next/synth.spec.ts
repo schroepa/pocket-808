@@ -27,6 +27,11 @@ test('Note setzen, Preset laden, Part wechseln; bleibt nach Neuladen', async ({ 
   await expect(cell).toHaveAttribute('aria-pressed', 'true');
   await page.waitForTimeout(400);
   await page.reload();
+  // Mobile: der aufgeklappte Synth bleibt nach dem Neuladen offen (open.synth wird gespeichert)
+  const head = page.locator('#dev-head-synth');
+  if ((await head.getAttribute('aria-expanded')) !== null) {
+    await expect(head).toHaveAttribute('aria-expanded', 'true');
+  }
   await openSynth(page);
   await expect(
     page.locator('#dev-synth .rr:not(.hd)').nth(11).locator('.pc').nth(2),
@@ -49,4 +54,41 @@ test('Lauflicht in der Roll beim Spielen', async ({ page }) => {
   await page.locator('.play').click();
   await expect(page.locator('#dev-synth .pc.now').first()).toBeVisible({ timeout: 3000 });
   await page.locator('.play').click();
+});
+
+test('Touch-Ziele im Synth mindestens 44 × 44 px (außer dem dichten Roll-Raster)', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name === 'next-desktop', 'nur Touch-Layouts');
+  await openSynth(page);
+  const small = await page.evaluate(() =>
+    [
+      ...document.querySelectorAll<HTMLElement>(
+        '#dev-synth :is(button, select, [role=slider]):not(.pc, .rl)',
+      ),
+    ]
+      .map((el) => {
+        const r = el.getBoundingClientRect();
+        return {
+          name: el.getAttribute('aria-label') ?? el.textContent,
+          w: Math.round(r.width),
+          h: Math.round(r.height),
+        };
+      })
+      .filter((x) => x.w < 44 || x.h < 44),
+  );
+  expect(small).toEqual([]);
+});
+
+test('Auswahllisten mit mindestens 16 px Schrift (iOS zoomt sonst beim Antippen)', async ({
+  page,
+}) => {
+  await openSynth(page);
+  const sizes = await page.evaluate(() =>
+    [...document.querySelectorAll('#dev-synth select')].map((el) =>
+      parseFloat(getComputedStyle(el).fontSize),
+    ),
+  );
+  expect(sizes.length).toBeGreaterThan(0);
+  for (const px of sizes) expect(px).toBeGreaterThanOrEqual(16);
 });
