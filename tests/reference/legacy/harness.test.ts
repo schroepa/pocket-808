@@ -5,7 +5,7 @@ import { LEGACY_HTML, loadLegacy, mulberry32, PATCHES, splitLegacy } from './har
 describe('splitLegacy', () => {
   const html =
     '<html><body><p>x</p><script>\n(function(){\nfunction setupGraph(c){}\nfunction buildIR(c,size,damp){}\n' +
-    'function renderVoice(i){}\nconst hot=window.claude;\nsetupGraph(ctx);\n  prerenderAll();\n})();\n</script></body></html>';
+    'function renderVoice(i){}\ns.start(t,Math.random()*1.5);\nconst hot=window.claude;\nsetupGraph(ctx);\n  prerenderAll();\n})();\n</script></body></html>';
 
   it('trennt Script und Markup und wendet alle Patches an', () => {
     const { body, script } = splitLegacy(html);
@@ -19,6 +19,7 @@ describe('splitLegacy', () => {
     expect(finds).toContain('function renderVoice(i){');
     expect(finds).toContain('function buildIR(c,size,damp){');
     expect(finds).toContain('function setupGraph(c){');
+    expect(finds).toContain('s.start(t,Math.random()*1.5);');
   });
 
   it('scheitert laut, wenn ein Anker fehlt', () => {

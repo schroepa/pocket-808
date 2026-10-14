@@ -2,7 +2,10 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { JSDOM, VirtualConsole, type DOMWindow } from 'jsdom';
+import { mulberry32, tagHash } from '../../../src/core/random.ts';
 import type { LegacyHooks } from './types.ts';
+
+export { mulberry32 };
 
 const require = createRequire(import.meta.url);
 const wa = require('node-web-audio-api') as { OfflineAudioContext: typeof OfflineAudioContext };
@@ -14,7 +17,7 @@ const HOOK =
   'window.__t={state,serial,ensureAudio,applyMixAll,stutterOn,stutterOff,synthNote,smpPlay,' +
   'renderVoice,prerenderAll,pump,voiceBuf,smpPcm,drumPcm,drumName,queue,VOICES,SYN_PRESETS,' +
   'DEFAULTS,PRESETS,SLOTS,SEED_B,SEED_NOTES,PARTS,PART_INFO,NAMES,SCALES,WAVES,ROWS,SYN_KEYS,' +
-  'SMP_RATE,SMP_MAX,SMP_DEF,CHS,CH_FULL,KEY,SMP_KEY,FACTORY,' +
+  'SMP_RATE,SMP_MAX,SMP_DEF,CHS,CH_FULL,KEY,SMP_KEY,FACTORY,mkCurve,buildIR,' +
   'degMidi,degName,effLen,calcAud,aud,tA,tD,tR,mastGain,' +
   'toggle,placeNote,toggleSub,setSub,clearTrack,clearAll,loadPreset,viewPattern,copyPattern,' +
   'pastePattern,snap,undoLast,get ctx(){return ctx;},' +
@@ -41,17 +44,16 @@ export const PATCHES: readonly Patch[] = [
     replace: 'function buildIR(c,size,damp){window.__reseed("ir");',
   },
   {
+    // Entscheidung 2026-10-14: Rauschen sample-genau starten (Bruchteil-Versatz färbte SD/CP/RS)
+    find: 's.start(t,Math.random()*1.5);',
+    replace: 's.start(t,Math.floor(Math.random()*1.5*ctx.sampleRate)/ctx.sampleRate);',
+  },
+  {
     find: 'function renderVoice(i){',
     replace: 'function renderVoice(i){window.__reseed("voice:"+i);',
   },
 ];
 
-/** FNV-1a, um aus Seed und Zweck einen Start-Seed zu bilden. */
-function hash(text: string): number {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193);
-  return h >>> 0;
-}
 
 export function splitLegacy(
   html: string,
@@ -69,17 +71,6 @@ export function splitLegacy(
   return { body: html.replace(m[0], ''), script };
 }
 
-/** Kleiner, reproduzierbarer Zufallsgenerator (ersetzt Math.random im Legacy-Fenster). */
-export function mulberry32(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 export interface AudioSetup {
   seconds: number;
@@ -121,7 +112,7 @@ export function loadLegacy(opts: LegacyOptions = {}): LegacyPage {
   const seed = opts.seed ?? 1;
   w.Math.random = mulberry32(seed);
   w.__reseed = (tag: string) => {
-    w.Math.random = mulberry32(hash(`${seed}:${tag}`));
+    w.Math.random = mulberry32(tagHash(`${seed}:${tag}`));
   };
   // node-web-audio-api erwartet Float32Arrays aus dem Node-Realm
   w.Float32Array = Float32Array;

@@ -83,6 +83,15 @@ export interface LegacyHooks {
   KEY: string;
   SMP_KEY: string;
   FACTORY: readonly { name: string }[];
+  mkCurve(k: number, norm: boolean): Float32Array;
+  buildIR(
+    c: {
+      sampleRate: number;
+      createBuffer(ch: number, n: number, sr: number): { getChannelData(i: number): Float32Array };
+    },
+    size: number,
+    damp: number,
+  ): { getChannelData(i: number): Float32Array };
   degMidi(part: Part, degree: number): number;
   degName(degree: number): string;
   effLen(row: unknown[], step: number): number;

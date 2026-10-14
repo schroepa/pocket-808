@@ -7,9 +7,10 @@ import { TOLERANCE } from './tolerance.ts';
 // Standardwerte aus legacy/index.html (DEFAULTS). tuneStep = Tune-Änderung, die die von Tune
 // gesteuerte Frequenz um einen Halbton (≈ 6 %) verschiebt:
 //   BD: Tonhöhe 38 + 44·Tune Hz, SD: Tonhöhe 150 + 80·Tune Hz, CH: Hochpass 6000 + 3000·Tune Hz.
-// Stimmen mit Rauschen (SD) streuen je Zufalls-Seed stark: Legacy startet den Rauschpuffer bei einem
-// zufälligen Bruchteil-Versatz, die lineare Interpolation färbt das Rauschen dann unterschiedlich.
-// Für sie gilt deshalb nur die Reproduzierbarkeit bei gleichem Seed, nicht die Seed-Toleranz.
+// Stimmen mit Rauschen: Spitze und Schwerpunkt <2 kHz hängen statistisch vom Rauschen ab (anderer
+// Seed = anderes weißes Rauschen), dort gilt nur die Reproduzierbarkeit. Die Klangfarbe (Gesamt-
+// Schwerpunkt) muss aber seed-unabhängig sein: Vor dem sample-genauen Rauschstart (Entscheidung
+// 2026-10-14) sprang sie bei der Snare je Seed um ~15 %, weil die Interpolation das Rauschen färbte.
 const CASES = {
   BD: { tune: 0.5, decay: 0.55, tuneStep: 0.082, noise: false }, // tonal
   SD: { tune: 0.5, decay: 0.45, tuneStep: 0.141, noise: true }, // Ton + Rauschen
@@ -35,10 +36,13 @@ describe.concurrent('Kalibrierung der Klang-Toleranzen', () => {
         again.base,
         'gleicher Seed in zwei Prozessen ergibt identischen Fingerabdruck',
       ).toEqual(a.base);
+      const seedProblems = compareFingerprints(a.base!, other.base!, TOLERANCE);
       if (!d.noise) {
+        expect(seedProblems, 'anderer Zufalls-Seed muss toleriert werden').toEqual([]);
+      } else {
         expect(
-          compareFingerprints(a.base!, other.base!, TOLERANCE),
-          'anderer Zufalls-Seed muss toleriert werden',
+          seedProblems.filter((p) => /^Schwerpunkt \d/.test(p)),
+          'Klangfarbe unabhängig vom Rauschen (sample-genauer Start)',
         ).toEqual([]);
       }
       // über die Klangfarbe, nicht zufällig über die (rauschabhängige) Spitze

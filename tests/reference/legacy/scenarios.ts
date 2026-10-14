@@ -223,6 +223,43 @@ const MIX: Record<string, MixCase> = {
       t.state.fx.size = 0.8;
     },
   },
+  // Live während der Wiedergabe: Mute, DJ-Filter, Return, Pegel, Pan und Tempo.
+  // Solo fehlt bewusst: node-web-audio-api rendert vorab geplante Solo-Automation in beiden
+  // Welten falsch (schon vor dem Ereignis); Solo prüft src/audio/engine.test.ts.
+  liveMix: {
+    seconds: 3,
+    setup: () => undefined,
+    events: [
+      {
+        at: 0.6,
+        run: (t) => {
+          mixOf(t, 'SD').m = true;
+          t.state.fx.dj = 0.25;
+          t.state.fx.ret = 0.5;
+          t.applyMixAll();
+        },
+      },
+      {
+        at: 1.4,
+        run: (t) => {
+          mixOf(t, 'BA').v = 0.3;
+          mixOf(t, 'OH').p = 0.9;
+          t.state.tempo = 120;
+          t.applyMixAll();
+        },
+      },
+    ],
+  },
+  // Open Hat klingt aus, Closed Hat würgt sie ab (808-Verhalten)
+  hatChoke: {
+    seconds: 1,
+    setup: (t) => {
+      isolate(t);
+      hits(t, { OH: [0], CH: [2] });
+      mixOf(t, 'OH').r = 0;
+      mixOf(t, 'CH').r = 0;
+    },
+  },
   djLowpass: {
     seconds: 1.4,
     setup: (t) => {
