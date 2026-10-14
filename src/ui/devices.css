@@ -1,0 +1,58 @@
+@layer components {
+  .devices {
+    display: grid;
+    gap: 10px;
+  }
+  .dev-head {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 56px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: var(--radius-panel);
+    background: var(--panel);
+    text-align: left;
+  }
+  .led {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #2a1218;
+  }
+  .dev-head[aria-expanded='true'] .led,
+  .dev-head[aria-selected='true'] .led {
+    background: var(--acc);
+    box-shadow: 0 0 10px var(--acc);
+  }
+  .plate {
+    font: 700 20px var(--font-display);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #a9a9b6;
+  }
+  .dev-sum {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    padding: 4px 8px;
+    border-radius: 8px;
+    background: var(--well);
+    font: 12px var(--font-lcd);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-transform: uppercase;
+    color: var(--acc);
+  }
+  .dev-body {
+    padding: 16px var(--pad) var(--pad);
+    border-radius: var(--radius-panel);
+    background: var(--panel);
+  }
+  .dev-name {
+    display: none;
+  }
+}
