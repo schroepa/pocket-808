@@ -46,6 +46,10 @@
     flex-wrap: wrap;
     gap: 8px;
   }
+  /* kurze Beschriftungen (1×): trotzdem 44 px breit */
+  .file-dialog .seg button {
+    min-width: var(--touch);
+  }
   .export-len,
   .file-msg {
     font: 14px var(--font-lcd);
