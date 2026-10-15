@@ -153,3 +153,23 @@
     box-shadow: 0 0 16px rgba(212, 212, 220, 0.5);
   }
 }
+@layer components {
+  .bounce-ask {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: var(--well);
+    font: 13px var(--font-lcd);
+    text-transform: uppercase;
+  }
+  .bounce-ask[hidden] {
+    display: none;
+  }
+  .bounce-ask span {
+    flex: 1 1 auto;
+  }
+}

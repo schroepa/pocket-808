@@ -31,6 +31,8 @@ export interface UiAudio {
   punchOn(kind: PunchKind): void;
   punchOff(kind: PunchKind): void;
   decode(data: ArrayBuffer): Promise<Float32Array>;
+  /** aktuelles Pattern einmal offline rendern, im Pad-Format (mono, 22,05 kHz, höchstens 3 s) */
+  bounce(state: State): Promise<{ pcm: Float32Array; cut: boolean } | null>;
   /** WAV offline rendern (eigene Engine-Instanz); null bei Abbruch */
   exportWav(
     state: State,
