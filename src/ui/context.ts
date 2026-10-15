@@ -19,6 +19,9 @@ export interface UiAudio {
   auditionNote(part: Part, degree: number, length: number): void;
   /** Pad vorhören (nur wenn es ein Sample hat) */
   auditionPad(pad: number): void;
+  /** Stutter an (Bruchteil eines Schlags: 1, 0,5, 0,25, 0,125) bzw. aus */
+  stutterOn(fraction: number): void;
+  stutterOff(): void;
   decode(data: ArrayBuffer): Promise<Float32Array>;
 }
 

@@ -9,6 +9,7 @@ import { installKeys, shortcutHelp } from './keys.ts';
 import { watchLayout, type Layout } from './layout.ts';
 import { brand } from './panels/brand.ts';
 import { deck } from './panels/deck.ts';
+import { fxDevice, mixerDevice } from './panels/mixer/device.ts';
 import { samplerDevice } from './panels/sampler/device.ts';
 import { slots } from './panels/slots.ts';
 import { stepEditor } from './panels/step-editor.ts';
@@ -56,7 +57,7 @@ export function mountShell(
       slots(c),
       stepEditor(c),
       tracks(c),
-      devices(c, layout, [synthDevice(c), samplerDevice(c)]),
+      devices(c, layout, [synthDevice(c), samplerDevice(c), mixerDevice(c), fxDevice(c)]),
       transport(c),
     ]),
   );

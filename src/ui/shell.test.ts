@@ -52,6 +52,8 @@ describe('mountShell', () => {
       'devices',
       'synth',
       'smp',
+      'mix',
+      'fx',
       'transport',
     ]);
   });

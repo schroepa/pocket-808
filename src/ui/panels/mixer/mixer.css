@@ -1,0 +1,113 @@
+@layer components {
+  .mix {
+    display: grid;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .mx {
+    display: grid;
+    grid-template-columns: 62px var(--touch) var(--touch) minmax(0, 1fr);
+    gap: 6px;
+    align-items: center;
+  }
+  .mx .nm {
+    height: var(--touch);
+    padding: 0 0 0 6px;
+    border: 0;
+    background: none;
+    text-align: left;
+    font: 600 16px var(--font-display);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--ink) 72%, var(--panel));
+  }
+  .mx.sel .nm {
+    color: var(--ink);
+  }
+  .mb {
+    position: relative;
+    height: var(--touch);
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: var(--cell);
+    font: 700 15px var(--font-display);
+    color: color-mix(in srgb, var(--ink) 72%, var(--cell));
+  }
+  .mb.m.on {
+    z-index: 1;
+    background: var(--cream);
+    color: var(--chassis);
+    box-shadow: 0 0 12px rgba(212, 212, 220, 0.22);
+  }
+  .mb.s.on {
+    z-index: 1;
+    background: var(--acc);
+    color: var(--chassis);
+    box-shadow: 0 0 14px color-mix(in srgb, var(--acc) 28%, transparent);
+  }
+  .fd {
+    width: 100%;
+    height: var(--touch);
+    margin: 0;
+    background: transparent;
+    touch-action: pan-y;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .fd::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--cell);
+  }
+  .fd::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+    margin-top: -8px;
+    border-radius: 50%;
+    background: var(--ink);
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .fd::-moz-range-track {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--cell);
+  }
+  .fd::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--ink);
+  }
+  .mx.sel .fd::-webkit-slider-thumb {
+    background: var(--acc);
+    box-shadow: 0 0 8px rgba(211, 146, 90, 0.45);
+  }
+  .mx.sel .fd::-moz-range-thumb {
+    background: var(--acc);
+    box-shadow: 0 0 8px rgba(211, 146, 90, 0.45);
+  }
+  .st-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .stp {
+    position: relative;
+    height: 56px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--cell);
+    font: 700 18px var(--font-display);
+    letter-spacing: 0.08em;
+    touch-action: none;
+  }
+  .stp.on {
+    z-index: 1;
+    background: var(--acc);
+    color: var(--chassis);
+    box-shadow: 0 0 16px rgba(211, 146, 90, 0.35);
+  }
+}

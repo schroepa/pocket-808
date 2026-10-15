@@ -116,6 +116,12 @@ function boot(hostData: unknown): Store {
     auditionPad: (i) => {
       engine.auditionPad(i);
     },
+    stutterOn: (f) => {
+      engine.stutterOn(f);
+    },
+    stutterOff: () => {
+      engine.stutterOff();
+    },
     decode: (d) => engine.decode(d),
   };
   mountShell(must(document.getElementById('app') ?? undefined, '#app'), {

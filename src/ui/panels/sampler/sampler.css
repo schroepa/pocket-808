@@ -97,13 +97,6 @@
   .smp-tools {
     margin-bottom: 12px;
   }
-  .knob-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px 0;
-    justify-items: center;
-    margin-bottom: 16px;
-  }
   .row-split {
     display: flex;
     align-items: center;

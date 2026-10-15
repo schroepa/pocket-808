@@ -51,4 +51,17 @@
     text-transform: uppercase;
     color: var(--ink-dim);
   }
+  .knob-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px 0;
+    justify-items: center;
+    margin-bottom: 16px;
+  }
+  .knob-grid.k2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .knob-grid.k3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
