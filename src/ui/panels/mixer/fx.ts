@@ -72,6 +72,17 @@ export function fxPanel(c: UiContext): HTMLElement {
       on();
     });
     listen(scope, b, 'keyup', off);
+    // Nie hängender Stutter: keyup kann woanders landen (Tab, App-Wechsel, Gerät zugeklappt)
+    listen(scope, b, 'blur', off);
+    const doc = b.ownerDocument;
+    const onHidden = (): void => {
+      if (doc.visibilityState === 'hidden') off();
+    };
+    doc.addEventListener('visibilitychange', onHidden);
+    scope.add(() => {
+      doc.removeEventListener('visibilitychange', onHidden);
+    });
+    scope.add(off);
     return b;
   });
   return h('div', { class: 'fx-body' }, [

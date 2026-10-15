@@ -136,6 +136,29 @@ describe('fxPanel', () => {
     b?.dispatchEvent(new KeyboardEvent('keydown', { key: 'x', bubbles: true }));
     expect(audio.stutterOn).toHaveBeenCalledTimes(1);
   });
+
+  it('Stutter hängt nie: Fokusverlust, verstecktes Fenster und Abbau schalten aus', () => {
+    const { c, audio } = makeContext();
+    const el = fxPanel(c);
+    const b = el.querySelector<HTMLButtonElement>('[aria-label="Stutter 1/4 halten"]');
+    const hold = (): void => {
+      b?.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+    };
+    hold();
+    b?.dispatchEvent(new FocusEvent('blur'));
+    expect(audio.stutterOff).toHaveBeenCalledTimes(1);
+    expect(b?.classList.contains('on')).toBe(false);
+    hold();
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+    expect(audio.stutterOff).toHaveBeenCalledTimes(2);
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(audio.stutterOff).toHaveBeenCalledTimes(2);
+    hold();
+    c.scope.dispose();
+    expect(audio.stutterOff).toHaveBeenCalledTimes(3);
+  });
 });
 
 describe('Geräte Mixer und FX', () => {
