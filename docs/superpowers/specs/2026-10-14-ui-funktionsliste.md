@@ -168,3 +168,12 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 | Bedingung | 1:2 … 4:4, Erster, Nicht erster; Zählung je Slot ab Start | ✅ | `core/stepopts.test.ts`, `next-stepopts.test.ts` |
 | Zurücksetzen | Standard (mit Zurück) | ✅ | `step-opts.test.ts` |
 | Speichern | optionales `opt` im Pattern, alte Stände bytegleich | ✅ | `core/stepopts.test.ts`, `core-persist.test.ts`, `stepopts.spec.ts` |
+
+## Fill und Parameter-Locks (Roadmap-Etappe 4a)
+
+| Handlung | Wirkung | Stand | Test |
+|---|---|---|---|
+| Fill (Transport) halten, F halten | Bedingungen „Fill“/„Nicht Fill“; Loslassen, Abbruch, Fokusverlust lösen | ✅ | `transport.test.ts`, `keys.test.ts`, `next-locks.test.ts`, `stepopts.spec.ts` |
+| Lock Tune/Decay (Drums) | eigene vorgerenderte Variante pro Step | ✅ | `core/stepopts.test.ts`, `next-locks.test.ts`, `step-opts.test.ts` |
+| Lock Tune/Decay/Start (Pads) | live pro Treffer | ✅ | `next-locks.test.ts`, `step-opts.test.ts` |
+| Locks lösen | mit Zurück, übrige Optionen bleiben | ✅ | `step-opts.test.ts` |

@@ -1,6 +1,6 @@
 {
   "name": "pocket-808",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "private": true,
   "type": "module",
   "description": "Pocket 808 – mobile Drum-Machine mit Synth, Sampler, Mixer und FX als einzelne HTML-Datei",

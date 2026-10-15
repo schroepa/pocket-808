@@ -29,6 +29,7 @@
 }
 @layer components {
   .fill-btn {
+    flex: 0 0 auto;
     min-width: var(--touch);
     min-height: 52px;
     padding: 0 14px;

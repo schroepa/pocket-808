@@ -55,3 +55,33 @@ test('Opt-Panel: im Fenster, Touch-Ziele ≥ 44 px', async ({ page }, info) => {
   );
   expect(small).toEqual([]);
 });
+
+test('Fill-Taste: im Fenster, Touch-Ziel, halten und loslassen', async ({ page }) => {
+  const fill = page.getByRole('button', { name: 'Fill halten' });
+  await expect(fill).toBeVisible();
+  const box = await fill.boundingBox();
+  expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(page.viewportSize()?.width ?? 0);
+  expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
+  expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+  await fill.hover();
+  await page.mouse.down();
+  await expect(fill).toHaveAttribute('aria-pressed', 'true');
+  await page.mouse.up();
+  await expect(fill).toHaveAttribute('aria-pressed', 'false');
+});
+
+test('Lock setzen: Tune-Lock bleibt nach Neuladen', async ({ page }) => {
+  await editor(page).getByRole('button', { name: 'Step-Optionen bearbeiten' }).click();
+  await editor(page).getByRole('button', { name: 'Step 1', exact: true }).click();
+  const tune = panel(page).getByRole('slider', { name: 'Lock Tune' });
+  await tune.press('End');
+  await expect(tune).toHaveAttribute('aria-valuenow', '100');
+  await page.waitForTimeout(400);
+  await page.reload();
+  await editor(page).getByRole('button', { name: 'Step-Optionen bearbeiten' }).click();
+  await editor(page).getByRole('button', { name: 'Step 1', exact: true }).click();
+  await expect(panel(page).getByRole('slider', { name: 'Lock Tune' })).toHaveAttribute(
+    'aria-valuenow',
+    '100',
+  );
+});
