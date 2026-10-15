@@ -16,11 +16,36 @@ export type NoteRow = (Note | null)[];
 /** Sub-Steps je Drum-Stimme oder Sampler-Pad ('P0'…'P7'): Step-Index → 16 Teil-Schläge */
 export type SubKey = VoiceId | `P${0 | 1 | 2 | 3 | 4 | 5 | 6 | 7}`;
 export type SubMap = Partial<Record<SubKey, Partial<Record<number, StepRow>>>>;
+/** Bedingung eines Steps: immer, a-ter von b Durchläufen, erster bzw. nicht erster Durchlauf */
+export type StepCond =
+  | 'all'
+  | '1:2'
+  | '2:2'
+  | '1:3'
+  | '2:3'
+  | '3:3'
+  | '1:4'
+  | '2:4'
+  | '3:4'
+  | '4:4'
+  | 'first'
+  | 'notFirst';
+/** Optionen eines Steps (nur Abweichungen vom Standard v 1, p 1, c 'all' werden gespeichert) */
+export interface StepOpt {
+  /** Velocity 0..1 */
+  v?: number;
+  /** Wahrscheinlichkeit 0..1 */
+  p?: number;
+  c?: StepCond;
+}
+export type OptMap = Partial<Record<SubKey, Partial<Record<number, StepOpt>>>>;
 export type Pattern = Record<VoiceId, StepRow> & {
   notes: Record<Part, NoteRow>;
   /** 8 Sampler-Pads × 16 Steps */
   smp: StepRow[];
   sub: SubMap;
+  /** Step-Optionen (Etappe 3); fehlt, solange keine gesetzt sind */
+  opt?: OptMap;
 };
 export interface SongEntry {
   p: Slot;

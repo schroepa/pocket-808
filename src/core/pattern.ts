@@ -1,6 +1,7 @@
 import { PARTS, VOICE_IDS } from './constants.ts';
 import { blankPattern, emptyRow } from './defaults.ts';
 import { effectiveLength } from './music.ts';
+import { withOpt, withoutKeyOpt } from './stepopts.ts';
 import type {
   Bit,
   NoteRow,
@@ -66,11 +67,17 @@ function withSub(p: Pattern, key: SubKey, step: number, row: StepRow | null): Pa
 export function toggleDrumStep(state: State, voice: VoiceId, step: number): State {
   if (subStepsOf(currentPattern(state), voice, step)) {
     return updateCurrent(state, (q) =>
-      withRow(withSub(q, voice, step, null), voice, setBit(q[voice], step, 0)),
+      withRow(
+        withOpt(withSub(q, voice, step, null), voice, step, null),
+        voice,
+        setBit(q[voice], step, 0),
+      ),
     );
   }
   const next = updateCurrent(state, (q) =>
-    withRow(q, voice, setBit(q[voice], step, q[voice][step] ? 0 : 1)),
+    q[voice][step]
+      ? withRow(withOpt(q, voice, step, null), voice, setBit(q[voice], step, 0))
+      : withRow(q, voice, setBit(q[voice], step, 1)),
   );
   return state.preset ? { ...next, preset: null } : next;
 }
@@ -80,10 +87,14 @@ export function toggleSampleStep(state: State, pad: number, step: number): State
   const key = `P${pad}` as SubKey;
   return updateCurrent(state, (q) => {
     const row = must(q.smp[pad], `Sampler-Reihe ${pad}`);
-    if (subStepsOf(q, key, step)) {
-      return withSampleRow(withSub(q, key, step, null), pad, setBit(row, step, 0));
+    if (subStepsOf(q, key, step) || row[step]) {
+      return withSampleRow(
+        withOpt(withSub(q, key, step, null), key, step, null),
+        pad,
+        setBit(row, step, 0),
+      );
     }
-    return withSampleRow(q, pad, setBit(row, step, row[step] ? 0 : 1));
+    return withSampleRow(q, pad, setBit(row, step, 1));
   });
 }
 
@@ -152,7 +163,8 @@ export function clearTrack(state: State): State {
       voice in q.sub
         ? (Object.fromEntries(Object.entries(q.sub).filter(([k]) => k !== voice)) as SubMap)
         : q.sub;
-    return row === q[voice] && sub === q.sub ? q : { ...withRow(q, voice, row), sub };
+    const cleared = row === q[voice] && sub === q.sub ? q : { ...withRow(q, voice, row), sub };
+    return withoutKeyOpt(cleared, voice);
   });
   return next.preset === null ? next : { ...next, preset: null };
 }
