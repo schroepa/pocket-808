@@ -1,7 +1,8 @@
 /* Drei Layouts über data-layout (layout.ts). Komponenten kennen keine Breakpoints. */
 
 /* Spalte „Sequencer“ (Editor, Spuren, Song, Werkzeuge) ist nur auf dem Desktop ein eigener Block */
-.col-main {
+.col-main,
+.col-extra {
   display: contents;
 }
 
@@ -118,20 +119,31 @@
   grid-template-columns: repeat(12, minmax(0, 1fr));
   grid-template-areas:
     'brand brand deck deck deck deck slots slots slots transport transport transport'
-    'main main main main devices devices devices devices devices devices devices devices';
-  grid-template-rows: auto 1fr;
+    'main main main main devices devices devices devices devices devices devices devices'
+    'extra extra extra extra devices devices devices devices devices devices devices devices';
+  /* die dritte Zeile nimmt die Höhe der Geräte auf, Song folgt direkt den Spuren */
+  grid-template-rows: auto auto 1fr;
   align-items: start;
   gap: 16px;
   max-width: 1920px;
   min-height: 100dvh;
   padding: 16px 24px;
 }
-[data-layout='desktop'] .col-main {
+/* Angesprungene und fokussierte Elemente nicht unter der stehenden Kopfleiste verstecken */
+html[data-layout='desktop'] {
+  scroll-padding-top: 120px;
+}
+[data-layout='desktop'] :is(.col-main, .col-extra) {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  grid-area: main;
   min-width: 0;
+}
+[data-layout='desktop'] .col-main {
+  grid-area: main;
+}
+[data-layout='desktop'] .col-extra {
+  grid-area: extra;
 }
 [data-layout='desktop'] [data-area='transport'] {
   position: static;

@@ -57,9 +57,11 @@ export function mountShell(
       brand(shortcutHelp(c)),
       deck(c),
       slots(c),
-      // Spalte „Sequencer“: nur auf dem Desktop ein eigener Block, sonst display: contents
-      h('div', { class: 'col-main' }, [stepEditor(c), tracks(c), songPanel(c), patternsPanel(c)]),
+      // Spalte 1 auf dem Desktop (zwei Blöcke untereinander), sonst display: contents.
+      // Die DOM-Reihenfolge ist zugleich Lese- und Mobile-Reihenfolge: Geräte vor Song.
+      h('div', { class: 'col-main' }, [stepEditor(c), tracks(c)]),
       devices(c, layout, [synthDevice(c), samplerDevice(c), mixerDevice(c), fxDevice(c)]),
+      h('div', { class: 'col-extra' }, [songPanel(c), patternsPanel(c)]),
       transport(c),
     ]),
   );

@@ -49,13 +49,13 @@ describe('mountShell', () => {
       'slots',
       'editor',
       'tracks',
-      'song',
-      'patterns',
       'devices',
       'synth',
       'smp',
       'mix',
       'fx',
+      'song',
+      'patterns',
       'transport',
     ]);
   });
