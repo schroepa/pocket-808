@@ -9,7 +9,7 @@ const pkg = JSON.parse(readFileSync(new URL('../../package.json', import.meta.ur
 describe('Werkzeug-Konfiguration', () => {
   it('Playwright baut immer frisch, statt einen laufenden (evtl. alten) Server zu nutzen', () => {
     const servers = [playwright.webServer ?? []].flat();
-    expect(servers.map((s) => s.port)).toEqual([4173, 4174]);
+    expect(servers.map((s) => s.port)).toEqual([4173]);
     for (const s of servers) expect(s.reuseExistingServer).toBe(false);
   });
 

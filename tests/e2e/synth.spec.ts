@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { expect, test } from '../e2e/fixtures.ts';
+import { expect, test } from './fixtures.ts';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
@@ -59,7 +59,7 @@ test('Lauflicht in der Roll beim Spielen', async ({ page }) => {
 test('Touch-Ziele im Synth mindestens 44 × 44 px (außer dem dichten Roll-Raster)', async ({
   page,
 }, info) => {
-  test.skip(info.project.name === 'next-desktop', 'nur Touch-Layouts');
+  test.skip(info.project.name === 'desktop', 'nur Touch-Layouts');
   await openSynth(page);
   const small = await page.evaluate(() =>
     [

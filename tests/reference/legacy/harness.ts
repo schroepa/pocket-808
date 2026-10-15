@@ -10,7 +10,7 @@ export { mulberry32 };
 const require = createRequire(import.meta.url);
 const wa = require('node-web-audio-api') as { OfflineAudioContext: typeof OfflineAudioContext };
 
-export const LEGACY_HTML = fileURLToPath(new URL('../../../legacy/index.html', import.meta.url));
+export const LEGACY_HTML = fileURLToPath(new URL('./oracle.html', import.meta.url));
 
 /** Reicht interne Funktionen und Werte des Legacy-Scripts an die Tests heraus. */
 const HOOK =
@@ -54,7 +54,6 @@ export const PATCHES: readonly Patch[] = [
   },
 ];
 
-
 export function splitLegacy(
   html: string,
   patches: readonly Patch[] = PATCHES,
@@ -70,7 +69,6 @@ export function splitLegacy(
   }
   return { body: html.replace(m[0], ''), script };
 }
-
 
 export interface AudioSetup {
   seconds: number;
@@ -142,7 +140,8 @@ export function loadLegacy(opts: LegacyOptions = {}): LegacyPage {
     t,
     errors,
     ctx() {
-      if (!ctx) throw new Error('Kein AudioContext: ensureAudio() aufrufen und audio-Option setzen');
+      if (!ctx)
+        throw new Error('Kein AudioContext: ensureAudio() aufrufen und audio-Option setzen');
       return ctx;
     },
     setNow(seconds) {

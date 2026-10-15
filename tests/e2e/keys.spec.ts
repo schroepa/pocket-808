@@ -1,7 +1,7 @@
-import { expect, test } from '../e2e/fixtures.ts';
+import { expect, test } from './fixtures.ts';
 
 test.beforeEach(() => {
-  test.skip(test.info().project.name !== 'next-desktop', 'Kürzel nur auf dem Desktop');
+  test.skip(test.info().project.name !== 'desktop', 'Kürzel nur auf dem Desktop');
 });
 
 test('Leertaste, Ziffern, Pfeile, Zurück und Kürzel-Dialog', async ({ page }) => {

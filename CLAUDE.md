@@ -1,6 +1,6 @@
 # Pocket 808 – Anweisungen für Claude Code
 
-Mobile Drum-Machine im Stil der TR-808. Quelltext in `src/` (TypeScript, Vite), der Build erzeugt eine **einzelne `dist/index.html`** ohne Laufzeit-Abhängigkeiten. Bis zur Umstellung (Fundament Schritt 6) ist `legacy/index.html` die ausgelieferte App. Hauptgerät des Besitzers ist ein **iPhone**. Alles muss dort performant und knackfrei laufen.
+Mobile Drum-Machine im Stil der TR-808. Quelltext in `src/` (TypeScript, Vite), der Build erzeugt eine **einzelne `dist/index.html`** ohne Laufzeit-Abhängigkeiten. Seit Fundament Schritt 6 ist das die ausgelieferte App; die alte App liegt nur noch eingefroren als Test-Orakel in `tests/reference/legacy/oracle.html` (nie ändern, nie ausliefern). Hauptgerät des Besitzers ist ein **iPhone**. Alles muss dort performant und knackfrei laufen.
 
 ## Zusammenarbeit
 
@@ -12,7 +12,7 @@ Mobile Drum-Machine im Stil der TR-808. Quelltext in `src/` (TypeScript, Vite), 
 
 - Minimal und flach: **keine Outlines, keine Schatten** (Ausnahme: Fokusring für Tastatur).
 - Aktive Zustände bekommen einen **Glow** ("wie im Club"), über `box-shadow` mit Akzentfarbe. Aktive Elemente brauchen `z-index:1`, sonst verdeckt der nächste Nachbar den Glow.
-- Sehr zurückgenommenes Farbklima: Neutrale Flächen plus **ein** gedämpfter Kupfer-Akzent. Keine neuen Farben einführen. Palette in `:root` (`--chassis`, `--panel`, `--well`, `--cell`, `--ink`, `--ink-dim`, `--acc`, `--cream`). Der Block "Club-Look" und "Zurückgenommenes Farbklima" am Ende des `<style>` überschreibt ältere Regeln.
+- Sehr zurückgenommenes Farbklima: Neutrale Flächen plus **ein** gedämpfter Kupfer-Akzent. Keine neuen Farben einführen. Palette in `src/ui/styles/tokens.css` (`--chassis`, `--panel`, `--well`, `--cell`, `--ink`, `--ink-dim`, `--acc`, `--cream`); Abstufungen per `color-mix` aus diesen Farben.
 - Touch zuerst (Layout ab 390 px Breite, kein horizontaler Scroll), große Ziele, `touch-action:none` auf Drag-Elementen, Tastaturbedienung und ARIA-Rollen bei Reglern.
 - Nur Google Fonts als externe Ressource.
 
@@ -24,15 +24,15 @@ Mobile Drum-Machine im Stil der TR-808. Quelltext in `src/` (TypeScript, Vite), 
 - Audio (`src/audio`): `createEngine({ store, createContext, … })` baut Kontext und Graph erst bei `prepare()`/`start()`, reagiert per Effekt auf Mixer, FX, Tempo, Synth-Pegel und Tune/Decay (Neu-Rendern entprellt) und plant mit dem Lookahead-Scheduler über die `core`-Funktionen. Lebenszyklus: Jede Bedien-Geste (Start, Vorhören, Stutter) ruft `onGesture` (iOS-Entsperren) und weckt den Kontext; `resume()` ist für jeden Pointerdown gedacht; `dispose()` stoppt, bricht Zeitgeber ab und schließt den Kontext. Offline-Renderings laufen über eine Warteschlange, nie parallel. Klang und Knotenzahl sind gegen die Legacy-Referenzen geprüft (`tests/reference/next-*.test.ts`). Rauschen startet sample-genau (Entscheidung 2026-10-14). Kontext, Offline-Kontext, Zeitquelle, Zeitgeber und Zufall sind für Tests austauschbar.
 - UI (`src/ui`): ein Komponentenbaum aus kleinen DOM-Funktionen (`dom.ts`: `h`, `bind`, `listen`, Scope), feine Bindungen an `store.select()`. Layout-Signal (`layout.ts`) setzt `data-layout` (mobile < 768 px oder Telefon quer = Touch und Höhe < 600 px; tablet ≥ 768 px mit Touch oder < 1024 px; desktop ≥ 1024 px mit Maus); Anordnung nur in `styles/layout.css`. Die Reihenfolge der Cascade Layers steht in `index.html` (Komponenten-CSS lädt vor `app.css`). Geräte-Halter (`devices.ts`): Akkordeon, Tabs oder alle offen. Die UI bekommt Audio und Dateien über `UiContext` (`context.ts`), nie direkt. Tastaturkürzel nur auf dem Desktop (`keys.ts`). Synth-Gerät in `ui/panels/synth/` (Kopf, Roll, Module, Presets), Bedienlogik in `core/synth.ts`. Sampler-Gerät in `ui/panels/sampler/`, Bedienlogik in `core/sampler.ts`, Pad-Samples in der SampleBank, Aufnahme über `platform/recorder.ts`. Mixer und FX in `ui/panels/mixer/` (Logik `core/mixer.ts`), Song (`ui/panels/song.ts`) und Vorlagen/Werkzeuge (`ui/panels/patterns.ts`) als eigene Bereiche. Desktop: Spalte 1 aus den Wrappern `.col-main` (Editor, Spuren) und `.col-extra` (Song, Vorlagen), sonst `display: contents`; Geräte in zwei CSS-Spalten; Kopfleiste sticky. Die DOM-Reihenfolge ist die Mobile-Reihenfolge. Raster-Spalten immer mit `minmax(0, …)`. Geräte-Bereichsnamen (`grid-area: synth` usw.) nur im Desktop-Raster setzen. Eigene Drum-Samples liegen in `store/samples.ts` (SampleBank).
 - Plattform (`src/platform`): iOS-Entsperren, Wake Lock, Lebenszyklus, Artifact-Host, Dateiauswahl; nur `core`-Importe, Abhängigkeiten werden übergeben.
-- Übergang: `npm run dev` und `npm run build:next` (→ `dist-next/`) für die neue App; `npm run build` liefert bis Schritt 6 `legacy/` nach `dist/` und die neue App nach `dist/next/` (live unter `/next/`). E2E der neuen App in `tests/e2e-next/` (Projekte `next-*`). Funktionsliste: `docs/superpowers/specs/2026-10-14-ui-funktionsliste.md`.
+- Build: `npm run dev` (Dev-Server), `npm run build` (→ `dist/index.html`). `/next/` leitet per `vercel.json` auf `/` um. E2E in `tests/e2e/` (Projekte `mobile`, `mobile-quer`, `tablet`, `tablet-quer`, `desktop`). Funktionsliste: `docs/superpowers/specs/2026-10-14-ui-funktionsliste.md`.
 - Persistenz: `localStorage` unter `pocket808.v1` (Zustand) und `pocket808.smp.v1` (Samples). Immer in try/catch. Beim Laden läuft alles durch `merge()`: neue Felder brauchen Defaults und eine **Migration alter Speicherstände** (Beispiel: der frühere Synth-Regler `sus` wird zu den Hüllkurven umgerechnet).
 - Zustand: `State` aus `src/core/types.ts` (= Speicherformat), im Store als Signal; gespeichert wird automatisch entprellt.
 - Audio-Kette: Stimmen → Kanalzug (`chan[id]`: Gain → StereoPanner) → `bus` → DJ-Filter (LP/HP) → Kompressor → Soft-Clip → Master-Gain → Limiter → Sicherheits-Shaper → Ausgang. Sends: Reverb (Convolver mit erzeugter Impulsantwort) und tempo-synchrones Delay für die Synth-Stimmen. Der Master-Pegel ist auf Spitze ≈ 0,77 abgestimmt. Bei Änderungen nachmessen (`tests/reference/mix.test.ts`, Szenario `demo`).
 - Scheduler: Lookahead (`setInterval` 25 ms, Vorlauf 0,2 s), Noten werden auf `ctx.currentTime` geplant.
 - Drums: Die zehn Stimmen werden **offline vorgerendert** (`renderVoice`/`prerenderAll`, nacheinander, nicht parallel) und beim Spielen nur als Buffer abgespielt. Level wirkt live, Tune/Decay rechnen kurz neu (`queueRerender`).
-- Start: `mkAudio()`/`warmAudio()` bauen Kontext, Graph und Vorrechnen schon beim Laden (suspendiert). Der Start-Tipp ruft nur noch `resume()`. Keine schwere Arbeit im Tipp-Handler.
+- Start: `engine.prepare()` (in `main.ts`) baut Kontext, Graph und Vorrechnen schon beim Laden (suspendiert). Der Start-Tipp ruft nur noch `resume()`. Keine schwere Arbeit im Tipp-Handler.
 - Synth (Bass `BA`, Lead `LD`): SH-101-Module Oszillator, Filter, Filter-Env und Amp-Env (ADSR, Parameter `fa fd fs fr` / `aa ad as ar`, alle 0..1, Zeiten über `tA/tD/tR`). Pro Part **monophon**: Eine neue Note schneidet die vorherige per `killVoice` kurz ab. Presets in `SYN_PRESETS`.
-- iOS: `unlockIOS()` (stilles Audio-Element, damit Web Audio dem Stumm-Schalter nicht folgt), `audioSession.type='playback'`, Resume bei jedem Pointerdown, falls der Kontext nicht läuft.
+- iOS: `createIosUnlock()` in `platform/ios.ts` (stilles Audio-Element, damit Web Audio dem Stumm-Schalter nicht folgt), `audioSession.type='playback'`, Resume bei jedem Pointerdown, falls der Kontext nicht läuft.
 
 ## Performance (immer beachten)
 
@@ -46,26 +46,22 @@ Mobile Drum-Machine im Stil der TR-808. Quelltext in `src/` (TypeScript, Vite), 
 ```sh
 nvm use               # Node 24 laut .nvmrc
 npm install
-npm test              # alles: Unit, Referenz, E2E, alte Tests
+npm test              # alles: Unit, Referenz, Bench, E2E
 npm run test:unit     # schnell: Unit- und Werkzeugtests
-npm run test:ref      # Referenz: Klang-Fingerabdrücke und Speicherstände gegen legacy/
+npm run test:ref      # Referenz: Klang-Fingerabdrücke und Speicherstände gegen die alte App (Orakel)
 npm run test:e2e      # Playwright auf Mobile, Tablet, Desktop
 npm run bench         # Performance-Budget (Knoten/s, Renderzeit)
 npm run lint && npm run typecheck
-npm run dev           # Vite-Dev-Server der neuen App (Schritt 5)
-npm run dev:legacy    # Dev-Server der alten App
-npm run build         # dist/index.html (Legacy) + dist/next/index.html (neue App)
-npm run build:next    # nur die neue App nach dist-next/ (E2E-Projekte next-*)
+npm run dev           # Vite-Dev-Server
+npm run build         # dist/index.html (eine Datei)
 ```
 
-- Referenzen neu erzeugen nur bewusst: `npm run ref:update`, `npm run bench:update`, `AXE_UPDATE=1 npx playwright test a11y`, `npx playwright test layout --update-snapshots`. Danach den Diff prüfen.
+- Referenzen neu erzeugen nur bewusst: `npm run ref:update`, `npm run bench:update`, `npx playwright test screens --update-snapshots`. Danach den Diff prüfen.
 - Klang-Toleranzen stehen in `tests/reference/tolerance.ts` und sind kalibriert (`tests/reference/calibration.test.ts`).
 - Audio-Tests laufen je Szenario in einem eigenen Kindprozess (`tests/reference/run.ts`).
 - Der Git-Hook (vor jedem Commit) prüft Lint, Typen, Unit- und Referenztests.
 
-- Übergangsphase: Die App liegt unverändert in `legacy/index.html`, die alten Tests in `legacy/tests/`. Neue Werkzeuge und Referenztests kommen schrittweise dazu, siehe `docs/superpowers/plans/`.
-
-- Referenztests laden `legacy/index.html` in jsdom (`tests/reference/legacy/harness.ts`) und rendern Audio mit `node-web-audio-api` offline, je Szenario in einem eigenen Prozess (die Bibliothek ist bei mehreren Kontexten pro Prozess launisch).
+- Referenztests laden die eingefrorene alte App (`tests/reference/legacy/oracle.html`) in jsdom (`tests/reference/legacy/harness.ts`) und rendern Audio mit `node-web-audio-api` offline, je Szenario in einem eigenen Prozess (die Bibliothek ist bei mehreren Kontexten pro Prozess launisch).
 - Neue Logik testgetrieben in `src/**/*.test.ts`; Abdeckung ≥ 90 % pro Datei wird von `npm run test:unit` erzwungen. Eigenschafts- und Modelltests mit fast-check per Mutationsprüfung kontrollieren (absichtlich Fehler einbauen, Test muss rot werden).
 - Visuelle Prüfung: Chromium/Playwright, Viewport 390 × 844.
 - Offline erscheint ein Konsolenfehler für die Google Fonts. Das ist harmlos.

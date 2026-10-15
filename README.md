@@ -4,11 +4,9 @@
 
 ▶ **Live ausprobieren: [pocket-808.vercel.app](https://pocket-808.vercel.app)**
 
-🔧 **Die neue Oberfläche zum Ausprobieren: [pocket-808.vercel.app/next/](https://pocket-808.vercel.app/next/)** (alles ist da: Drums, Synth, Sampler, Mixer, FX, Song und Vorlagen; die Haupt-Adresse wechselt mit Schritt 6)
-
 Aufmachen, auf *Start* tippen, und der Beat läuft. Pocket 808 braucht keine Installation, kein Konto und keinen Server. Alles, was du baust, bleibt in deinem Browser.
 
-> Diese README ist ein **lebendes Dokument**. Sie wird mit jeder Änderung am Projekt aktualisiert. Stand: 2026-10-14, Version 0.15.0.
+> Diese README ist ein **lebendes Dokument**. Sie wird mit jeder Änderung am Projekt aktualisiert. Stand: 2026-10-15, Version 0.16.0.
 
 ---
 
@@ -175,9 +173,9 @@ Pocket 808 wird mit mehr Testcode als App-Code gebaut. Jeder Commit läuft durch
 | Ebene | Was geprüft wird | Umfang |
 |---|---|---|
 | **Unit** | `core`, `store`, `audio`, `ui` und `platform` einzeln (Oberfläche in jsdom), mit Eigenschafts- und Modelltests (fast-check); Abdeckung ≥ 90 % pro Datei erzwungen | 452 Tests |
-| **Referenz** | Die neue Engine klingt wie die bewährte alte App: Beide rendern dieselben Szenarien offline (`node-web-audio-api`) und werden über **Klang-Fingerabdrücke** (Spitze, RMS-Verlauf in 10 ms, spektraler Schwerpunkt) verglichen, dazu Speicherstände, Scheduler-Sequenzen und das Umrechnen importierter Samples (bitgleich) | 162 Tests, 15 Mix-Szenarien, 50 Drum-Varianten |
+| **Referenz** | Die neue Engine klingt wie die bewährte alte App, die eingefroren als Vergleichsmaßstab in `tests/reference/legacy/oracle.html` liegt (sie wird nicht mehr ausgeliefert): Beide rendern dieselben Szenarien offline (`node-web-audio-api`) und werden über **Klang-Fingerabdrücke** (Spitze, RMS-Verlauf in 10 ms, spektraler Schwerpunkt) verglichen, dazu Speicherstände, Scheduler-Sequenzen und das Umrechnen importierter Samples (bitgleich) | 162 Tests, 15 Mix-Szenarien, 50 Drum-Varianten |
 | **Bench** | Performance-Budget: Audio-Knoten pro Sekunde und Renderzeit für ein Demo- und ein Worst-Case-Pattern | Demo 47 Knoten/s, Worst-Case 429 Knoten/s |
-| **E2E** | Playwright auf iPhone hoch und quer, iPad hoch und quer (WebKit) und Desktop (Chromium): Funktion, Kürzel, kein horizontaler Scroll, Screenshots je Gerät, Barrierefreiheit mit axe (keine schweren Verstöße), alte Speicherstände, Artifact-Host, keine Long Tasks beim Spielen, Touch-Ziele ≥ 44 px, Größenbudget | 158 Tests |
+| **E2E** | Playwright auf iPhone hoch und quer, iPad hoch und quer (WebKit) und Desktop (Chromium): Funktion, Kürzel, kein horizontaler Scroll, Screenshots je Gerät, Barrierefreiheit mit axe (keine schweren Verstöße), alte Speicherstände, Artifact-Host, keine Long Tasks beim Spielen, Touch-Ziele ≥ 44 px, Größenbudget | 138 Tests |
 
 - **Toleranzen kalibriert:** Die Toleranzen der Klang-Fingerabdrücke sind kalibriert. Ein Halbton Verstimmung oder 10 % mehr Decay werden erkannt, Rauschschwankungen nicht.
 - **Mutationsprüfung:** Wir bauen absichtlich Fehler ein, zum Beispiel einen ausgebauten Live-Effekt, falschen Swing oder eine Closed Hat, die die Open Hat nicht mehr abwürgt. Der passende Test muss rot werden, sonst fehlt ein Test.
@@ -186,7 +184,7 @@ Pocket 808 wird mit mehr Testcode als App-Code gebaut. Jeder Commit läuft durch
 
 ## Projektstand
 
-Pocket 808 wird gerade auf ein neues technisches Fundament gestellt. Live läuft bis zur Umstellung die bewährte Version aus `legacy/index.html`.
+Pocket 808 steht auf einem neuen technischen Fundament: TypeScript, getrennte Schichten, eigene Layouts für Telefon, Tablet und Desktop. Seit Schritt 6 liefert die Haupt-Adresse die neue App aus. Die frühere Vorschau-Adresse `/next/` leitet dorthin weiter. Speicherstände bleiben erhalten.
 
 | Schritt | Inhalt | Stand |
 |---|---|---|
@@ -195,11 +193,11 @@ Pocket 808 wird gerade auf ein neues technisches Fundament gestellt. Live läuft
 | 2 | `core`: Datenmodell, Pattern, Song, Musiktheorie, Speicherformat | ✅ |
 | 3 | `store`: Signals-Kern, Zustand, Undo, Speichern | ✅ |
 | 4 | `audio`: Engine, gleich zur Referenz | ✅ |
-| 5a | UI-Grundgerüst: drei Layouts, Deck, Step-Editor, Spuren, Transport, Tastaturkürzel, platform | ✅ (live unter `/next/`) |
-| 5b | Synth in der neuen UI: Piano-Roll, SH-101-Module mit Hüllkurvenanzeige, Presets | ✅ (live unter `/next/`) |
-| 5c | Sampler in der neuen UI: Pads, Wellenform mit Griffen, Laden und Mikrofon-Aufnahme, Rückwärts, Steps | ✅ (live unter `/next/`) |
-| 5d | Mixer, FX, Song, Vorlagen in der neuen UI; Desktop-Pult mit stehender Kopfleiste | ✅ (live unter `/next/`) |
-| 6 | Umstellung: die neue App geht live | als Nächstes |
+| 5a | UI-Grundgerüst: drei Layouts, Deck, Step-Editor, Spuren, Transport, Tastaturkürzel, platform | ✅ |
+| 5b | Synth in der neuen UI: Piano-Roll, SH-101-Module mit Hüllkurvenanzeige, Presets | ✅ |
+| 5c | Sampler in der neuen UI: Pads, Wellenform mit Griffen, Laden und Mikrofon-Aufnahme, Rückwärts, Steps | ✅ |
+| 5d | Mixer, FX, Song, Vorlagen in der neuen UI; Desktop-Pult mit stehender Kopfleiste | ✅ |
+| 6 | Umstellung: die neue App ist live, alte App und alte Tests entfernt | ✅ (Test auf dem iPhone steht aus) |
 
 ---
 
@@ -210,21 +208,19 @@ Voraussetzung ist Node 24 (siehe `.nvmrc`).
 ```sh
 nvm use
 npm install
-npm run dev           # neue Oberfläche im Dev-Server mit Hot Reload
-npm run dev:legacy    # die bisherige App im Dev-Server
-npm run build         # dist/index.html (bisherige App) + dist/next/index.html (neue)
-npm run build:next    # nur die neue App nach dist-next/
+npm run dev           # Dev-Server mit Hot Reload
+npm run build         # dist/index.html (eine Datei, alles inline)
 npm run preview       # gebaute Datei lokal ausliefern
 ```
 
 Audio startet erst nach einer Nutzergeste. Das ist eine Browser-Vorgabe, darum der Tipp auf *Start*.
 
 ```sh
-npm test              # alles: Unit, Referenz, Bench, E2E, alte Tests
+npm test              # alles: Unit, Referenz, Bench, E2E
 npm run test:unit     # schnell: Unit-Tests mit Abdeckung
 npm run test:ref      # Klang- und Speicherstand-Referenzen
 npm run bench         # Performance-Budget
-npm run test:e2e      # Playwright: Mobile, Tablet (hoch/quer), Desktop – alte und neue App
+npm run test:e2e      # Playwright: Mobile (hoch/quer), Tablet (hoch/quer), Desktop
 npm run lint && npm run typecheck
 ```
 
@@ -239,11 +235,9 @@ src/audio/       Audio-Engine
 src/ui/          Oberfläche: DOM-Bausteine, Steuerelemente, Panels, Layouts
 src/platform/    iOS, Wake Lock, Lebenszyklus, Artifact-Host, Dateien
 src/main.ts      Verdrahtung aller Schichten
-index.html       Einstieg der neuen App (vite.next.config.ts)
-legacy/          die bisherige App (live bis zur Umstellung) und ihre alten Tests
-tests/reference/ Referenztests gegen legacy/ (Klang, Speicherstände, Bench)
-tests/e2e/       Playwright (bisherige App)
-tests/e2e-next/  Playwright (neue App, vier Geräte-Ansichten)
+index.html       Einstieg (Vite baut daraus dist/index.html)
+tests/reference/ Referenztests gegen die eingefrorene alte App (legacy/oracle.html): Klang, Speicherstände, Bench
+tests/e2e/       Playwright auf fünf Geräte-Ansichten
 docs/superpowers/specs/  Spezifikationen
 docs/superpowers/plans/  Implementierungspläne
 ```

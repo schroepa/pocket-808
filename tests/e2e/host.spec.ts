@@ -1,4 +1,4 @@
-import { expect, test } from '../e2e/fixtures.ts';
+import { expect, test } from './fixtures.ts';
 
 test('window.claude.hot: Startzustand vom Host, Schnappschuss zurück', async ({ page }) => {
   await page.addInitScript(() => {

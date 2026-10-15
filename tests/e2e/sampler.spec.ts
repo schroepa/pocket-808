@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { expect, test } from '../e2e/fixtures.ts';
+import { expect, test } from './fixtures.ts';
 
 /** Kurzer 440-Hz-Ton als 16-Bit-WAV (0,2 s, 22,05 kHz) */
 function toneWav(): Buffer {
@@ -83,7 +83,7 @@ test('kein horizontaler Scroll, Touch-Ziele ≥ 44 px (außer dem dichten Step-R
     () => document.documentElement.scrollWidth - window.innerWidth,
   );
   expect(overflow).toBeLessThanOrEqual(0);
-  test.skip(info.project.name === 'next-desktop', 'Touch-Ziele nur auf Touch-Layouts');
+  test.skip(info.project.name === 'desktop', 'Touch-Ziele nur auf Touch-Layouts');
   const small = await page.evaluate(() =>
     [...document.querySelectorAll<HTMLElement>('#dev-smp :is(button, [role=slider]):not(.ss)')]
       .filter((el) => el.offsetParent !== null)

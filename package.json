@@ -1,6 +1,6 @@
 {
   "name": "pocket-808",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "private": true,
   "type": "module",
   "description": "Pocket 808 – mobile Drum-Machine mit Synth, Sampler, Mixer und FX als einzelne HTML-Datei",
@@ -8,25 +8,20 @@
     "node": ">=24"
   },
   "scripts": {
-    "test:legacy": "node legacy/tests/synth-test.cjs && node legacy/tests/smp-test.cjs && node legacy/tests/sub-test.cjs && node legacy/tests/compat-test.cjs && node legacy/tests/env-test.cjs && node legacy/tests/mix-test2.cjs",
-    "bench:legacy": "node legacy/tests/bench.cjs index.html demo && node legacy/tests/bench.cjs index.html worst",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "test:unit": "vitest run --project unit --project ui --coverage",
     "prepare": "simple-git-hooks",
-    "dev": "vite --config vite.next.config.ts",
-    "dev:legacy": "vite",
-    "build": "vite build && vite build --config vite.next.config.ts --outDir dist/next",
-    "build:next": "vite build --config vite.next.config.ts",
+    "dev": "vite",
+    "build": "vite build",
     "preview": "vite preview",
-    "preview:next": "vite preview --config vite.next.config.ts",
     "test:e2e": "playwright test",
     "test:ref": "vitest run --project reference",
     "ref:update": "REF_UPDATE=1 vitest run --project reference",
     "bench": "vitest run --project bench",
     "bench:update": "REF_UPDATE=1 vitest run --project bench",
-    "test": "npm run test:unit && npm run test:ref && npm run bench && npm run test:e2e && npm run test:legacy"
+    "test": "npm run test:unit && npm run test:ref && npm run bench && npm run test:e2e"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

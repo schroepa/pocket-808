@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { expect, test } from '../e2e/fixtures.ts';
+import { expect, test } from './fixtures.ts';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
@@ -85,7 +85,7 @@ test('Mixer und FX: im Fenster, Touch-Ziele ≥ 44 px', async ({ page }, info) =
       `#dev-${id}`,
     );
     expect(right).toBeLessThanOrEqual(0);
-    if (info.project.name === 'next-desktop') continue;
+    if (info.project.name === 'desktop') continue;
     const small = await page.evaluate(
       (sel) =>
         [...document.querySelectorAll<HTMLElement>(`${sel} :is(button, input, [role=slider])`)]
