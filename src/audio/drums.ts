@@ -23,10 +23,30 @@ export interface DrumBank {
   rerender(voice: VoiceId): void;
   ready(voice: VoiceId): boolean;
   setSample(voice: VoiceId, sample: DrumSample | null): void;
-  hit(voice: VoiceId, time: number, params: DrumParams): void;
+  /** Treffer; mit lock (Parameter-Lock Tune/Decay) spielt eine vorgerenderte Variante */
+  hit(voice: VoiceId, time: number, params: DrumParams, lock?: DrumLock): void;
+  /** Varianten für Parameter-Locks vorrendern (über dieselbe Warteschlange) */
+  ensureVariants(list: readonly VariantSpec[]): void;
   /** Zeitgeber löschen, ausstehende Renderaufträge verwerfen */
   dispose(): void;
 }
+
+/** gelockte Werte eines Treffers (fehlend: Spurwert) */
+export interface DrumLock {
+  tune?: number | undefined;
+  decay?: number | undefined;
+}
+/** eine Variante: Stimme mit festen Werten für Tune und Decay */
+export interface VariantSpec {
+  voice: VoiceId;
+  tune: number;
+  decay: number;
+}
+/** höchstens so viele Varianten im Speicher (die älteste fällt heraus) */
+const MAX_VARIANTS = 64;
+/** auf 1/100 gerundet, damit der Cache klein bleibt */
+const q = (x: number): number => Math.round(x * 100) / 100;
+export const variantKey = (v: VariantSpec): string => `${v.voice}|${q(v.tune)}|${q(v.decay)}`;
 
 export function createDrumBank(o: {
   graph: Graph;
@@ -44,6 +64,8 @@ export function createDrumBank(o: {
   const samples = new Map(o.samples);
   const sampleBuffers = new Map<VoiceId, AudioBuffer>();
   const last = new Map<VoiceId, Playing>();
+  const variants = new Map<string, AudioBuffer>();
+  const pending = new Set<string>();
   const choke = { gain: null as GainNode | null };
   // Eine Warteschlange für alle Offline-Renderings: nie zwei gleichzeitig (iPhone)
   let renders: Promise<void> = Promise.resolve();
@@ -66,6 +88,29 @@ export function createDrumBank(o: {
       if (tokens[voice] === tok) buffers[voice] = buf;
     } catch {
       /* Rückfall: Live-Synthese (wie Legacy) */
+    }
+  };
+  const renderVariant = async (v: VariantSpec, key: string): Promise<void> => {
+    try {
+      const buf = await renderVoice({
+        createOffline: o.createOffline,
+        sampleRate: ctx.sampleRate,
+        voice: v.voice,
+        params: { ...o.params()[v.voice], tune: q(v.tune), decay: q(v.decay) },
+        noise: graph.noise,
+        kick: graph.kick,
+        rnd: o.random(`voice:${VOICE_IDS.indexOf(v.voice)}`),
+      });
+      variants.set(key, buf);
+      while (variants.size > MAX_VARIANTS) {
+        const oldest = variants.keys().next().value;
+        if (oldest === undefined) break;
+        variants.delete(oldest);
+      }
+    } catch {
+      /* Rückfall: Normal-Buffer */
+    } finally {
+      pending.delete(key);
     }
   };
   const pause = (ms: number): Promise<void> =>
@@ -125,6 +170,15 @@ export function createDrumBank(o: {
     last.set(voice, { src, g: out, v });
   };
 
+  const ensureVariants = (list: readonly VariantSpec[]): void => {
+    for (const v of list) {
+      const key = variantKey(v);
+      if (variants.has(key) || pending.has(key)) continue;
+      pending.add(key);
+      void enqueue(() => renderVariant(v, key));
+    }
+  };
+
   return {
     prerenderAll() {
       // nacheinander statt alle gleichzeitig; dazwischen kurz Luft für Audio-Thread und UI
@@ -136,8 +190,10 @@ export function createDrumBank(o: {
           }),
         ),
       ).then(() => undefined);
-      return prerendering;
+      // wartet auch auf Varianten, die schon in der Warteschlange stehen (Export)
+      return prerendering.then(() => renders);
     },
+    ensureVariants,
     rerender(voice) {
       timer.clearTimeout(rerenderTimers[voice]);
       rerenderTimers[voice] = timer.setTimeout(() => void enqueue(() => render(voice)), 90);
@@ -148,14 +204,29 @@ export function createDrumBank(o: {
       else samples.delete(voice);
       sampleBuffers.delete(voice);
     },
-    hit(voice, t, p) {
+    hit(voice, t, base, lock) {
+      const p =
+        lock && (lock.tune !== undefined || lock.decay !== undefined)
+          ? { ...base, tune: lock.tune ?? base.tune, decay: lock.decay ?? base.decay }
+          : base;
       const custom = samples.get(voice);
       if (custom) {
         playSample(voice, custom, t, p);
         return;
       }
       const dest = graph.chan[voice].in;
-      const buf = buffers[voice];
+      let buf = buffers[voice];
+      if (p !== base) {
+        const spec = { voice, tune: p.tune, decay: p.decay };
+        const key = variantKey(spec);
+        const v = variants.get(key);
+        if (v) {
+          // zuletzt benutzt ans Ende (LRU)
+          variants.delete(key);
+          variants.set(key, v);
+          buf = v;
+        } else ensureVariants([spec]);
+      }
       if (!buf) {
         // noch nicht vorgerendert: live synthetisieren (Legacy-Rückfall). Abwürgen und Stehlen
         // greifen dabei nur unter Live-Stimmen (choke), nicht gegenüber Buffern – wie Legacy.

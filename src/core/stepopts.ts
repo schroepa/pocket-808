@@ -121,3 +121,24 @@ export function stepIsOn(p: Pattern, key: SubKey, step: number): boolean {
   const row = key.startsWith('P') ? p.smp[Number(key.slice(1))] : p[key as VoiceId];
   return row?.[step] === 1;
 }
+
+/**
+ * Alle Drum-Varianten, die Parameter-Locks brauchen, als sortierte Schlüssel „Stimme|Tune|Decay“
+ * (auf 1/100 gerundet; ein fehlender Lock-Wert folgt der Spur).
+ */
+export function drumLockVariants(s: State): string[] {
+  const keys = new Set<string>();
+  const q = (x: number): number => Math.round(x * 100) / 100;
+  for (const pat of Object.values(s.patterns)) {
+    for (const [key, steps] of Object.entries(pat.opt ?? {})) {
+      if (key.startsWith('P')) continue;
+      const voice = key as VoiceId;
+      for (const o of Object.values(steps)) {
+        if (!o || (o.t === undefined && o.d === undefined)) continue;
+        const base = s.params[voice];
+        keys.add(`${voice}|${q(o.t ?? base.tune)}|${q(o.d ?? base.decay)}`);
+      }
+    }
+  }
+  return [...keys].sort();
+}

@@ -16,6 +16,7 @@ import { loadState, serialize } from './persist.ts';
 import { applyPreset } from './presets.ts';
 import {
   condPasses,
+  drumLockVariants,
   hasLock,
   setStepOpt,
   STEP_CONDS,
@@ -269,5 +270,19 @@ describe('Fill und Parameter-Locks', () => {
       BD: { 0: { t: 0.2, d: 1 } },
       P3: { 4: { s: 0.25, t: 0 }, 5: { c: 'fill' } },
     });
+  });
+});
+
+describe('drumLockVariants', () => {
+  it('sammelt gelockte Drum-Varianten aller Patterns, Pads zählen nicht', () => {
+    let s = setStepOpt(baseState(), 'BD', 0, { t: 0.234 });
+    s = setStepOpt(s, 'SD', 1, { d: 0.7 });
+    s = setStepOpt(s, 'P0', 1, { t: 0.1 });
+    s = setStepOpt({ ...s, cur: 'B' }, 'BD', 3, { t: 0.234, v: 0.5 });
+    s = setStepOpt(s, 'CH', 2, { v: 0.5 });
+    expect(drumLockVariants(s)).toEqual([
+      `BD|0.23|${String(s.params.BD.decay)}`,
+      `SD|${String(s.params.SD.tune)}|0.7`,
+    ]);
   });
 });
