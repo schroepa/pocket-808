@@ -25,3 +25,13 @@ describe('Playwright-Stabilität', () => {
     expect(playwright.retries).toBe(1);
   });
 });
+
+describe('Versionsnummer', () => {
+  it('APP_VERSION entspricht package.json', async () => {
+    const { APP_VERSION } = await import('../../src/core/constants.ts');
+    const p = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')) as {
+      version: string;
+    };
+    expect(APP_VERSION).toBe(p.version);
+  });
+});
