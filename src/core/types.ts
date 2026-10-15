@@ -29,7 +29,9 @@ export type StepCond =
   | '3:4'
   | '4:4'
   | 'first'
-  | 'notFirst';
+  | 'notFirst'
+  | 'fill'
+  | 'notFill';
 /** Optionen eines Steps (nur Abweichungen vom Standard v 1, p 1, c 'all' werden gespeichert) */
 export interface StepOpt {
   /** Velocity 0..1 */
@@ -37,6 +39,12 @@ export interface StepOpt {
   /** Wahrscheinlichkeit 0..1 */
   p?: number;
   c?: StepCond;
+  /** Parameter-Lock Tune 0..1 (vorhanden = gelockt) */
+  t?: number;
+  /** Parameter-Lock Decay 0..1 */
+  d?: number;
+  /** Parameter-Lock Sample-Start 0..1 (nur Pads) */
+  s?: number;
 }
 export type OptMap = Partial<Record<SubKey, Partial<Record<number, StepOpt>>>>;
 export type Pattern = Record<VoiceId, StepRow> & {

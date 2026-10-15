@@ -16,6 +16,7 @@ import { loadState, serialize } from './persist.ts';
 import { applyPreset } from './presets.ts';
 import {
   condPasses,
+  hasLock,
   setStepOpt,
   STEP_CONDS,
   stepIsOn,
@@ -86,9 +87,11 @@ describe('Step-Optionen', () => {
       '4:4',
       'first',
       'notFirst',
+      'fill',
+      'notFill',
     ]);
     expect(STEP_CONDS[0]?.label).toBe('Immer');
-    expect(STEP_CONDS.at(-1)?.label).toBe('Nicht erster');
+    expect(STEP_CONDS.at(-3)?.label).toBe('Nicht erster');
     expect(velocityGain(0.5)).toBe(0.25);
   });
 });
@@ -224,5 +227,47 @@ describe('Sub-Steps leeren entfernt die Optionen eines ausgeschalteten Steps', (
     let s = toggleSubStep(baseState(), 'P1', 2, 4);
     s = setStepOpt(s, 'P1', 2, { p: 0.5 });
     expect('opt' in currentPattern(setSubSteps(s, 'P1', 2, Array<0 | 1>(16).fill(0)))).toBe(false);
+  });
+});
+
+describe('Fill und Parameter-Locks', () => {
+  it('Fill-Bedingungen', () => {
+    expect(condPasses('fill', 1)).toBe(false);
+    expect(condPasses('fill', 1, true)).toBe(true);
+    expect(condPasses('notFill', 3)).toBe(true);
+    expect(condPasses('notFill', 3, true)).toBe(false);
+    expect(condPasses('1:2', 1, true)).toBe(true);
+    expect(STEP_CONDS.slice(-2).map((x) => x.label)).toEqual(['Fill', 'Nicht Fill']);
+  });
+
+  it('Locks bleiben gespeichert, auch bei jedem Wert; begrenzt; einzeln entfernbar', () => {
+    const s = setStepOpt(baseState(), 'BD', 2, { t: 1.4, d: 0.5 });
+    expect(currentPattern(s).opt?.BD?.[2]).toEqual({ t: 1, d: 0.5 });
+    expect(hasLock(stepOptOf(currentPattern(s), 'BD', 2))).toBe(true);
+    expect(hasLock(stepOptOf(currentPattern(s), 'BD', 3))).toBe(false);
+    const t = setStepOpt(s, 'BD', 2, { t: undefined, d: undefined });
+    expect('opt' in currentPattern(t)).toBe(false);
+    const u = setStepOpt(setStepOpt(s, 'BD', 2, { v: 0.5 }), 'BD', 2, {
+      t: undefined,
+      d: undefined,
+    });
+    expect(currentPattern(u).opt?.BD?.[2]).toEqual({ v: 0.5 });
+  });
+
+  it('Speicherformat: Locks lesen, Start nur bei Pads', () => {
+    const raw = {
+      patterns: {
+        A: {
+          opt: {
+            BD: { 0: { t: 0.2, d: 2, s: 0.5 }, 1: { t: 'x' } },
+            P3: { 4: { s: 0.25, t: -1 }, 5: { c: 'fill' } },
+          },
+        },
+      },
+    };
+    expect(loadState(raw, baseState()).patterns.A.opt).toEqual({
+      BD: { 0: { t: 0.2, d: 1 } },
+      P3: { 4: { s: 0.25, t: 0 }, 5: { c: 'fill' } },
+    });
   });
 });

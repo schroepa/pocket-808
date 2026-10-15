@@ -22,8 +22,8 @@ import {
   moveEntry,
   removeEntry,
 } from '../core/song.ts';
-import { setStepOpt } from '../core/stepopts.ts';
-import type { Pattern, Preset, Slot, State, StepOpt, SubKey, VoiceId } from '../core/types.ts';
+import { setStepOpt, type StepOptPatch } from '../core/stepopts.ts';
+import type { Pattern, Preset, Slot, State, SubKey, VoiceId } from '../core/types.ts';
 import { restoreSnapshot, snapshot } from '../core/undo.ts';
 import { batch, computed, signal, type Equals, type ReadonlySignal } from './signals.ts';
 
@@ -51,7 +51,7 @@ export interface Store {
   paste(): void;
   undo(): void;
   /** Step-Optionen ändern (ohne Zurück, z. B. beim Drehen) */
-  setStepOpt(key: SubKey, step: number, patch: StepOpt): void;
+  setStepOpt(key: SubKey, step: number, patch: StepOptPatch): void;
   /** Step-Optionen auf den Standard zurücksetzen (mit Zurück) */
   resetStepOpt(key: SubKey, step: number): void;
   /** ganzen Zustand ersetzen (Projekt öffnen); Zurück stellt ihn wieder her und ruft revert */
