@@ -1,8 +1,8 @@
 import { readFileSync, statSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
-// Ausgangsgröße von dist-next/index.html nach 5a (70 855 B) plus 20 % Puffer
-const BUDGET_BYTES = 85_030;
+// Größe nach 5c (94 461 B, mit Synth und Sampler) plus 20 % Puffer; nach 5a waren es 70 855 B
+const BUDGET_BYTES = 113_360;
 const DIST = new URL('../../dist-next/index.html', import.meta.url);
 
 test.describe('gebaute dist-next/index.html', () => {

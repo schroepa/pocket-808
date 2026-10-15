@@ -53,6 +53,7 @@
 [data-layout='tablet'] .dev-heads {
   display: grid;
   grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 6px;
 }
 [data-layout='tablet'] .dev-head[aria-selected='true'] {
@@ -75,7 +76,8 @@
 @media (orientation: landscape) {
   [data-layout='tablet'] .shell {
     display: grid;
-    grid-template-columns: 52fr 48fr;
+    /* minmax(0, …): breite Inhalte (Tabs mit Zusammenfassung, Roll) dürfen die Spalte nicht sprengen */
+    grid-template-columns: minmax(0, 52fr) minmax(0, 48fr);
     grid-template-areas:
       'brand deck'
       'slots transport'
