@@ -224,18 +224,31 @@ export function createEngine(o: EngineOptions): Engine {
         g.syncSynth(state(), audible.peek(), now());
       },
     );
-    // Varianten für Parameter-Locks aller Patterns vorrendern
+    // Varianten für Parameter-Locks aller Patterns vorrendern: sofort beim Aufbau (Export wartet
+    // darauf), danach entprellt wie das Neu-Rendern der Spur, damit Drehen keine Flut auslöst
     const locks = store.select(drumLockVariants, (a, b) => a.join() === b.join());
-    disposers.push(
-      effect(() => {
-        drums?.ensureVariants(
-          locks.value.map((k) => {
-            const [voice, tune, decay] = k.split('|') as [VoiceId, string, string];
-            return { voice, tune: Number(tune), decay: Number(decay) };
-          }),
-        );
-      }),
+    const want = (keys: readonly string[]): void => {
+      drums?.wantVariants(
+        keys.map((k) => {
+          const [voice, tune, decay] = k.split('|') as [VoiceId, string, string];
+          return { voice, tune: Number(tune), decay: Number(decay) };
+        }),
+      );
+    };
+    want(locks.peek());
+    let lockTimer: unknown;
+    live(
+      () => locks.value,
+      (keys) => {
+        timer.clearTimeout(lockTimer);
+        lockTimer = timer.setTimeout(() => {
+          want(keys);
+        }, 90);
+      },
     );
+    disposers.push(() => {
+      timer.clearTimeout(lockTimer);
+    });
     for (const id of VOICE_IDS) {
       const p = store.select(
         (s) => s.params[id],
@@ -290,8 +303,9 @@ export function createEngine(o: EngineOptions): Engine {
       samples: drumSamples,
     });
     sampler = createSampler(c, pads);
-    watchLive(g);
+    // zuerst die Grundstimmen in die Warteschlange, danach die Varianten der Locks (watchLive)
     if (o.prerender !== false) void drums.prerenderAll();
+    watchLive(g);
     return true;
   };
 

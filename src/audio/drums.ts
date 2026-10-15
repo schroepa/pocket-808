@@ -25,8 +25,11 @@ export interface DrumBank {
   setSample(voice: VoiceId, sample: DrumSample | null): void;
   /** Treffer; mit lock (Parameter-Lock Tune/Decay) spielt eine vorgerenderte Variante */
   hit(voice: VoiceId, time: number, params: DrumParams, lock?: DrumLock): void;
-  /** Varianten für Parameter-Locks vorrendern (über dieselbe Warteschlange) */
-  ensureVariants(list: readonly VariantSpec[]): void;
+  /**
+   * Gewünschte Varianten für Parameter-Locks (ersetzt die bisherige Liste) und vorrendern, über
+   * dieselbe Warteschlange; nicht mehr gewünschte Aufträge werden beim Start übersprungen.
+   */
+  wantVariants(list: readonly VariantSpec[]): void;
   /** Zeitgeber löschen, ausstehende Renderaufträge verwerfen */
   dispose(): void;
 }
@@ -66,6 +69,8 @@ export function createDrumBank(o: {
   const last = new Map<VoiceId, Playing>();
   const variants = new Map<string, AudioBuffer>();
   const pending = new Set<string>();
+  /** gewünschte Varianten (Locks im Zustand, Treffer ohne fertige Variante) */
+  let wanted = new Set<string>();
   const choke = { gain: null as GainNode | null };
   // Eine Warteschlange für alle Offline-Renderings: nie zwei gleichzeitig (iPhone)
   let renders: Promise<void> = Promise.resolve();
@@ -91,6 +96,11 @@ export function createDrumBank(o: {
     }
   };
   const renderVariant = async (v: VariantSpec, key: string): Promise<void> => {
+    // beim Drehen eines Locks überholt: Zwischenwerte nicht mehr rendern
+    if (!wanted.has(key)) {
+      pending.delete(key);
+      return;
+    }
     try {
       const buf = await renderVoice({
         createOffline: o.createOffline,
@@ -170,13 +180,16 @@ export function createDrumBank(o: {
     last.set(voice, { src, g: out, v });
   };
 
-  const ensureVariants = (list: readonly VariantSpec[]): void => {
-    for (const v of list) {
-      const key = variantKey(v);
-      if (variants.has(key) || pending.has(key)) continue;
-      pending.add(key);
-      void enqueue(() => renderVariant(v, key));
-    }
+  const queueVariant = (v: VariantSpec): void => {
+    const key = variantKey(v);
+    wanted.add(key);
+    if (variants.has(key) || pending.has(key)) return;
+    pending.add(key);
+    void enqueue(() => renderVariant(v, key));
+  };
+  const wantVariants = (list: readonly VariantSpec[]): void => {
+    wanted = new Set();
+    for (const v of list) queueVariant(v);
   };
 
   return {
@@ -193,7 +206,7 @@ export function createDrumBank(o: {
       // wartet auch auf Varianten, die schon in der Warteschlange stehen (Export)
       return prerendering.then(() => renders);
     },
-    ensureVariants,
+    wantVariants,
     rerender(voice) {
       timer.clearTimeout(rerenderTimers[voice]);
       rerenderTimers[voice] = timer.setTimeout(() => void enqueue(() => render(voice)), 90);
@@ -225,7 +238,7 @@ export function createDrumBank(o: {
           variants.delete(key);
           variants.set(key, v);
           buf = v;
-        } else ensureVariants([spec]);
+        } else queueVariant(spec);
       }
       if (!buf) {
         // noch nicht vorgerendert: live synthetisieren (Legacy-Rückfall). Abwürgen und Stehlen

@@ -327,6 +327,77 @@ describe('createEngine', () => {
     }
   });
 
+  /** Offline-Fabrik, die jedes Rendering nach 40 ms mit einem leeren Buffer beendet und die Längen mitschreibt */
+  const slowOffline = (lengths: number[]) =>
+    vi.fn((_c: number, n: number) => {
+      const oc = fakeContext();
+      return {
+        ...oc,
+        startRendering: () => {
+          lengths.push(n);
+          return new Promise((resolve) =>
+            setTimeout(() => {
+              resolve(oc.createBuffer(1, n));
+            }, 40),
+          );
+        },
+      };
+    });
+  const withLock = (t: number): ReturnType<typeof baseState> => {
+    const s = baseState();
+    return { ...s, patterns: { ...s.patterns, A: { ...s.patterns.A, opt: { BD: { 0: { t } } } } } };
+  };
+
+  it('Lock drehen: nur die zuletzt gewünschte Variante wird gerendert (keine Flut)', async () => {
+    vi.useFakeTimers();
+    try {
+      const lengths: number[] = [];
+      const store = createStore(withLock(0.1));
+      const engine = createEngine({
+        store,
+        createContext: () => fakeContext() as never,
+        createOffline: slowOffline(lengths) as never,
+        prerender: false,
+      });
+      engine.prepare();
+      await vi.advanceTimersByTimeAsync(10);
+      for (let i = 1; i <= 30; i++) {
+        store.update(() => withLock(0.1 + i / 100));
+        await vi.advanceTimersByTimeAsync(10);
+      }
+      const all = engine.prerenderAll();
+      await vi.advanceTimersByTimeAsync(5000);
+      await all;
+      // zehn Grundstimmen, die erste Variante (0,1) und die letzte (0,4); keine Zwischenwerte
+      expect(lengths.length).toBeLessThanOrEqual(13);
+      engine.dispose();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('beim Start kommen die Grundstimmen vor den Varianten', async () => {
+    vi.useFakeTimers();
+    try {
+      const lengths: number[] = [];
+      const store = createStore(withLock(0.3));
+      const engine = createEngine({
+        store,
+        createContext: () => fakeContext() as never,
+        createOffline: slowOffline(lengths) as never,
+      });
+      engine.prepare();
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(lengths).toHaveLength(11);
+      // die Variante (BD, 1,7 s) ist das letzte Rendering, nicht das erste
+      expect(lengths.at(-1)).toBe(Math.ceil(44100 * 1.7));
+      expect(lengths.at(-2)).not.toBe(Math.ceil(44100 * 1.7));
+      engine.dispose();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('prepare meldet einen Fehler beim Aufbau, schließt den Kontext und versucht es erneut', () => {
     const store = createStore(baseState());
     const broken = fakeContext();
