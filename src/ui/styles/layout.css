@@ -1,5 +1,11 @@
 /* Drei Layouts über data-layout (layout.ts). Komponenten kennen keine Breakpoints. */
 
+/* Spalte „Sequencer“ (Editor, Spuren, Song, Werkzeuge) ist nur auf dem Desktop ein eigener Block */
+.col-main,
+.col-extra {
+  display: contents;
+}
+
 /* Mobile (Grundform): eine Spalte, Startleiste fest unten */
 .shell {
   display: flex;
@@ -82,7 +88,9 @@
       'brand deck'
       'slots transport'
       'editor devices'
-      'tracks devices';
+      'tracks devices'
+      'song devices'
+      'patterns devices';
     align-items: start;
     gap: 16px 20px;
     max-width: 1400px;
@@ -103,27 +111,54 @@
   }
 }
 
-/* Desktop – Entwurf C: Studio-Pult, Geräte in eigenen Bereichen */
+/* Desktop – Entwurf C: Studio-Pult. Links der Sequencer als Spalte, rechts die Geräte in zwei
+   Textspalten (fließen nach Höhe), oben eine stehende Kopfleiste. Alles bei 1440 × 900 ohne Scrollen
+   passt bei touchtauglichen Größen nicht (Ruling 5d): der Inhalt scrollt, die Kopfleiste bleibt. */
 [data-layout='desktop'] .shell {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   grid-template-areas:
     'brand brand deck deck deck deck slots slots slots transport transport transport'
-    'editor editor editor editor synth synth synth synth mix mix mix mix'
-    'tracks tracks tracks tracks synth synth synth synth mix mix mix mix'
-    '. . . . smp smp smp smp fx fx fx fx';
-  /* Spalten wachsen unabhängig: der hohe Synth läuft über zwei Zeilen, Spuren folgen dem Editor */
-  grid-template-rows: auto auto 1fr auto;
+    'main main main main devices devices devices devices devices devices devices devices'
+    'extra extra extra extra devices devices devices devices devices devices devices devices';
+  /* die dritte Zeile nimmt die Höhe der Geräte auf, Song folgt direkt den Spuren */
+  grid-template-rows: auto auto 1fr;
   align-items: start;
   gap: 16px;
   max-width: 1920px;
   min-height: 100dvh;
   padding: 16px 24px;
 }
+/* Angesprungene und fokussierte Elemente nicht unter der stehenden Kopfleiste verstecken */
+html[data-layout='desktop'] {
+  scroll-padding-top: 120px;
+}
+[data-layout='desktop'] :is(.col-main, .col-extra) {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+[data-layout='desktop'] .col-main {
+  grid-area: main;
+}
+[data-layout='desktop'] .col-extra {
+  grid-area: extra;
+}
 [data-layout='desktop'] [data-area='transport'] {
   position: static;
   padding: 0;
   background: none;
+}
+[data-layout='desktop']
+  :is([data-area='brand'], [data-area='deck'], [data-area='slots'], [data-area='transport']) {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  align-self: stretch;
+  margin: -8px;
+  padding: 8px;
+  background: var(--chassis);
 }
 [data-layout='desktop'] .brand h1 {
   font-size: 26px;
@@ -131,11 +166,20 @@
 [data-layout='desktop'] .stripe {
   display: none;
 }
-[data-layout='desktop'] :is(.deck, .slots, .transport) {
-  align-self: center;
+[data-layout='desktop'] :is(.slots, .transport) {
+  align-content: center;
 }
-[data-layout='desktop'] :is(.devices, .dev-bodies) {
-  display: contents;
+[data-layout='desktop'] .devices {
+  display: block;
+  min-width: 0;
+}
+[data-layout='desktop'] .dev-bodies {
+  columns: 2 360px;
+  column-gap: 16px;
+}
+[data-layout='desktop'] .dev-body {
+  break-inside: avoid;
+  margin-bottom: 16px;
 }
 [data-layout='desktop'] .dev-name {
   display: block;
@@ -167,16 +211,9 @@
 [data-area='transport'] {
   grid-area: transport;
 }
-/* Geräte-Bereiche nur im Desktop-Raster: anderswo legte ein unbekannter Bereichsname eine Extraspalte an */
-[data-layout='desktop'] [data-area='synth'] {
-  grid-area: synth;
+[data-area='song'] {
+  grid-area: song;
 }
-[data-layout='desktop'] [data-area='smp'] {
-  grid-area: smp;
-}
-[data-layout='desktop'] [data-area='mix'] {
-  grid-area: mix;
-}
-[data-layout='desktop'] [data-area='fx'] {
-  grid-area: fx;
+[data-area='patterns'] {
+  grid-area: patterns;
 }

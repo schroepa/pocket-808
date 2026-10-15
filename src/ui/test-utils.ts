@@ -57,6 +57,8 @@ export function fakeAudio(available = true) {
     audition: vi.fn(),
     auditionNote: vi.fn(),
     auditionPad: vi.fn(),
+    stutterOn: vi.fn(),
+    stutterOff: vi.fn(),
     decode: vi.fn(() => Promise.resolve(Float32Array.from([0, 0, 0.5, 0.2]))),
   } satisfies UiAudio;
   return audio;

@@ -144,4 +144,31 @@ describe('knob', () => {
       ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home' }));
     expect(c.readout.text.value).toBe('Swing 0 %');
   });
+
+  it('Rastpunkt: beim Ziehen fängt der Wert nahe snap, Tasten bewegen frei', () => {
+    const { c } = makeContext();
+    const v = signal(0.4);
+    const write = vi.fn((x: number) => {
+      v.value = x;
+    });
+    const wrap = knob(c.scope, {
+      label: 'Pan',
+      value: v,
+      write,
+      def: () => 0.5,
+      format: (x) => String(x),
+      readout: c.readout,
+      snap: 0.5,
+    });
+    const el = wrap.querySelector('[role=slider]');
+    el?.dispatchEvent(pointer('pointerdown', { clientY: 100 }));
+    el?.dispatchEvent(pointer('pointermove', { clientY: 84 })); // 0,4 + 16/170 ≈ 0,494
+    expect(write).toHaveBeenLastCalledWith(0.5);
+    el?.dispatchEvent(pointer('pointermove', { clientY: 70 })); // ≈ 0,576
+    expect(write.mock.lastCall?.[0]).toBeCloseTo(0.4 + 30 / 170, 10);
+    el?.dispatchEvent(pointer('pointerup'));
+    v.value = 0.49;
+    el?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
+    expect(write.mock.lastCall?.[0]).toBeCloseTo(0.51, 10);
+  });
 });

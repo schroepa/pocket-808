@@ -15,6 +15,8 @@ export interface KnobOptions {
   tag?: () => string;
   onEnd?: () => void;
   now?: () => number;
+  /** Rastpunkt beim Ziehen (±0,03, Legacy snap), z. B. Pan-Mitte */
+  snap?: number;
 }
 
 const KEYS: Readonly<Partial<Record<string, (v: number, step: number) => number>>> = {
@@ -81,7 +83,9 @@ export function knob(scope: Scope, o: KnobOptions): HTMLElement {
     if (!drag) return;
     const dy = drag.y - e.clientY;
     if (Math.abs(dy) > 3) drag.moved = true;
-    if (drag.moved) apply(drag.v + dy / 170);
+    if (!drag.moved) return;
+    const v = drag.v + dy / 170;
+    apply(o.snap !== undefined && Math.abs(v - o.snap) < 0.03 ? o.snap : v);
   });
   listen(scope, el, 'pointerup', () => {
     if (!drag) return;

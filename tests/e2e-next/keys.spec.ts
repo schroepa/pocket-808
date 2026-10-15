@@ -15,7 +15,7 @@ test('Leertaste, Ziffern, Pfeile, Zurück und Kürzel-Dialog', async ({ page }) 
   await page.keyboard.press('Space');
   await expect(page.locator('.play')).toHaveAttribute('aria-pressed', 'false');
   await page.keyboard.press('2');
-  await expect(page.getByRole('button', { name: 'Pattern B' })).toHaveAttribute(
+  await expect(page.getByRole('button', { name: 'Pattern B', exact: true })).toHaveAttribute(
     'aria-pressed',
     'true',
   );

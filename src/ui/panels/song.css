@@ -1,0 +1,54 @@
+@layer components {
+  .ed-head h2 small {
+    margin-left: 8px;
+    font: 500 13px var(--font-display);
+    letter-spacing: 0.16em;
+    color: var(--ink-dim);
+  }
+  .chain {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 58px;
+    margin-bottom: 12px;
+  }
+  .chain-empty {
+    align-self: center;
+    font-size: 15px;
+    color: color-mix(in srgb, var(--ink) 72%, var(--panel));
+  }
+  .blk {
+    position: relative;
+    display: grid;
+    place-content: center;
+    gap: 3px;
+    width: 52px;
+    height: 58px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: var(--cell);
+    font: 700 22px/1 var(--font-display);
+  }
+  .blk small {
+    font: 12px/1 var(--font-lcd);
+    color: color-mix(in srgb, var(--ink) 72%, var(--cell));
+  }
+  .blk.sel {
+    z-index: 1;
+    background: color-mix(in srgb, var(--cream) 14%, var(--cell));
+    box-shadow: 0 0 10px rgba(212, 212, 220, 0.18);
+  }
+  .blk.play {
+    z-index: 1;
+    background: var(--acc);
+    color: var(--chassis);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--acc) 26%, transparent);
+  }
+  .blk.play small {
+    color: var(--chassis);
+  }
+  .patterns .chips {
+    margin: 8px 0 14px;
+  }
+}
