@@ -1,0 +1,55 @@
+@layer components {
+  .opt-panel {
+    display: grid;
+    gap: 10px;
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 10px;
+    background: var(--well);
+  }
+  .opt-panel[hidden],
+  .opt-ctl[hidden],
+  .opt-off[hidden] {
+    display: none;
+  }
+  .opt-ctl {
+    display: grid;
+    gap: 10px;
+  }
+  .opt-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .opt-row .fld {
+    flex: 1 1 140px;
+  }
+  .opt-off {
+    font: 13px var(--font-lcd);
+    color: var(--ink-dim);
+  }
+  /* Velocity als Helligkeit eingeschalteter Steps; Marke (Punkt unten rechts) für Chance/Bedingung.
+     button: höhere Spezifität als die Grundregeln der Steps, unabhängig von der Ladereihenfolge */
+  button:is(.step, .ss).on {
+    background-color: color-mix(in srgb, var(--acc) calc(30% + 70% * var(--vel, 1)), var(--cell));
+  }
+  button.cell.on::after {
+    background-color: color-mix(in srgb, var(--acc) calc(30% + 70% * var(--vel, 1)), var(--cell));
+  }
+  button:is(.step, .ss).opt {
+    background-image: radial-gradient(
+      circle at calc(100% - 8px) calc(100% - 8px),
+      var(--cream) 0 3px,
+      transparent 3.5px
+    );
+  }
+  button.cell.opt::after {
+    background-image: radial-gradient(
+      circle at calc(100% - 3px) 50%,
+      var(--cream) 0 2px,
+      transparent 2.5px
+    );
+  }
+}

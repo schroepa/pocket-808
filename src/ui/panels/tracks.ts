@@ -4,6 +4,8 @@ import type { UiContext } from '../context.ts';
 import { markColumn } from '../controls/marker.ts';
 import { stepButton } from '../controls/step-button.ts';
 import { bind, h } from '../dom.ts';
+import { must } from '../../core/util.ts';
+import { optLook } from './step-opts.ts';
 import { drumOn, toggleWithAudition } from './voice.ts';
 import './tracks.css';
 
@@ -26,6 +28,12 @@ export function tracks(c: UiContext): HTMLElement {
       }),
     ),
   );
+  grid.forEach((cells, i) => {
+    const id = must(VOICES[i], 'Stimme').id;
+    cells.forEach((cell, s) => {
+      optLook(scope, store, () => id, s, cell);
+    });
+  });
   const rows = VOICES.map((v, i) => {
     const lab = h('button', {
       class: 'lab',

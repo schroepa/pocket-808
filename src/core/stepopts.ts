@@ -1,5 +1,5 @@
 const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));
-import type { OptMap, Pattern, State, StepCond, StepOpt, SubKey } from './types.ts';
+import type { OptMap, Pattern, State, StepCond, StepOpt, SubKey, VoiceId } from './types.ts';
 
 /** Bedingungen in der Reihenfolge der Auswahl */
 export const STEP_CONDS: readonly { value: StepCond; label: string }[] = [
@@ -92,3 +92,10 @@ export function condPasses(c: StepCond, n: number): boolean {
 
 /** Pegel-Faktor einer Velocity (v²: 50 % ≈ −12 dB) */
 export const velocityGain = (v: number): number => v * v;
+
+/** Klingt der Step (gesetzt oder mit Sub-Steps)? Für Drums (Stimme) und Pads (P0–P7). */
+export function stepIsOn(p: Pattern, key: SubKey, step: number): boolean {
+  if (p.sub[key]?.[step]) return true;
+  const row = key.startsWith('P') ? p.smp[Number(key.slice(1))] : p[key as VoiceId];
+  return row?.[step] === 1;
+}

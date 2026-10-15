@@ -22,7 +22,8 @@ import {
   moveEntry,
   removeEntry,
 } from '../core/song.ts';
-import type { Pattern, Preset, Slot, State, SubKey, VoiceId } from '../core/types.ts';
+import { setStepOpt } from '../core/stepopts.ts';
+import type { Pattern, Preset, Slot, State, StepOpt, SubKey, VoiceId } from '../core/types.ts';
 import { restoreSnapshot, snapshot } from '../core/undo.ts';
 import { batch, computed, signal, type Equals, type ReadonlySignal } from './signals.ts';
 
@@ -49,6 +50,10 @@ export interface Store {
   copy(): void;
   paste(): void;
   undo(): void;
+  /** Step-Optionen ändern (ohne Zurück, z. B. beim Drehen) */
+  setStepOpt(key: SubKey, step: number, patch: StepOpt): void;
+  /** Step-Optionen auf den Standard zurücksetzen (mit Zurück) */
+  resetStepOpt(key: SubKey, step: number): void;
   /** ganzen Zustand ersetzen (Projekt öffnen); Zurück stellt ihn wieder her und ruft revert */
   replaceState(next: State, revert?: () => void): void;
   appendToSong(): void;
@@ -137,6 +142,12 @@ export function createStore(initial: State, opts: { freeze?: boolean } = {}): St
         update(u.restore);
       });
       u.after?.();
+    },
+    setStepOpt: (key, step, patch) => {
+      update((s) => setStepOpt(s, key, step, patch));
+    },
+    resetStepOpt: (key, step) => {
+      withUndo((s) => setStepOpt(s, key, step, {}));
     },
     replaceState: (next, revert) => {
       const prev = state.peek();

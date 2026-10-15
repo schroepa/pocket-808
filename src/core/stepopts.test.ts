@@ -12,7 +12,14 @@ import {
 } from './pattern.ts';
 import { loadState, serialize } from './persist.ts';
 import { applyPreset } from './presets.ts';
-import { condPasses, setStepOpt, STEP_CONDS, stepOptOf, velocityGain } from './stepopts.ts';
+import {
+  condPasses,
+  setStepOpt,
+  STEP_CONDS,
+  stepIsOn,
+  stepOptOf,
+  velocityGain,
+} from './stepopts.ts';
 import { deepFreeze } from './test-utils.ts';
 import type { State, StepCond } from './types.ts';
 
@@ -173,5 +180,18 @@ describe('Step-Optionen im Speicherformat', () => {
     expect(loadState({ patterns: { A: { BD: 'x...' } } }, base).patterns.A.opt).toEqual({
       BD: { 0: { v: 0.5 } },
     });
+  });
+});
+
+describe('stepIsOn', () => {
+  it('Drums, Pads und Sub-Steps', () => {
+    let s = toggleDrumStep(baseState(), 'SD', 3);
+    s = toggleSampleStep(s, 2, 7);
+    const p = currentPattern(s);
+    expect(stepIsOn(p, 'SD', 3)).toBe(true);
+    expect(stepIsOn(p, 'SD', 4)).toBe(false);
+    expect(stepIsOn(p, 'P2', 7)).toBe(true);
+    expect(stepIsOn(p, 'P2', 6)).toBe(false);
+    expect(stepIsOn({ ...p, sub: { BD: { 9: Array<0 | 1>(16).fill(1) } } }, 'BD', 9)).toBe(true);
   });
 });
