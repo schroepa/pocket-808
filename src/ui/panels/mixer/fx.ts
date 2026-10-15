@@ -3,8 +3,9 @@ import { setFxValue } from '../../../core/mixer.ts';
 import type { Fx } from '../../../core/types.ts';
 import { computed } from '../../../store/signals.ts';
 import type { UiContext } from '../../context.ts';
+import { holdButton } from '../../controls/hold.ts';
 import { knob } from '../../controls/knob.ts';
-import { h, listen } from '../../dom.ts';
+import { h } from '../../dom.ts';
 import { djText, sizeText } from './format.ts';
 
 const DEFAULTS = fxDefaults();
@@ -38,53 +39,19 @@ export function fxPanel(c: UiContext): HTMLElement {
       tag: () => tag,
       ...(snap === undefined ? {} : { snap }),
     });
-  const stutter = STUTTER.map(([t, fraction]) => {
-    const b = h('button', {
+  const stutter = STUTTER.map(([t, fraction]) =>
+    holdButton(scope, {
       class: 'stp',
       text: t,
-      attrs: { type: 'button', 'aria-label': `Stutter ${t} halten` },
-    });
-    const on = (): void => {
-      if (b.classList.contains('on')) return;
-      b.classList.add('on');
-      audio.stutterOn(fraction);
-    };
-    const off = (): void => {
-      if (!b.classList.contains('on')) return;
-      b.classList.remove('on');
-      audio.stutterOff();
-    };
-    listen(scope, b, 'pointerdown', (e) => {
-      e.preventDefault();
-      try {
-        b.setPointerCapture(e.pointerId);
-      } catch {
-        /* jsdom und ältere Browser */
-      }
-      on();
-    });
-    for (const type of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) {
-      listen(scope, b, type, off);
-    }
-    listen(scope, b, 'keydown', (e) => {
-      if (e.key !== 'Enter' && e.key !== ' ') return;
-      e.preventDefault();
-      on();
-    });
-    listen(scope, b, 'keyup', off);
-    // Nie hängender Stutter: keyup kann woanders landen (Tab, App-Wechsel, Gerät zugeklappt)
-    listen(scope, b, 'blur', off);
-    const doc = b.ownerDocument;
-    const onHidden = (): void => {
-      if (doc.visibilityState === 'hidden') off();
-    };
-    doc.addEventListener('visibilitychange', onHidden);
-    scope.add(() => {
-      doc.removeEventListener('visibilitychange', onHidden);
-    });
-    scope.add(off);
-    return b;
-  });
+      ariaLabel: `Stutter ${t} halten`,
+      on: () => {
+        audio.stutterOn(fraction);
+      },
+      off: () => {
+        audio.stutterOff();
+      },
+    }),
+  );
   return h('div', { class: 'fx-body' }, [
     h('div', { class: 'cap-label', text: 'Reverb' }),
     h('div', { class: 'knob-grid k3' }, [

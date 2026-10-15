@@ -54,6 +54,8 @@ export interface Store {
   setStepOpt(key: SubKey, step: number, patch: StepOptPatch): void;
   /** Step-Optionen auf den Standard zurücksetzen (mit Zurück) */
   resetStepOpt(key: SubKey, step: number): void;
+  /** Parameter-Locks eines Steps lösen (mit Zurück), übrige Optionen bleiben */
+  resetStepLocks(key: SubKey, step: number): void;
   /** ganzen Zustand ersetzen (Projekt öffnen); Zurück stellt ihn wieder her und ruft revert */
   replaceState(next: State, revert?: () => void): void;
   appendToSong(): void;
@@ -148,6 +150,9 @@ export function createStore(initial: State, opts: { freeze?: boolean } = {}): St
     },
     resetStepOpt: (key, step) => {
       withUndo((s) => setStepOpt(s, key, step, {}));
+    },
+    resetStepLocks: (key, step) => {
+      withUndo((s) => setStepOpt(s, key, step, { t: undefined, d: undefined, s: undefined }));
     },
     replaceState: (next, revert) => {
       const prev = state.peek();

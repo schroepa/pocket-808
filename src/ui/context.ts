@@ -22,6 +22,8 @@ export interface UiAudio {
   /** Stutter an (Bruchteil eines Schlags: 1, 0,5, 0,25, 0,125) bzw. aus */
   stutterOn(fraction: number): void;
   stutterOff(): void;
+  /** Fill-Taste gehalten bzw. losgelassen */
+  setFill(on: boolean): void;
   decode(data: ArrayBuffer): Promise<Float32Array>;
   /** WAV offline rendern (eigene Engine-Instanz); null bei Abbruch */
   exportWav(

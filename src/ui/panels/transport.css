@@ -27,3 +27,24 @@
     box-shadow: 0 0 18px rgba(211, 146, 90, 0.35);
   }
 }
+@layer components {
+  .fill-btn {
+    min-width: var(--touch);
+    min-height: 52px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--cell);
+    color: var(--ink);
+    font: 700 15px var(--font-display);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    touch-action: none;
+  }
+  .fill-btn.on {
+    z-index: 1;
+    background: var(--acc);
+    color: var(--chassis);
+    box-shadow: var(--glow-acc);
+  }
+}

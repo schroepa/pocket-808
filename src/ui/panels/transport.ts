@@ -1,5 +1,6 @@
 import { computed } from '../../store/signals.ts';
 import type { UiContext } from '../context.ts';
+import { holdButton } from '../controls/hold.ts';
 import { segment } from '../controls/segment.ts';
 import { bind, h } from '../dom.ts';
 import './transport.css';
@@ -58,6 +59,17 @@ export function transport(c: UiContext): HTMLElement {
       value: computed(() => store.state.value.mode),
       write: (m) => {
         store.setMode(m);
+      },
+    }),
+    holdButton(scope, {
+      class: 'fill-btn',
+      text: 'Fill',
+      ariaLabel: 'Fill halten',
+      on: () => {
+        audio.setFill(true);
+      },
+      off: () => {
+        audio.setFill(false);
       },
     }),
     play,
