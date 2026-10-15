@@ -640,8 +640,53 @@ export async function stepOptsHits(args: {
   return { bd, pad };
 }
 
+/**
+ * Slot-Wechsel mitten im Takt: A ist leer, B hat BD auf Step 0 und 8 mit Bedingung „Erster“.
+ * Bei 1,0 s (Step 8 von Takt 1) wechselt die Ansicht auf B. Liefert die Startzeiten der BD-Treffer.
+ */
+export async function condSwitchHits(): Promise<number[]> {
+  const times: number[] = [];
+  let counting = false;
+  await play({
+    seconds: 6.5,
+    playFor: 6,
+    seed: 1,
+    setup: (s) => {
+      isolate(s);
+      s.patterns.B.BD[0] = 1;
+      s.patterns.B.BD[8] = 1;
+      s.patterns.B.opt = { BD: { 0: { c: 'first' }, 8: { c: 'first' } } };
+    },
+    events: [
+      {
+        at: 0.9,
+        run: (_e, change) => {
+          change((s) => ({ ...s, cur: 'B' }));
+        },
+      },
+    ],
+    instrument: (ctx) => {
+      const make = ctx.createBufferSource.bind(ctx);
+      ctx.createBufferSource = () => {
+        const src = make();
+        const start = src.start.bind(src);
+        src.start = (when?: number, offset?: number, duration?: number) => {
+          if (counting && (when ?? 0) < 6) times.push(when ?? 0);
+          start(when, offset, duration);
+        };
+        return src;
+      };
+    },
+    afterPrerender: () => {
+      counting = true;
+    },
+  });
+  return times;
+}
+
 export const SCENARIOS: Record<string, (args: never) => Promise<unknown>> = {
   stepOptsHits,
+  condSwitchHits,
   exportDemo,
   exportBounds,
   drumVariants,

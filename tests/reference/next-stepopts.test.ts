@@ -43,3 +43,14 @@ describe.concurrent('Step-Optionen in der Engine', () => {
     expect(some.bd.length).toBeLessThan(13);
   });
 });
+
+describe('Durchläufe bei Wechseln mitten im Takt', () => {
+  it('ein angefangener Takt zählt als Durchlauf 1: „Erster“ spielt nur einmal', async ({
+    expect,
+  }) => {
+    const t = await runNext<number[]>('condSwitchHits', {});
+    expect(t).toHaveLength(1);
+    expect(t[0]).toBeGreaterThan(0.9);
+    expect(t[0]).toBeLessThan(2);
+  });
+});

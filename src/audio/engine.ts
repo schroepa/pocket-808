@@ -319,8 +319,8 @@ export function createEngine(o: EngineOptions): Engine {
         bar = r;
       }
       const slot = stepSlot(bar, s);
-      if (step === 0) loops[slot] = (loops[slot] ?? 0) + 1;
-      const n = loops[slot] ?? 1;
+      // Step 0 beginnt einen Durchlauf; ein mitten im Takt begonnener Slot zählt sofort als Durchlauf 1
+      const n = (loops[slot] = step === 0 ? (loops[slot] ?? 0) + 1 : (loops[slot] ?? 1));
       const pat = s.patterns[slot];
       const d = stepDuration(s.tempo);
       const t = nextTime + swingDelay(step, s.swing, d);

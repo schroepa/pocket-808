@@ -1,7 +1,7 @@
 import { PARTS, VOICE_IDS } from './constants.ts';
 import { blankPattern, emptyRow } from './defaults.ts';
 import { effectiveLength } from './music.ts';
-import { withOpt, withoutKeyOpt } from './stepopts.ts';
+import { stepIsOn, withOpt, withoutKeyOpt } from './stepopts.ts';
 import type {
   Bit,
   NoteRow,
@@ -100,7 +100,12 @@ export function toggleSampleStep(state: State, pad: number, step: number): State
 
 /** Sub-Steps eines Steps setzen; eine leere Reihe entfernt den Eintrag. */
 export function setSubSteps(state: State, key: SubKey, step: number, row: StepRow): State {
-  return updateCurrent(state, (q) => withSub(q, key, step, row.some(Boolean) ? [...row] : null));
+  return updateCurrent(state, (q) => {
+    if (row.some(Boolean)) return withSub(q, key, step, [...row]);
+    const next = withSub(q, key, step, null);
+    // ohne Sub-Steps und ohne gesetztes Bit ist der Step aus: seine Optionen gehen mit
+    return stepIsOn(next, key, step) ? next : withOpt(next, key, step, null);
+  });
 }
 
 export function toggleSubStep(state: State, key: SubKey, step: number, k: number): State {

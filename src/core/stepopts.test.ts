@@ -7,8 +7,10 @@ import {
   clearTrack,
   currentPattern,
   pastePattern,
+  setSubSteps,
   toggleDrumStep,
   toggleSampleStep,
+  toggleSubStep,
 } from './pattern.ts';
 import { loadState, serialize } from './persist.ts';
 import { applyPreset } from './presets.ts';
@@ -193,5 +195,34 @@ describe('stepIsOn', () => {
     expect(stepIsOn(p, 'P2', 7)).toBe(true);
     expect(stepIsOn(p, 'P2', 6)).toBe(false);
     expect(stepIsOn({ ...p, sub: { BD: { 9: Array<0 | 1>(16).fill(1) } } }, 'BD', 9)).toBe(true);
+  });
+});
+
+describe('Sub-Steps leeren entfernt die Optionen eines ausgeschalteten Steps', () => {
+  it('Drum: Leeren und letzter Sub-Step', () => {
+    const empty = Array<0 | 1>(16).fill(0);
+    let s = toggleSubStep(baseState(), 'BD', 3, 0);
+    s = setStepOpt(s, 'BD', 3, { v: 0.35, c: '1:2' });
+    expect('opt' in currentPattern(setSubSteps(s, 'BD', 3, empty))).toBe(false);
+    expect('opt' in currentPattern(toggleSubStep(s, 'BD', 3, 0))).toBe(false);
+    // Step selbst an: Optionen bleiben
+    const on = setStepOpt(
+      toggleDrumStep(toggleSubStep(baseState(), 'BD', 5, 0), 'BD', 5),
+      'BD',
+      5,
+      {
+        v: 0.5,
+      },
+    );
+    expect(currentPattern(on).BD[5]).toBe(0);
+    const keep = setStepOpt(toggleDrumStep(baseState(), 'BD', 6), 'BD', 6, { v: 0.5 });
+    expect(currentPattern(setSubSteps(keep, 'BD', 6, empty)).opt).toEqual({
+      BD: { 6: { v: 0.5 } },
+    });
+  });
+  it('Pad', () => {
+    let s = toggleSubStep(baseState(), 'P1', 2, 4);
+    s = setStepOpt(s, 'P1', 2, { p: 0.5 });
+    expect('opt' in currentPattern(setSubSteps(s, 'P1', 2, Array<0 | 1>(16).fill(0)))).toBe(false);
   });
 });
