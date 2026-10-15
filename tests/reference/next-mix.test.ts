@@ -56,3 +56,24 @@ describe.concurrent('Neue Engine: Mix und FX = Referenz', () => {
     });
   }
 });
+
+describe.concurrent('WAV-Export (audio/export.ts)', () => {
+  it('rendert den Demo-Zustand wie das Mix-Szenario demo', async ({ expect }) => {
+    const print = await runNext<StereoPrint>('exportDemo', {});
+    expectStereo(expect, 'mix/demo', print);
+  });
+
+  it('plant genau einen Takt, meldet Fortschritt und lässt sich abbrechen', async ({ expect }) => {
+    const r = await runNext<{
+      steps: number[];
+      progress: number[];
+      abortedBefore: boolean;
+      abortedDuring: boolean;
+    }>('exportBounds', {});
+    expect(r.steps).toEqual(Array.from({ length: 16 }, (_, i) => i));
+    expect(r.progress.length).toBeGreaterThan(1);
+    expect(r.progress.every((f, i) => f >= (r.progress[i - 1] ?? 0) && f <= 1)).toBe(true);
+    expect(r.abortedBefore).toBe(true);
+    expect(r.abortedDuring).toBe(true);
+  });
+});

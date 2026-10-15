@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import { factorySamples, noiseData, softClipCurve } from '../../../src/audio/dsp.ts';
 import { createEngine, type ScheduledStep } from '../../../src/audio/engine.ts';
+import { renderOffline } from '../../../src/audio/export.ts';
 import type { EngineTimer } from '../../../src/audio/timer.ts';
 import { createGraph } from '../../../src/audio/graph.ts';
 import { createSampler } from '../../../src/audio/sampler.ts';
@@ -492,7 +493,80 @@ export async function songSequence(
   return { entries: entries.slice(0, args.steps), switchedAt };
 }
 
+/** Export-Weg (audio/export.ts) mit dem Demo-Zustand: muss wie das Mix-Szenario 'demo' klingen. */
+export async function exportDemo(args: { seed?: number }): Promise<StereoPrint> {
+  const random = seededRandom(args.seed ?? 1);
+  const buf = await renderOffline({
+    state: structuredClone(initialState()),
+    pads: factorySamples(random('factory')),
+    drums: {},
+    playFor: 4,
+    seconds: 4,
+    createContext: createOffline,
+    createOffline,
+    random,
+  });
+  if (!buf) throw new Error('Export abgebrochen');
+  return {
+    L: fingerprint(buf.getChannelData(0), buf.sampleRate),
+    R: fingerprint(buf.getChannelData(1), buf.sampleRate),
+  };
+}
+
+/** Grenzen und Abbruch des Export-Wegs: geplante Steps, Fortschritt, Abbruch. */
+export async function exportBounds(): Promise<{
+  steps: number[];
+  progress: number[];
+  abortedBefore: boolean;
+  abortedDuring: boolean;
+}> {
+  const s = structuredClone(initialState());
+  const steps: number[] = [];
+  const progress: number[] = [];
+  const base = {
+    pads: [],
+    drums: {},
+    createContext: createOffline,
+    createOffline,
+    random: seededRandom(1),
+  };
+  const bar = 16 * (60 / s.tempo / 4);
+  await renderOffline({
+    ...base,
+    state: { ...s, mode: 'pattern' },
+    playFor: bar,
+    seconds: bar + 0.5,
+    onScheduled: (e) => steps.push(e.step),
+    onProgress: (f) => progress.push(f),
+    yieldEvery: 4,
+  });
+  const before = new AbortController();
+  before.abort();
+  const a = await renderOffline({
+    ...base,
+    state: s,
+    playFor: 1,
+    seconds: 1,
+    signal: before.signal,
+  });
+  const during = new AbortController();
+  const b = await renderOffline({
+    ...base,
+    state: s,
+    playFor: 4,
+    seconds: 4,
+    signal: during.signal,
+    yieldEvery: 2,
+    onProgress: (f) => {
+      if (f > 0.2) during.abort();
+    },
+  });
+  return { steps, progress, abortedBefore: a === null, abortedDuring: b === null };
+}
+
 export const SCENARIOS: Record<string, (args: never) => Promise<unknown>> = {
+  exportDemo,
+  exportBounds,
   drumVariants,
   synthPreset,
   samplerPad,
