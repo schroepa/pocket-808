@@ -1,4 +1,4 @@
-import { vi } from 'vitest';
+import { vi, type Mock } from 'vitest';
 import { baseState } from '../core/defaults.ts';
 import type { State } from '../core/types.ts';
 import type { Timer } from '../store/persist.ts';
@@ -56,6 +56,7 @@ export function fakeAudio(available = true) {
     tick: vi.fn(),
     audition: vi.fn(),
     auditionNote: vi.fn(),
+    auditionPad: vi.fn(),
     decode: vi.fn(() => Promise.resolve(Float32Array.from([0, 0, 0.5, 0.2]))),
   } satisfies UiAudio;
   return audio;
@@ -85,8 +86,22 @@ export function makeContext(opts: { state?: State; available?: boolean } = {}) {
     ),
   };
   const readout = createReadout(scope, voiceLine(store, audio.available), timer);
-  const c: UiContext = { store, samples, audio, files, readout, scope };
-  return { c, store, audio, files, timer, scope, storage };
+  const recording: { stop: Mock<() => void>; finish: (b: ArrayBuffer | null) => void } = {
+    stop: vi.fn<() => void>(),
+    finish: () => undefined,
+  };
+  const recorder = {
+    start: vi.fn(() => {
+      const done = new Promise<ArrayBuffer | null>((resolve) => {
+        recording.finish = resolve;
+      });
+      return Promise.resolve<
+        { done: Promise<ArrayBuffer | null>; stop(): void } | { error: 'unavailable' | 'denied' }
+      >({ done, stop: recording.stop });
+    }),
+  };
+  const c: UiContext = { store, samples, audio, files, recorder, readout, scope };
+  return { c, store, audio, files, recorder, recording, timer, scope, storage };
 }
 
 /** Zeiger-Ereignis für jsdom (kennt PointerEvent nicht überall) */

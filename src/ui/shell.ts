@@ -2,7 +2,7 @@ import type { Timer } from '../store/persist.ts';
 import type { SampleBank } from '../store/samples.ts';
 import type { ReadonlySignal } from '../store/signals.ts';
 import type { Store } from '../store/store.ts';
-import type { UiAudio, UiContext, UiFiles } from './context.ts';
+import type { UiAudio, UiContext, UiFiles, UiRecorder } from './context.ts';
 import { devices } from './devices.ts';
 import { createScope, h } from './dom.ts';
 import { installKeys, shortcutHelp } from './keys.ts';
@@ -23,6 +23,7 @@ export interface ShellDeps {
   samples: SampleBank;
   audio: UiAudio;
   files: UiFiles;
+  recorder: UiRecorder;
   timer: Timer;
   win: Pick<Window, 'matchMedia' | 'requestAnimationFrame' | 'cancelAnimationFrame'>;
 }
@@ -43,6 +44,7 @@ export function mountShell(
     samples: deps.samples,
     audio: deps.audio,
     files: deps.files,
+    recorder: deps.recorder,
     readout,
     scope,
   };

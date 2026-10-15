@@ -27,6 +27,7 @@ function mount(matches: Record<string, boolean> = {}) {
     samples: createSampleBank({ getItem: () => null, setItem: () => undefined }, {}),
     audio,
     files: { pickAudio: () => Promise.resolve(null) },
+    recorder: { start: () => Promise.resolve({ error: 'unavailable' as const }) },
     timer: manualTimer(),
     win: {
       matchMedia: media(matches),

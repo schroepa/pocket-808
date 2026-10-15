@@ -17,12 +17,23 @@ export interface UiAudio {
   audition(voice: VoiceId): void;
   /** Stufe des Parts vorhören (Länge in Steps) */
   auditionNote(part: Part, degree: number, length: number): void;
+  /** Pad vorhören (nur wenn es ein Sample hat) */
+  auditionPad(pad: number): void;
   decode(data: ArrayBuffer): Promise<Float32Array>;
 }
 
 /** Datei wählen (platform/files.ts über main.ts); null bei Abbruch */
 export interface UiFiles {
-  pickAudio(): Promise<{ data: ArrayBuffer; name: string } | null>;
+  pickAudio(opts?: { capture?: boolean }): Promise<{ data: ArrayBuffer; name: string } | null>;
+}
+
+/** Mikrofon-Aufnahme (platform/recorder.ts über main.ts) */
+export interface UiRecorder {
+  start(
+    maxMs: number,
+  ): Promise<
+    { done: Promise<ArrayBuffer | null>; stop(): void } | { error: 'unavailable' | 'denied' }
+  >;
 }
 
 export interface UiContext {
@@ -30,6 +41,7 @@ export interface UiContext {
   samples: SampleBank;
   audio: UiAudio;
   files: UiFiles;
+  recorder: UiRecorder;
   readout: Readout;
   scope: Scope;
 }
