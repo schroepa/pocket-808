@@ -1,6 +1,7 @@
 import { CHANNELS, PARTS, ROWS, SCALES, SLOTS, SYN_KEYS, VOICE_IDS, WAVES } from './constants.ts';
 import { blankPattern, emptyRow, parsePattern } from './defaults.ts';
-import type { Fx, NoteRow, Pattern, Slot, State, StepRow, SubKey } from './types.ts';
+import { isStepCond, normalizeOpt } from './stepopts.ts';
+import type { Fx, NoteRow, OptMap, Pattern, Slot, State, StepRow, SubKey } from './types.ts';
 import { must } from './util.ts';
 
 type Obj = Record<string, unknown>;
@@ -70,7 +71,34 @@ function readPattern(o: unknown, prev: Pattern): Pattern {
       }
     }
   } else p.sub = prev.sub;
+  const opt = src?.opt;
+  if (isObj(opt)) {
+    const map = readOpt(opt);
+    if (map) p.opt = map;
+  } else if (prev.opt) p.opt = prev.opt;
   return p;
+}
+
+/** Step-Optionen prüfen: bekannte Schlüssel, Step 0–15, Werte begrenzt, nur Abweichungen */
+function readOpt(o: Obj): OptMap | null {
+  const map: OptMap = {};
+  for (const key of Object.keys(o)) {
+    if (!((VOICE_IDS as readonly string[]).includes(key) || PAD_SUB_KEY.test(key))) continue;
+    const m = o[key];
+    if (!isObj(m)) continue;
+    for (const st of Object.keys(m)) {
+      const n = Number(st);
+      const e = m[st];
+      if (!isInt(n) || n < 0 || n >= 16 || !isObj(e)) continue;
+      const norm = normalizeOpt({
+        ...(isNum(e.v) ? { v: e.v } : {}),
+        ...(isNum(e.p) ? { p: e.p } : {}),
+        ...(isStepCond(e.c) ? { c: e.c } : {}),
+      });
+      if (norm) (map[key as SubKey] ??= {})[n] = norm;
+    }
+  }
+  return Object.keys(map).length ? map : null;
 }
 
 /**

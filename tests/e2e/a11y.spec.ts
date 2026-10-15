@@ -56,3 +56,14 @@ test('keine schweren Verstöße mit offenem Datei-Dialog (axe)', async ({ page }
     [],
   );
 });
+
+test('keine schweren Verstöße mit offenen Step-Optionen (axe)', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Step-Optionen bearbeiten' }).first().click();
+  await page.getByRole('button', { name: 'Step 1', exact: true }).click();
+  const r = await new AxeBuilder({ page }).analyze();
+  const bad = r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+  expect(bad.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual(
+    [],
+  );
+});

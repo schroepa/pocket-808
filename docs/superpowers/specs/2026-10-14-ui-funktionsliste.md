@@ -157,3 +157,14 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 | Fremde oder kaputte Datei | Meldung „Keine Pocket-808-Datei“, nichts ändert sich | ✅ | `core/project.test.ts`, `project.spec.ts` |
 | WAV erzeugen | Pattern 1/2/4/8× oder Song, Länge, Fortschritt, Abbrechen, max. 5 min | ✅ | `export.test.ts`, `project.test.ts`, `next-mix.test.ts` |
 | WAV sichern | 44,1 kHz, 16 Bit, Stereo | ✅ | `wav.test.ts`, `project.spec.ts` |
+
+## Step-Optionen (Roadmap-Etappe 3)
+
+| Handlung | Wirkung | Stand | Test |
+|---|---|---|---|
+| Opt (Step-Editor, Sampler-Steps) | Opt-Modus, schließt Sub aus; Tipp wählt, schaltet ausgeschaltete Steps ein | ✅ | `step-opts.test.ts`, `stepopts.spec.ts` |
+| Velocity, Leise/Mittel/Voll | Pegel v², Helligkeit des Steps | ✅ | `core/stepopts.test.ts`, `next-stepopts.test.ts`, `step-opts.test.ts` |
+| Chance | Wahrscheinlichkeit pro Step, einmal gewürfelt | ✅ | `next-stepopts.test.ts`, `step-opts.test.ts` |
+| Bedingung | 1:2 … 4:4, Erster, Nicht erster; Zählung je Slot ab Start | ✅ | `core/stepopts.test.ts`, `next-stepopts.test.ts` |
+| Zurücksetzen | Standard (mit Zurück) | ✅ | `step-opts.test.ts` |
+| Speichern | optionales `opt` im Pattern, alte Stände bytegleich | ✅ | `core/stepopts.test.ts`, `core-persist.test.ts`, `stepopts.spec.ts` |

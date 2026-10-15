@@ -11,7 +11,7 @@ import { CHANNELS, DRUM_DEFAULTS, SYN_PRESETS, VOICE_IDS } from '../../../src/co
 import { initialState } from '../../../src/core/initial.ts';
 import { audibleChannels } from '../../../src/core/mix.ts';
 import { seededRandom } from '../../../src/core/random.ts';
-import type { DrumParams, Part, Slot, State, VoiceId } from '../../../src/core/types.ts';
+import type { DrumParams, Part, Slot, State, StepOpt, VoiceId } from '../../../src/core/types.ts';
 import { createStore } from '../../../src/store/store.ts';
 import { must } from '../../../src/core/util.ts';
 import { fingerprint, type Fingerprint } from '../../support/fingerprint.ts';
@@ -577,7 +577,116 @@ export async function exportBounds(): Promise<{
   };
 }
 
+/**
+ * Step-Optionen: BD auf Step 0 (und optional Pad 0 auf Step 8) mit Optionen, `bars` Takte bei
+ * 120 BPM. Zählt die Treffer über die Buffer-Quellen (Startzeit, Pegel des ersten Gain-Knotens).
+ */
+export async function stepOptsHits(args: {
+  bars: number;
+  bd?: StepOpt;
+  pad?: StepOpt;
+  seed?: number;
+}): Promise<{ bd: { time: number; gain: number }[]; pad: { time: number; gain: number }[] }> {
+  const bd: { time: number; gain: number }[] = [];
+  const pad: { time: number; gain: number }[] = [];
+  let counting = false;
+  const seconds = args.bars * 2;
+  await play({
+    seconds: seconds + 0.5,
+    playFor: seconds,
+    seed: args.seed ?? 1,
+    setup: (s) => {
+      isolate(s);
+      hits(s, { BD: [0] });
+      if (args.bd) s.patterns.A.opt = { BD: { 0: args.bd } };
+      if (args.pad) {
+        must(s.patterns.A.smp[0], 'Pad 0')[8] = 1;
+        s.patterns.A.opt = { ...s.patterns.A.opt, P0: { 8: args.pad } };
+      }
+    },
+    instrument: (ctx) => {
+      const make = ctx.createBufferSource.bind(ctx);
+      ctx.createBufferSource = () => {
+        const src = make();
+        let gain = -1;
+        const connect = src.connect.bind(src) as (n: AudioNode) => AudioNode;
+        (src as unknown as { connect: (n: AudioNode) => AudioNode }).connect = (n) => {
+          const g = n as GainNode;
+          if (gain < 0) gain = g.gain.value;
+          // Sampler: Hüllkurve (Wert 1) → Pegel-Gain; dann zählt der Pegel-Gain dahinter
+          const next = g.connect.bind(g) as (m: AudioNode) => AudioNode;
+          (g as unknown as { connect: (m: AudioNode) => AudioNode }).connect = (m) => {
+            if (src.buffer?.sampleRate === 22050) gain = (m as GainNode).gain.value;
+            return next(m);
+          };
+          return connect(n);
+        };
+        const start = src.start.bind(src);
+        src.start = (when?: number, offset?: number, duration?: number) => {
+          if (counting && (when ?? 0) < seconds) {
+            // Pad-Buffer haben 22,05 kHz (Sample-Format), Drum-Buffer die Kontextrate
+            const list = src.buffer?.sampleRate === 22050 ? pad : bd;
+            list.push({ time: when ?? 0, gain });
+          }
+          start(when, offset, duration);
+        };
+        return src;
+      };
+    },
+    afterPrerender: () => {
+      counting = true;
+    },
+  });
+  return { bd, pad };
+}
+
+/**
+ * Slot-Wechsel mitten im Takt: A ist leer, B hat BD auf Step 0 und 8 mit Bedingung „Erster“.
+ * Bei 1,0 s (Step 8 von Takt 1) wechselt die Ansicht auf B. Liefert die Startzeiten der BD-Treffer.
+ */
+export async function condSwitchHits(): Promise<number[]> {
+  const times: number[] = [];
+  let counting = false;
+  await play({
+    seconds: 6.5,
+    playFor: 6,
+    seed: 1,
+    setup: (s) => {
+      isolate(s);
+      s.patterns.B.BD[0] = 1;
+      s.patterns.B.BD[8] = 1;
+      s.patterns.B.opt = { BD: { 0: { c: 'first' }, 8: { c: 'first' } } };
+    },
+    events: [
+      {
+        at: 0.9,
+        run: (_e, change) => {
+          change((s) => ({ ...s, cur: 'B' }));
+        },
+      },
+    ],
+    instrument: (ctx) => {
+      const make = ctx.createBufferSource.bind(ctx);
+      ctx.createBufferSource = () => {
+        const src = make();
+        const start = src.start.bind(src);
+        src.start = (when?: number, offset?: number, duration?: number) => {
+          if (counting && (when ?? 0) < 6) times.push(when ?? 0);
+          start(when, offset, duration);
+        };
+        return src;
+      };
+    },
+    afterPrerender: () => {
+      counting = true;
+    },
+  });
+  return times;
+}
+
 export const SCENARIOS: Record<string, (args: never) => Promise<unknown>> = {
+  stepOptsHits,
+  condSwitchHits,
   exportDemo,
   exportBounds,
   drumVariants,
