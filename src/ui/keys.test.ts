@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { signal } from '../store/signals.ts';
 import { h } from './dom.ts';
-import { installKeys, shortcutHelp } from './keys.ts';
+import { installKeys, SHORTCUTS, shortcutHelp } from './keys.ts';
 import type { Layout } from './layout.ts';
 import { makeContext } from './test-utils.ts';
 
@@ -162,5 +162,34 @@ describe('shortcutHelp', () => {
     Object.defineProperty(d, 'showModal', { value: undefined });
     el.querySelector<HTMLButtonElement>('[aria-label="Tastaturkürzel"]')?.click();
     expect(d.hasAttribute('open')).toBe(true);
+  });
+});
+
+describe('Kürzel für Projekt sichern und öffnen', () => {
+  it('⌘/Strg+S sichert, ⌘/Strg+O öffnet; nicht bei offenem Dialog', () => {
+    // frühere Tests lassen geöffnete Dialoge im Dokument zurück
+    for (const d of document.querySelectorAll('dialog')) d.remove();
+    const ctx = makeContext();
+    const actions = { save: vi.fn(), open: vi.fn() };
+    installKeys(ctx.c, signal<Layout>('desktop'), document, actions);
+    const press = (key: string, init: KeyboardEventInit) => {
+      const e = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init });
+      document.body.dispatchEvent(e);
+      return e;
+    };
+    expect(press('s', { metaKey: true }).defaultPrevented).toBe(true);
+    expect(actions.save).toHaveBeenCalledTimes(1);
+    expect(press('o', { ctrlKey: true }).defaultPrevented).toBe(true);
+    expect(actions.open).toHaveBeenCalledTimes(1);
+    const d = h('dialog', { attrs: { open: '' } });
+    document.body.append(d);
+    press('s', { metaKey: true });
+    expect(actions.save).toHaveBeenCalledTimes(1);
+    d.remove();
+    ctx.scope.dispose();
+  });
+
+  it('die Hilfe nennt die neuen Kürzel', () => {
+    expect(SHORTCUTS.map(([k]) => k)).toEqual(expect.arrayContaining(['⌘/Strg + S', '⌘/Strg + O']));
   });
 });

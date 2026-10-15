@@ -12,6 +12,7 @@ import { deck } from './panels/deck.ts';
 import { fxDevice, mixerDevice } from './panels/mixer/device.ts';
 import { samplerDevice } from './panels/sampler/device.ts';
 import { patternsPanel } from './panels/patterns.ts';
+import { projectDialog } from './panels/project/dialog.ts';
 import { slots } from './panels/slots.ts';
 import { songPanel } from './panels/song.ts';
 import { stepEditor } from './panels/step-editor.ts';
@@ -52,9 +53,10 @@ export function mountShell(
     readout,
     scope,
   };
+  const file = projectDialog(c);
   root.replaceChildren(
     h('main', { class: 'shell' }, [
-      brand(shortcutHelp(c)),
+      brand(file.el, shortcutHelp(c)),
       deck(c),
       slots(c),
       // Spalte 1 auf dem Desktop (zwei Blöcke untereinander), sonst display: contents.
@@ -65,7 +67,10 @@ export function mountShell(
       transport(c),
     ]),
   );
-  installKeys(c, layout, document);
+  installKeys(c, layout, document, {
+    save: () => void file.save(),
+    open: () => void file.open(),
+  });
   drivePlayhead(scope, deps.audio, {
     request: (fn) => deps.win.requestAnimationFrame(fn),
     cancel: (id) => {

@@ -22,11 +22,16 @@ function mount(matches: Record<string, boolean> = {}) {
   document.body.replaceChildren(root);
   const audio = fakeAudio();
   const raf = { request: vi.fn(() => 7), cancel: vi.fn() };
+  const files = {
+    pickAudio: () => Promise.resolve(null),
+    pickProject: vi.fn(() => Promise.resolve(null)),
+    save: vi.fn(() => Promise.resolve('cancelled' as const)),
+  };
   const shell = mountShell(root, {
     store: createStore(baseState()),
     samples: createSampleBank({ getItem: () => null, setItem: () => undefined }, {}),
     audio,
-    files: { pickAudio: () => Promise.resolve(null) },
+    files,
     recorder: { start: () => Promise.resolve({ error: 'unavailable' as const }) },
     timer: manualTimer(),
     win: {
@@ -36,7 +41,7 @@ function mount(matches: Record<string, boolean> = {}) {
     },
   });
   mounted.push(shell);
-  return { root, shell, audio, raf };
+  return { root, shell, audio, raf, files };
 }
 
 describe('mountShell', () => {
@@ -95,5 +100,20 @@ describe('mountShell', () => {
     );
     expect(audio.start).toHaveBeenCalled();
     shell.dispose();
+  });
+});
+
+describe('Datei-Knopf in der Shell', () => {
+  it('steht in der Kopfzeile; ⌘S sichert, ⌘O öffnet (Desktop)', () => {
+    const { root, files } = mount({ '(min-width: 768px)': true, '(min-width: 1024px)': true });
+    expect(root.querySelector('.brand .file-btn')?.textContent).toBe('Datei');
+    const press = (key: string) =>
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key, metaKey: true, bubbles: true, cancelable: true }),
+      );
+    press('s');
+    press('o');
+    expect(files.save).toHaveBeenCalledTimes(1);
+    expect(files.pickProject).toHaveBeenCalledTimes(1);
   });
 });

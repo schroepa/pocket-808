@@ -16,10 +16,23 @@ export const SHORTCUTS: readonly (readonly [string, string])[] = [
   ['⌘/Strg + Z', 'Zurück'],
   ['⌘/Strg + C', 'Pattern kopieren'],
   ['⌘/Strg + V', 'Pattern einfügen'],
+  ['⌘/Strg + S', 'Projekt sichern'],
+  ['⌘/Strg + O', 'Projekt öffnen'],
 ];
 
+/** Aktionen des Datei-Dialogs für die Kürzel ⌘/Strg+S und ⌘/Strg+O */
+export interface FileActions {
+  save(): void;
+  open(): void;
+}
+
 /** Tastaturkürzel, nur im Desktop-Layout; Texteingaben und eigene Tasten der Regler haben Vorrang. */
-export function installKeys(c: UiContext, layout: ReadonlySignal<Layout>, doc: Document): void {
+export function installKeys(
+  c: UiContext,
+  layout: ReadonlySignal<Layout>,
+  doc: Document,
+  files?: FileActions,
+): void {
   const { store, audio, readout } = c;
   listen(c.scope, doc, 'keydown', (e) => {
     if (layout.peek() !== 'desktop' || e.defaultPrevented) return;
@@ -48,6 +61,10 @@ export function installKeys(c: UiContext, layout: ReadonlySignal<Layout>, doc: D
       e.preventDefault();
       store.copy();
       readout.flash(`PATTERN ${store.state.peek().cur} KOPIERT`);
+    } else if (mod && files && (k === 's' || k === 'o')) {
+      e.preventDefault();
+      if (k === 's') files.save();
+      else files.open();
     } else if (mod && k === 'v') {
       if (!store.canPaste.peek()) return;
       e.preventDefault();

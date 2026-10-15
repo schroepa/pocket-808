@@ -123,9 +123,14 @@
   .slot.sel.has::after {
     background: var(--chassis);
   }
+  .brand-tools {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
   .help {
     display: none;
-    margin-left: auto;
   }
   [data-layout='desktop'] .help {
     display: block;
