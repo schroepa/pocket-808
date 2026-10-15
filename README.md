@@ -6,7 +6,7 @@
 
 Aufmachen, auf *Start* tippen, und der Beat läuft. Pocket 808 braucht keine Installation, kein Konto und keinen Server. Alles, was du baust, bleibt in deinem Browser.
 
-> Diese README ist ein **lebendes Dokument**. Sie wird mit jeder Änderung am Projekt aktualisiert. Stand: 2026-10-15, Version 0.18.0.
+> Diese README ist ein **lebendes Dokument**. Sie wird mit jeder Änderung am Projekt aktualisiert. Stand: 2026-10-15, Version 0.19.0.
 
 ---
 
@@ -21,7 +21,9 @@ Aufmachen, auf *Start* tippen, und der Beat läuft. Pocket 808 braucht keine Ins
   - **Velocity**, mit Schnellwahl Leise, Mittel, Voll. Ghost Notes und Akzente klingen natürlich, weil der Pegel quadratisch folgt.
   - **Chance:** Der Schlag kommt nur mit dieser Wahrscheinlichkeit.
   - **Bedingung:** 1:2 bis 4:4, Erster, Nicht erster. Damit variiert ein Pattern über 2, 3 oder 4 Durchläufe, ohne dass du ein zweites bauen musst.
-  - Leise Steps leuchten schwächer, Steps mit Chance oder Bedingung tragen einen kleinen Punkt.
+  - **Fill:** Die Bedingungen „Fill“ und „Nicht Fill“ reagieren auf die **Fill**-Taste in der Transportleiste (am Rechner: F halten). So spielt ein Pattern seine Fill-Variante, solange du drückst, wie bei OP-XY und Elektron.
+  - **Parameter-Locks:** Jeder Step kann eigenes **Tune** und **Decay** haben, Sampler-Steps zusätzlich einen eigenen **Start** im Sample (Chops wie beim EP-133). Gelockte Drum-Steps spielen eigene, offline vorgerenderte Klang-Varianten, also auch hier keine zusätzlichen Audio-Knoten pro Schlag.
+  - Leise Steps leuchten schwächer, Steps mit Chance, Bedingung oder Lock tragen einen kleinen Punkt.
 - **Basslines und Melodien:**
   - Zwei monophone Synth-Stimmen mit Oszillator (Säge, Rechteck, Dreieck, Sinus), Sub-Oszillator, Filter mit Resonanz und zwei ADSR-Hüllkurven.
   - Tonart und Skala wählst du aus, die Piano-Roll bleibt automatisch in der Tonart, falsche Töne gibt es nicht.
@@ -191,10 +193,10 @@ Pocket 808 wird mit mehr Testcode als App-Code gebaut. Jeder Commit läuft durch
 
 | Ebene | Was geprüft wird | Umfang |
 |---|---|---|
-| **Unit** | `core`, `store`, `audio`, `ui` und `platform` einzeln (Oberfläche in jsdom), mit Eigenschafts- und Modelltests (fast-check); Abdeckung ≥ 90 % pro Datei erzwungen | 550 Tests |
-| **Referenz** | Die neue Engine klingt wie die bewährte alte App, die eingefroren als Vergleichsmaßstab in `tests/reference/legacy/oracle.html` liegt (sie wird nicht mehr ausgeliefert): Beide rendern dieselben Szenarien offline (`node-web-audio-api`) und werden über **Klang-Fingerabdrücke** (Spitze, RMS-Verlauf in 10 ms, spektraler Schwerpunkt) verglichen, dazu Speicherstände, Scheduler-Sequenzen und das Umrechnen importierter Samples (bitgleich) | 169 Tests, 15 Mix-Szenarien, 50 Drum-Varianten, WAV-Export, Step-Optionen |
+| **Unit** | `core`, `store`, `audio`, `ui` und `platform` einzeln (Oberfläche in jsdom), mit Eigenschafts- und Modelltests (fast-check); Abdeckung ≥ 90 % pro Datei erzwungen | 560 Tests |
+| **Referenz** | Die neue Engine klingt wie die bewährte alte App, die eingefroren als Vergleichsmaßstab in `tests/reference/legacy/oracle.html` liegt (sie wird nicht mehr ausgeliefert): Beide rendern dieselben Szenarien offline (`node-web-audio-api`) und werden über **Klang-Fingerabdrücke** (Spitze, RMS-Verlauf in 10 ms, spektraler Schwerpunkt) verglichen, dazu Speicherstände, Scheduler-Sequenzen und das Umrechnen importierter Samples (bitgleich) | 172 Tests, 15 Mix-Szenarien, 50 Drum-Varianten, WAV-Export, Step-Optionen, Locks und Fill |
 | **Bench** | Performance-Budget: Audio-Knoten pro Sekunde und Renderzeit für ein Demo- und ein Worst-Case-Pattern | Demo 47 Knoten/s, Worst-Case 429 Knoten/s |
-| **E2E** | Playwright auf iPhone hoch und quer, iPad hoch und quer (WebKit) und Desktop (Chromium): Funktion, Kürzel, kein horizontaler Scroll, Screenshots je Gerät, Barrierefreiheit mit axe (keine schweren Verstöße), alte Speicherstände, Artifact-Host, Projekt sichern und öffnen, WAV-Export, Step-Optionen, keine Long Tasks beim Spielen, Touch-Ziele ≥ 44 px, Größenbudget | 178 Tests |
+| **E2E** | Playwright auf iPhone hoch und quer, iPad hoch und quer (WebKit) und Desktop (Chromium): Funktion, Kürzel, kein horizontaler Scroll, Screenshots je Gerät, Barrierefreiheit mit axe (keine schweren Verstöße), alte Speicherstände, Artifact-Host, Projekt sichern und öffnen, WAV-Export, Step-Optionen, Fill und Locks, keine Long Tasks beim Spielen, Touch-Ziele ≥ 44 px, Größenbudget | 188 Tests |
 
 - **Toleranzen kalibriert:** Die Toleranzen der Klang-Fingerabdrücke sind kalibriert. Ein Halbton Verstimmung oder 10 % mehr Decay werden erkannt, Rauschschwankungen nicht.
 - **Mutationsprüfung:** Wir bauen absichtlich Fehler ein, zum Beispiel einen ausgebauten Live-Effekt, falschen Swing oder eine Closed Hat, die die Open Hat nicht mehr abwürgt. Der passende Test muss rot werden, sonst fehlt ein Test.
@@ -270,7 +272,7 @@ Nach dem Fundament, in dieser Reihenfolge:
 1. ~~Mixer und FX~~
 2. ~~Projekt speichern und laden (`.pocket808.json`), Audio-Export (WAV)~~ – MP3 bei Bedarf später
 3. ~~Velocity und Accent, Wahrscheinlichkeit und Bedingungen pro Step~~
-4. **Performance**, inspiriert von Teenage Engineering: Punch-in-Effekte zum Halten wie bei Pocket Operator und EP-133, Parameter-Locks pro Step wie bei OP-Z und OP-XY, ein Pattern auf ein Pad bouncen, Fill-Taste
+4. **Performance**, inspiriert von Teenage Engineering: ~~Fill-Taste und Parameter-Locks pro Step~~ (4a), Punch-in-Effekte zum Halten wie bei Pocket Operator und EP-133, ein Pattern auf ein Pad bouncen (4b)
 5. **Spielspaß:** animiertes Display wie beim OP-1, Würfel für Variationen, Mixer- und Mute-Szenen
 6. Synth: Akkorde, Arpeggiator, Slide und Accent, LFO
 7. Sampler: Chop-Modus, melodische Tastatur, Pitch pro Step

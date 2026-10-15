@@ -15,14 +15,20 @@ export const STEP_CONDS: readonly { value: StepCond; label: string }[] = [
   { value: '4:4', label: '4:4' },
   { value: 'first', label: 'Erster' },
   { value: 'notFirst', label: 'Nicht erster' },
+  { value: 'fill', label: 'Fill' },
+  { value: 'notFill', label: 'Nicht Fill' },
 ];
 
-const DEFAULT: Required<StepOpt> = { v: 1, p: 1, c: 'all' };
+/** Standardwerte; Locks (t, d, s) haben keinen Standard: fehlt das Feld, folgt der Step der Spur */
+const DEFAULT = { v: 1, p: 1, c: 'all' as StepCond };
+export type StepOptions = typeof DEFAULT & Pick<StepOpt, 't' | 'd' | 's'>;
+/** Änderung von Step-Optionen; undefined entfernt ein Feld (z. B. Lock lösen) */
+export type StepOptPatch = { [K in keyof StepOpt]?: StepOpt[K] | undefined };
 
 export const isStepCond = (c: unknown): c is StepCond => STEP_CONDS.some((x) => x.value === c);
 
 /** Optionen eines Steps samt Standardwerten */
-export const stepOptOf = (p: Pattern, key: SubKey, step: number): Required<StepOpt> => ({
+export const stepOptOf = (p: Pattern, key: SubKey, step: number): StepOptions => ({
   ...DEFAULT,
   ...p.opt?.[key]?.[step],
 });
@@ -33,11 +39,20 @@ export function normalizeOpt(o: StepOpt): StepOpt | null {
   if (o.v !== undefined && clamp(o.v, 0, 1) !== 1) out.v = clamp(o.v, 0, 1);
   if (o.p !== undefined && clamp(o.p, 0, 1) !== 1) out.p = clamp(o.p, 0, 1);
   if (o.c !== undefined && o.c !== 'all') out.c = o.c;
+  for (const k of ['t', 'd', 's'] as const) {
+    const x = o[k];
+    if (x !== undefined) out[k] = clamp(x, 0, 1);
+  }
   return Object.keys(out).length ? out : null;
 }
 
+const FIELDS = ['v', 'p', 'c', 't', 'd', 's'] as const;
 const sameOpt = (a: StepOpt | undefined, b: StepOpt | null): boolean =>
-  (a === undefined && b === null) || (!!a && !!b && a.v === b.v && a.p === b.p && a.c === b.c);
+  (a === undefined && b === null) || (!!a && !!b && FIELDS.every((k) => a[k] === b[k]));
+
+/** Hat der Step einen Parameter-Lock? */
+export const hasLock = (o: StepOpt): boolean =>
+  o.t !== undefined || o.d !== undefined || o.s !== undefined;
 
 /** Pattern mit neuer OptMap; eine leere Map entfernt das Feld */
 function withMap(p: Pattern, map: OptMap): Pattern {
@@ -73,17 +88,24 @@ export const keepOpt = (p: Pattern, keep: (key: string) => boolean): OptMap =>
  * Optionen eines Steps im aktuellen Pattern ändern: patch wird eingemischt; ein leerer patch setzt den
  * Step auf den Standard zurück.
  */
-export function setStepOpt(state: State, key: SubKey, step: number, patch: StepOpt): State {
+export function setStepOpt(state: State, key: SubKey, step: number, patch: StepOptPatch): State {
   const pat = state.patterns[state.cur];
-  const merged = Object.keys(patch).length ? { ...pat.opt?.[key]?.[step], ...patch } : {};
-  const next = withOpt(pat, key, step, normalizeOpt(merged));
+  const merged: StepOptPatch = Object.keys(patch).length
+    ? { ...pat.opt?.[key]?.[step], ...patch }
+    : {};
+  const clean = Object.fromEntries(
+    Object.entries(merged).filter(([, x]) => x !== undefined),
+  ) as StepOpt;
+  const next = withOpt(pat, key, step, normalizeOpt(clean));
   if (next === pat) return state;
   return { ...state, patterns: { ...state.patterns, [state.cur]: next } };
 }
 
-/** Spielt ein Step im n-ten Durchlauf (ab 1)? */
-export function condPasses(c: StepCond, n: number): boolean {
+/** Spielt ein Step im n-ten Durchlauf (ab 1), bei gehaltener bzw. losgelassener Fill-Taste? */
+export function condPasses(c: StepCond, n: number, fill = false): boolean {
   if (c === 'all') return true;
+  if (c === 'fill') return fill;
+  if (c === 'notFill') return !fill;
   if (c === 'first') return n === 1;
   if (c === 'notFirst') return n > 1;
   const [a, b] = c.split(':').map(Number) as [number, number];
@@ -98,4 +120,25 @@ export function stepIsOn(p: Pattern, key: SubKey, step: number): boolean {
   if (p.sub[key]?.[step]) return true;
   const row = key.startsWith('P') ? p.smp[Number(key.slice(1))] : p[key as VoiceId];
   return row?.[step] === 1;
+}
+
+/**
+ * Alle Drum-Varianten, die Parameter-Locks brauchen, als sortierte Schlüssel „Stimme|Tune|Decay“
+ * (auf 1/100 gerundet; ein fehlender Lock-Wert folgt der Spur).
+ */
+export function drumLockVariants(s: State): string[] {
+  const keys = new Set<string>();
+  const q = (x: number): number => Math.round(x * 100) / 100;
+  for (const pat of Object.values(s.patterns)) {
+    for (const [key, steps] of Object.entries(pat.opt ?? {})) {
+      if (key.startsWith('P')) continue;
+      const voice = key as VoiceId;
+      for (const o of Object.values(steps)) {
+        if (!o || (o.t === undefined && o.d === undefined)) continue;
+        const base = s.params[voice];
+        keys.add(`${voice}|${q(o.t ?? base.tune)}|${q(o.d ?? base.decay)}`);
+      }
+    }
+  }
+  return [...keys].sort();
 }

@@ -143,6 +143,7 @@ function hits(s: State, steps: Partial<Record<VoiceId, number[]>>): void {
 interface EngineLike {
   stutterOn(f: number): void;
   stutterOff(): void;
+  setFill(on: boolean): void;
 }
 type Change = (fn: (s: State) => State) => void;
 interface MixCase {
@@ -684,7 +685,102 @@ export async function condSwitchHits(): Promise<number[]> {
   return times;
 }
 
+interface Hit {
+  time: number;
+  buffer: number;
+  rate: number;
+  offset: number;
+  pad: boolean;
+}
+
+/** Zeichnet alle Buffer-Treffer auf: Zeit, Buffer-Nummer, Abspielrate, Startversatz. */
+function recordHits(hits: Hit[], until: number, active: () => boolean) {
+  const ids = new WeakMap<AudioBuffer, number>();
+  let next = 0;
+  return (ctx: OfflineAudioContext): void => {
+    const make = ctx.createBufferSource.bind(ctx);
+    ctx.createBufferSource = () => {
+      const src = make();
+      const start = src.start.bind(src);
+      src.start = (when?: number, offset?: number, duration?: number) => {
+        const b = src.buffer;
+        if (active() && b && (when ?? 0) < until) {
+          if (!ids.has(b)) ids.set(b, ++next);
+          hits.push({
+            time: when ?? 0,
+            buffer: ids.get(b) ?? 0,
+            rate: src.playbackRate.value,
+            offset: offset ?? 0,
+            pad: b.sampleRate === 22050,
+          });
+        }
+        start(when, offset, duration);
+      };
+      return src;
+    };
+  };
+}
+
+/** Parameter-Locks: BD auf 0 und 8 (8 mit Tune-Lock), Pad 0 auf Step 4 mit Tune- und Start-Lock. */
+export async function lockHits(): Promise<Hit[]> {
+  const log: Hit[] = [];
+  let on = false;
+  await play({
+    seconds: 4.5,
+    playFor: 4,
+    seed: 1,
+    setup: (s) => {
+      isolate(s);
+      hits(s, { BD: [0, 8] });
+      must(s.patterns.A.smp[0], 'Pad 0')[4] = 1;
+      s.patterns.A.opt = { BD: { 8: { t: 0.2 } }, P0: { 4: { t: 0.8, s: 0.3 } } };
+    },
+    instrument: recordHits(log, 4, () => on),
+    afterPrerender: () => {
+      on = true;
+    },
+  });
+  return log;
+}
+
+/** Fill: BD Step 0 „Fill“, Step 8 „Nicht Fill“; Fill gehalten von 1,5 s bis 3,5 s. */
+export async function fillHits(): Promise<number[]> {
+  const log: Hit[] = [];
+  let on = false;
+  await play({
+    seconds: 6.5,
+    playFor: 6,
+    seed: 1,
+    setup: (s) => {
+      isolate(s);
+      hits(s, { BD: [0, 8] });
+      s.patterns.A.opt = { BD: { 0: { c: 'fill' }, 8: { c: 'notFill' } } };
+    },
+    events: [
+      {
+        at: 1.5,
+        run: (e) => {
+          e.setFill(true);
+        },
+      },
+      {
+        at: 3.5,
+        run: (e) => {
+          e.setFill(false);
+        },
+      },
+    ],
+    instrument: recordHits(log, 6, () => on),
+    afterPrerender: () => {
+      on = true;
+    },
+  });
+  return log.map((h) => h.time);
+}
+
 export const SCENARIOS: Record<string, (args: never) => Promise<unknown>> = {
+  lockHits,
+  fillHits,
   stepOptsHits,
   condSwitchHits,
   exportDemo,

@@ -16,6 +16,7 @@ export const SHORTCUTS: readonly (readonly [string, string])[] = [
   ['⌘/Strg + Z', 'Zurück'],
   ['⌘/Strg + C', 'Pattern kopieren'],
   ['⌘/Strg + V', 'Pattern einfügen'],
+  ['F (halten)', 'Fill'],
   ['⌘/Strg + S', 'Projekt sichern'],
   ['⌘/Strg + O', 'Projekt öffnen'],
 ];
@@ -34,6 +35,7 @@ export function installKeys(
   files?: FileActions,
 ): void {
   const { store, audio, readout } = c;
+  installFillKey(c, doc);
   listen(c.scope, doc, 'keydown', (e) => {
     if (layout.peek() !== 'desktop' || e.defaultPrevented) return;
     const t = e.target instanceof Element ? e.target : doc.body;
@@ -41,7 +43,10 @@ export function installKeys(
     if (t.closest(TEXT) || doc.querySelector('dialog[open]')) return;
     const mod = e.metaKey || e.ctrlKey;
     const k = e.key.toLowerCase();
-    if (e.key === ' ' && !mod) {
+    if (k === 'f' && !mod && !e.altKey) {
+      e.preventDefault();
+      if (!e.repeat) audio.setFill(true);
+    } else if (e.key === ' ' && !mod) {
       e.preventDefault();
       if (e.repeat) return;
       if (audio.playing.peek()) audio.stop();
@@ -72,6 +77,19 @@ export function installKeys(
       readout.flash(`EINGEFÜGT IN ${store.state.peek().cur}`);
     }
   });
+}
+
+/** Fill hält nur, solange F gedrückt ist; Fokusverlust des Fensters löst es ebenfalls */
+function installFillKey(c: UiContext, doc: Document): void {
+  listen(c.scope, doc, 'keyup', (e) => {
+    if (e.key.toLowerCase() === 'f') c.audio.setFill(false);
+  });
+  const win = doc.defaultView;
+  if (win) {
+    listen(c.scope, win, 'blur', () => {
+      c.audio.setFill(false);
+    });
+  }
 }
 
 /** Knopf „?“ mit Dialog, der die Kürzel auflistet (nur auf dem Desktop sichtbar, deck.css). */

@@ -6,12 +6,28 @@ import type { Rng } from '../core/random.ts';
 import { toPcm, type DrumSample } from '../core/samples.ts';
 import { nextBar, songStart, stepSlot, type SongCursor } from '../core/song.ts';
 import { stepDuration, subStepOffset, swingDelay } from '../core/timing.ts';
-import { condPasses, stepOptOf, velocityGain } from '../core/stepopts.ts';
-import type { ChannelId, Part, Pattern, Slot, State, SubKey, VoiceId } from '../core/types.ts';
+import {
+  condPasses,
+  drumLockVariants,
+  hasLock,
+  stepOptOf,
+  velocityGain,
+  type StepOptions,
+} from '../core/stepopts.ts';
+import type {
+  ChannelId,
+  Part,
+  Pattern,
+  Slot,
+  State,
+  StepOpt,
+  SubKey,
+  VoiceId,
+} from '../core/types.ts';
 import { must } from '../core/util.ts';
 import { batch, computed, effect, signal, type ReadonlySignal } from '../store/signals.ts';
 import type { Store } from '../store/store.ts';
-import { createDrumBank, type DrumBank } from './drums.ts';
+import { createDrumBank, type DrumBank, type DrumLock } from './drums.ts';
 import { impulseResponse, stutterPeriod } from './dsp.ts';
 import { createGraph, type Graph } from './graph.ts';
 import { createSampler, type Sampler } from './sampler.ts';
@@ -70,6 +86,8 @@ export interface Engine {
   auditionPad(pad: number): void;
   stutterOn(fraction: number): void;
   stutterOff(): void;
+  /** Fill-Taste gehalten (Bedingungen „Fill“/„Nicht Fill“) */
+  setFill(on: boolean): void;
   setPadSample(pad: number, pcm: Float32Array | null): void;
   setDrumSample(voice: VoiceId, sample: DrumSample | null): void;
   /** Datei dekodieren und ins Sample-Format (22,05 kHz mono) umrechnen */
@@ -120,6 +138,8 @@ export function createEngine(o: EngineOptions): Engine {
   /** Durchläufe je Slot seit dem Start (Bedingungen der Step-Optionen) */
   let loops: Partial<Record<Slot, number>> = {};
   const chance = random('prob');
+  /** Fill-Taste gehalten? */
+  let fill = false;
   const queue: ScheduledStep[] = [];
   let irTimer: unknown = null;
   let disposed = false;
@@ -204,6 +224,31 @@ export function createEngine(o: EngineOptions): Engine {
         g.syncSynth(state(), audible.peek(), now());
       },
     );
+    // Varianten für Parameter-Locks aller Patterns vorrendern: sofort beim Aufbau (Export wartet
+    // darauf), danach entprellt wie das Neu-Rendern der Spur, damit Drehen keine Flut auslöst
+    const locks = store.select(drumLockVariants, (a, b) => a.join() === b.join());
+    const want = (keys: readonly string[]): void => {
+      drums?.wantVariants(
+        keys.map((k) => {
+          const [voice, tune, decay] = k.split('|') as [VoiceId, string, string];
+          return { voice, tune: Number(tune), decay: Number(decay) };
+        }),
+      );
+    };
+    want(locks.peek());
+    let lockTimer: unknown;
+    live(
+      () => locks.value,
+      (keys) => {
+        timer.clearTimeout(lockTimer);
+        lockTimer = timer.setTimeout(() => {
+          want(keys);
+        }, 90);
+      },
+    );
+    disposers.push(() => {
+      timer.clearTimeout(lockTimer);
+    });
     for (const id of VOICE_IDS) {
       const p = store.select(
         (s) => s.params[id],
@@ -258,8 +303,9 @@ export function createEngine(o: EngineOptions): Engine {
       samples: drumSamples,
     });
     sampler = createSampler(c, pads);
-    watchLive(g);
+    // zuerst die Grundstimmen in die Warteschlange, danach die Varianten der Locks (watchLive)
     if (o.prerender !== false) void drums.prerenderAll();
+    watchLive(g);
     return true;
   };
 
@@ -276,9 +322,14 @@ export function createEngine(o: EngineOptions): Engine {
     return true;
   };
 
-  const scheduleDrum = (voice: VoiceId, t: number, velocity = 1): void => {
+  const scheduleDrum = (voice: VoiceId, t: number, velocity = 1, lock?: DrumLock): void => {
     const p = state().params[voice];
-    drums?.hit(voice, t, velocity === 1 ? p : { ...p, level: p.level * velocityGain(velocity) });
+    drums?.hit(
+      voice,
+      t,
+      velocity === 1 ? p : { ...p, level: p.level * velocityGain(velocity) },
+      lock,
+    );
   };
   const scheduleNote = (part: Part, midi: number, t: number, duration: number): void => {
     if (!graph || !ctx) return;
@@ -292,18 +343,28 @@ export function createEngine(o: EngineOptions): Engine {
       previous: synthLast[part],
     });
   };
-  const schedulePad = (pad: number, t: number, velocity = 1): void => {
+  const schedulePad = (pad: number, t: number, velocity = 1, lock?: StepOpt): void => {
     if (!graph || !sampler) return;
-    const p = must(state().smp.pads[pad], `Pad ${pad}`);
+    const base = must(state().smp.pads[pad], `Pad ${pad}`);
     // der Sampler rechnet lvl², so ergibt lvl · v ebenfalls v²
-    sampler.play(pad, t, velocity === 1 ? p : { ...p, lvl: p.lvl * velocity }, graph.chan.SM.in);
+    let p = velocity === 1 ? base : { ...base, lvl: base.lvl * velocity };
+    if (lock && hasLock(lock)) {
+      p = {
+        ...p,
+        tune: lock.t ?? p.tune,
+        dec: lock.d ?? p.dec,
+        // Start bleibt mindestens 0,02 vor dem Ende
+        start: lock.s === undefined ? p.start : Math.min(lock.s, p.end - 0.02),
+      };
+    }
+    sampler.play(pad, t, p, graph.chan.SM.in);
   };
-  /** Bedingung (Durchlauf n) und Wahrscheinlichkeit eines Steps; liefert die Velocity oder null */
-  const trig = (pat: Pattern, key: SubKey, st: number, n: number): number | null => {
+  /** Bedingung (Durchlauf n, Fill) und Wahrscheinlichkeit eines Steps; liefert die Optionen oder null */
+  const trig = (pat: Pattern, key: SubKey, st: number, n: number): StepOptions | null => {
     const o = stepOptOf(pat, key, st);
-    if (!condPasses(o.c, n)) return null;
+    if (!condPasses(o.c, n, fill)) return null;
     if (o.p < 1 && chance() >= o.p) return null;
-    return o.v;
+    return o;
   };
 
   /** Lookahead-Scheduler (Legacy pump): plant alle Steps bis 0,2 s voraus. */
@@ -329,11 +390,14 @@ export function createEngine(o: EngineOptions): Engine {
         if (!aud[id]) continue;
         const sb = subStepsOf(pat, id, step);
         if (!sb && !pat[id][step]) continue;
-        const v = trig(pat, id, step, n);
-        if (v === null) continue;
+        const o = trig(pat, id, step, n);
+        if (!o) continue;
+        const lock = hasLock(o) ? { tune: o.t, decay: o.d } : undefined;
         if (sb) {
-          for (let k = 0; k < 16; k++) if (sb[k]) scheduleDrum(id, t + subStepOffset(k, d), v);
-        } else scheduleDrum(id, t, v);
+          for (let k = 0; k < 16; k++) {
+            if (sb[k]) scheduleDrum(id, t + subStepOffset(k, d), o.v, lock);
+          }
+        } else scheduleDrum(id, t, o.v, lock);
       }
       for (const id of PARTS) {
         const row = pat.notes[id];
@@ -352,11 +416,11 @@ export function createEngine(o: EngineOptions): Engine {
           const key = `P${i}` as SubKey;
           const sb = subStepsOf(pat, key, step);
           if (!sb && !pat.smp[i]?.[step]) continue;
-          const v = trig(pat, key, step, n);
-          if (v === null) continue;
+          const o = trig(pat, key, step, n);
+          if (!o) continue;
           if (sb) {
-            for (let k = 0; k < 16; k++) if (sb[k]) schedulePad(i, t + subStepOffset(k, d), v);
-          } else schedulePad(i, t, v);
+            for (let k = 0; k < 16; k++) if (sb[k]) schedulePad(i, t + subStepOffset(k, d), o.v, o);
+          } else schedulePad(i, t, o.v, o);
         }
       }
       const entry: ScheduledStep = { step, time: t, slot, song: bar.fromSong, si: cursor.index };
@@ -433,6 +497,9 @@ export function createEngine(o: EngineOptions): Engine {
     stutterOn(fraction) {
       if (!gesture()) return;
       graph?.stutterOn(now() + 0.01, stutterPeriod(state().tempo, fraction));
+    },
+    setFill(on) {
+      fill = on;
     },
     stutterOff() {
       graph?.stutterOff(now() + 0.005);

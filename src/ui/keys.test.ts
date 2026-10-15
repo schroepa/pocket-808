@@ -193,3 +193,27 @@ describe('Kürzel für Projekt sichern und öffnen', () => {
     expect(SHORTCUTS.map(([k]) => k)).toEqual(expect.arrayContaining(['⌘/Strg + S', '⌘/Strg + O']));
   });
 });
+
+describe('Taste F hält Fill (Desktop)', () => {
+  it('keydown an, keyup aus, Wiederholungen zählen nicht', () => {
+    for (const d of document.querySelectorAll('dialog')) d.remove();
+    const ctx = makeContext();
+    installKeys(ctx.c, signal<Layout>('desktop'), document);
+    const fire = (type: string, init: KeyboardEventInit = {}) =>
+      document.body.dispatchEvent(
+        new KeyboardEvent(type, { key: 'f', bubbles: true, cancelable: true, ...init }),
+      );
+    fire('keydown');
+    fire('keydown', { repeat: true });
+    expect(ctx.audio.setFill).toHaveBeenCalledTimes(1);
+    expect(ctx.audio.setFill).toHaveBeenLastCalledWith(true);
+    fire('keyup');
+    expect(ctx.audio.setFill).toHaveBeenLastCalledWith(false);
+    fire('keydown', { metaKey: true });
+    expect(ctx.audio.setFill).toHaveBeenCalledTimes(2);
+    fire('keydown');
+    window.dispatchEvent(new FocusEvent('blur'));
+    expect(ctx.audio.setFill).toHaveBeenLastCalledWith(false);
+    ctx.scope.dispose();
+  });
+});

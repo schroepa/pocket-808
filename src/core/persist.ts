@@ -94,6 +94,9 @@ function readOpt(o: Obj): OptMap | null {
         ...(isNum(e.v) ? { v: e.v } : {}),
         ...(isNum(e.p) ? { p: e.p } : {}),
         ...(isStepCond(e.c) ? { c: e.c } : {}),
+        ...(isNum(e.t) ? { t: e.t } : {}),
+        ...(isNum(e.d) ? { d: e.d } : {}),
+        ...(isNum(e.s) && PAD_SUB_KEY.test(key) ? { s: e.s } : {}),
       });
       if (norm) (map[key as SubKey] ??= {})[n] = norm;
     }

@@ -138,6 +138,9 @@ function boot(hostData: unknown): Store {
     stutterOff: () => {
       engine.stutterOff();
     },
+    setFill: (on) => {
+      engine.setFill(on);
+    },
     decode: (d) => engine.decode(d),
     exportWav: async (state, playFor, seconds, onProgress, signal) => {
       const buf = await renderOffline({

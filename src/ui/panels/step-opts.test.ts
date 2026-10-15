@@ -130,3 +130,45 @@ describe('Step-Optionen: Anzeige in Spuren und Sampler', () => {
     expect(opt?.getAttribute('aria-pressed')).toBe('false');
   });
 });
+
+describe('Parameter-Locks im Opt-Feld', () => {
+  it('Drums: Tune und Decay zeigen den Spurwert, Drehen lockt, „Locks lösen“ mit Zurück', () => {
+    const { c, store } = makeContext();
+    const el = stepEditor(c);
+    chipBtn(el, 'Step-Optionen bearbeiten')?.click();
+    steps(el)[0]?.click();
+    const p = panel(el);
+    if (!p) throw new Error('Panel');
+    const tune = p.querySelector('[role=slider][aria-label="Lock Tune"]');
+    const start = p.querySelector('[role=slider][aria-label="Lock Start"]');
+    expect(start?.closest<HTMLElement>('.knob-wrap')?.hidden).toBe(true);
+    expect(tune?.getAttribute('aria-valuenow')).toBe(
+      String(Math.round(store.state.value.params.BD.tune * 100)),
+    );
+    expect(tune?.closest('.knob-wrap')?.classList.contains('locked')).toBe(false);
+    key(tune, 'End');
+    expect(currentPattern(store.state.value).opt?.BD?.[0]).toEqual({ t: 1 });
+    expect(tune?.closest('.knob-wrap')?.classList.contains('locked')).toBe(true);
+    expect(steps(el)[0]?.classList.contains('opt')).toBe(true);
+    key(p.querySelector('[role=slider][aria-label="Lock Decay"]'), 'Home');
+    expect(currentPattern(store.state.value).opt?.BD?.[0]).toEqual({ t: 1, d: 0 });
+    chipBtn(p, 'Locks lösen')?.click();
+    expect(currentPattern(store.state.value).opt).toBeUndefined();
+    store.undo();
+    expect(currentPattern(store.state.value).opt?.BD?.[0]).toEqual({ t: 1, d: 0 });
+  });
+
+  it('Pads: zusätzlich Start; Velocity bleibt beim Lösen der Locks', () => {
+    const { c, store } = makeContext();
+    const el = samplerSteps(c);
+    chipBtn(el, 'Step-Optionen bearbeiten')?.click();
+    el.querySelectorAll<HTMLButtonElement>('.ss')[2]?.click();
+    const p = panel(el);
+    if (!p) throw new Error('Panel');
+    chipBtn(p, 'Leise')?.click();
+    key(p.querySelector('[role=slider][aria-label="Lock Start"]'), 'End');
+    expect(currentPattern(store.state.value).opt?.P0?.[2]).toEqual({ v: 0.35, s: 1 });
+    chipBtn(p, 'Locks lösen')?.click();
+    expect(currentPattern(store.state.value).opt?.P0?.[2]).toEqual({ v: 0.35 });
+  });
+});

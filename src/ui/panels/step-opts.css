@@ -60,3 +60,14 @@
     );
   }
 }
+@layer components {
+  .opt-locks {
+    justify-content: flex-start;
+  }
+  .knob-wrap.locked .knob-label {
+    color: var(--acc);
+  }
+  .opt-ctl [hidden] {
+    display: none;
+  }
+}

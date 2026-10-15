@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { makeContext } from '../test-utils.ts';
+import { makeContext, pointer } from '../test-utils.ts';
 import { transport } from './transport.ts';
 
 describe('transport', () => {
@@ -23,5 +23,28 @@ describe('transport', () => {
     const el = transport(c);
     el.querySelectorAll<HTMLButtonElement>('[role=radio]')[1]?.click();
     expect(store.state.value.mode).toBe('song');
+  });
+});
+
+describe('Fill-Taste', () => {
+  it('halten schaltet Fill an, Loslassen, Abbruch und Fokusverlust aus', () => {
+    const { c, audio, scope } = makeContext();
+    const el = transport(c);
+    const fill = el.querySelector<HTMLButtonElement>('[aria-label="Fill halten"]');
+    if (!fill) throw new Error('Fill');
+    fill.dispatchEvent(pointer('pointerdown'));
+    expect(audio.setFill).toHaveBeenLastCalledWith(true);
+    expect(fill.classList.contains('on')).toBe(true);
+    fill.dispatchEvent(pointer('pointerup'));
+    expect(audio.setFill).toHaveBeenLastCalledWith(false);
+    fill.dispatchEvent(pointer('pointerdown'));
+    fill.dispatchEvent(pointer('pointercancel'));
+    expect(audio.setFill).toHaveBeenLastCalledWith(false);
+    fill.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }));
+    fill.dispatchEvent(new FocusEvent('blur'));
+    expect(audio.setFill).toHaveBeenLastCalledWith(false);
+    fill.dispatchEvent(pointer('pointerdown'));
+    scope.dispose();
+    expect(audio.setFill).toHaveBeenLastCalledWith(false);
   });
 });
