@@ -35,6 +35,8 @@ describe('samplerPads', () => {
     pads[1]?.click();
     expect(sel(c)).toBe(1);
     expect(pads[1]?.classList.contains('sel')).toBe(true);
+    expect(pads[1]?.getAttribute('aria-pressed')).toBe('true');
+    expect(pads[0]?.getAttribute('aria-pressed')).toBe('false');
     expect(audio.auditionPad).toHaveBeenCalledWith(1);
     pads[2]?.click();
     expect(audio.auditionPad).toHaveBeenCalledTimes(1);
@@ -170,6 +172,39 @@ describe('samplerTools', () => {
     rec.click();
     await flush();
     expect(msg.el.textContent).toBe('Mikro gesperrt · öffne Aufnahme-App');
+  });
+
+  it('Rec: zweiter Tipp während der Mikrofon-Abfrage startet keine zweite Aufnahme', async () => {
+    const { btn, recorder } = setup();
+    let release: () => void = () => undefined;
+    recorder.start.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = () => {
+            resolve({ error: 'unavailable' });
+          };
+        }),
+    );
+    const rec = btn('Mit dem Mikrofon aufnehmen');
+    rec.click();
+    rec.click();
+    expect(recorder.start).toHaveBeenCalledTimes(1);
+    release();
+    await flush();
+  });
+
+  it('Rec: abgelehntes Ergebnis lässt den Knopf nicht auf „Stopp“ hängen', async () => {
+    const { btn, recorder, msg } = setup();
+    recorder.start.mockResolvedValueOnce({
+      done: Promise.reject(new Error('weg')),
+      stop: () => undefined,
+    });
+    const rec = btn('Mit dem Mikrofon aufnehmen');
+    rec.click();
+    await flush();
+    await flush();
+    expect(rec.textContent).toBe('Rec');
+    expect(msg.el.textContent).toBe('Nichts aufgenommen');
   });
 
   it('Rev schaltet um und hört vor; Leeren setzt das Pad zurück', () => {

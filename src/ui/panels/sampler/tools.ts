@@ -11,7 +11,8 @@ import type { Message } from './message.ts';
 export function samplerTools(c: UiContext, msg: Message): HTMLElement {
   const { store, scope, samples, audio, files, recorder } = c;
   const { sel, pad } = padState(c);
-  const recording = signal<{ stop(): void } | null>(null);
+  // 'pending': Mikrofon-Abfrage läuft; weitere Tipps werden bis dahin ignoriert
+  const recording = signal<{ stop(): void } | 'pending' | null>(null);
 
   const decodeInto = async (i: number, data: ArrayBuffer, name: string): Promise<void> => {
     try {
@@ -35,13 +36,16 @@ export function samplerTools(c: UiContext, msg: Message): HTMLElement {
   };
   const record = async (): Promise<void> => {
     const running = recording.peek();
+    if (running === 'pending') return;
     if (running) {
       running.stop();
       return;
     }
     const i = sel.peek();
+    recording.value = 'pending';
     const r = await recorder.start(SMP_MAX * 1000);
     if ('error' in r) {
+      recording.value = null;
       msg.show(
         `${r.error === 'denied' ? 'Mikro gesperrt' : 'Mikro hier nicht verfügbar'} · öffne Aufnahme-App`,
       );
@@ -50,7 +54,7 @@ export function samplerTools(c: UiContext, msg: Message): HTMLElement {
     }
     recording.value = r;
     msg.show(`Aufnahme läuft · max. ${SMP_MAX} s`, true);
-    const buf = await r.done;
+    const buf = await r.done.catch(() => null);
     recording.value = null;
     if (buf) await decodeInto(i, buf, 'Aufnahme');
     else msg.show('Nichts aufgenommen');
@@ -63,9 +67,9 @@ export function samplerTools(c: UiContext, msg: Message): HTMLElement {
       },
     }),
     chip(scope, {
-      label: computed(() => (recording.value ? 'Stopp' : 'Rec')),
+      label: computed(() => (recording.value && recording.value !== 'pending' ? 'Stopp' : 'Rec')),
       ariaLabel: 'Mit dem Mikrofon aufnehmen',
-      active: computed(() => recording.value !== null),
+      active: computed(() => recording.value !== null && recording.value !== 'pending'),
       onClick: () => {
         void record();
       },

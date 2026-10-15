@@ -30,6 +30,7 @@ export function samplerPads(c: UiContext): HTMLElement {
       () => store.state.value.smp.sel === i,
       (on) => {
         b.classList.toggle('sel', on);
+        b.setAttribute('aria-pressed', String(on));
       },
     );
     bind(

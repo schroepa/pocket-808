@@ -29,18 +29,33 @@ export function createRecorder(env: RecorderEnv): { start(maxMs: number): Promis
         return { error: 'denied' };
       }
       const chunks: Blob[] = [];
-      const mr = new Rec(stream);
+      const release = (): void => {
+        for (const t of stream.getTracks()) t.stop();
+      };
+      let mr: MediaRecorderLike;
+      try {
+        mr = new Rec(stream);
+      } catch {
+        release();
+        return { error: 'unavailable' };
+      }
       mr.ondataavailable = (e) => {
         if (e.data.size) chunks.push(e.data);
       };
       const done = new Promise<ArrayBuffer | null>((resolve) => {
         mr.onstop = () => {
           env.clearTimeout(timer);
-          for (const t of stream.getTracks()) t.stop();
-          resolve(chunks.length ? new Blob(chunks).arrayBuffer() : null);
+          release();
+          // ein Lesefehler zählt wie „nichts aufgenommen“, der Knopf darf nicht hängen bleiben
+          resolve(chunks.length ? new Blob(chunks).arrayBuffer().catch(() => null) : null);
         };
       });
-      mr.start();
+      try {
+        mr.start();
+      } catch {
+        release();
+        return { error: 'unavailable' };
+      }
       const timer = env.setTimeout(() => {
         mr.stop();
       }, maxMs);

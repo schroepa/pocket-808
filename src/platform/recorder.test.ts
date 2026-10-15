@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createRecorder, type MediaRecorderLike } from './recorder.ts';
 
-function setup(opts: { media?: boolean; recorder?: boolean; deny?: boolean } = {}) {
+function setup(
+  opts: { media?: boolean; recorder?: boolean; deny?: boolean; failStart?: boolean } = {},
+) {
   const track = { stop: vi.fn() };
   const stream = { getTracks: () => [track] } as unknown as MediaStream;
   const made: (MediaRecorderLike & { started: boolean })[] = [];
@@ -13,6 +15,7 @@ function setup(opts: { media?: boolean; recorder?: boolean; deny?: boolean } = {
       made.push(this);
     }
     start() {
+      if (opts.failStart) throw new Error('NotSupportedError');
       this.started = true;
     }
     stop() {
@@ -75,5 +78,23 @@ describe('createRecorder', () => {
     expect(t.env.setTimeout).toHaveBeenCalledWith(expect.any(Function), 3000);
     t.fireTimeout();
     expect(await r.done).toBeNull();
+  });
+  it('Fehler beim Starten: Mikrofon wieder frei, nicht verfügbar', async () => {
+    const t = setup({ failStart: true });
+    expect(await t.recorder.start(3000)).toEqual({ error: 'unavailable' });
+    expect(t.track.stop).toHaveBeenCalled();
+  });
+  it('Lesefehler der Aufnahme liefert null statt abzulehnen', async () => {
+    const t = setup();
+    const r = await t.recorder.start(3000);
+    if ('error' in r) throw new Error('Fehler');
+    const bad = new Blob([new Uint8Array([1])]);
+    t.rec()?.ondataavailable?.({ data: bad });
+    const spy = vi
+      .spyOn(Blob.prototype, 'arrayBuffer')
+      .mockImplementation(() => Promise.reject(new Error('weg')));
+    r.stop();
+    expect(await r.done).toBeNull();
+    spy.mockRestore();
   });
 });
