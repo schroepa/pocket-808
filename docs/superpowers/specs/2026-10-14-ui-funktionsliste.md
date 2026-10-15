@@ -1,6 +1,6 @@
 # Funktionsliste der Oberfläche (Legacy → neue UI)
 
-Stand: 2026-10-14. Abgeleitet aus `legacy/index.html`: `build*`-Funktionen, Listener in `init` und Markup. Jede Bedienhandlung steht in einer Zeile. Pro Teilschritt (5a–5d) wird abgehakt, und jede Zeile verweist auf ihren Test. Gehört zu `2026-10-14-ui-layouts-design.md`.
+Stand: 2026-10-15, vollständig. Abgeleitet aus `legacy/index.html`: `build*`-Funktionen, Listener in `init` und Markup. Jede Bedienhandlung steht in einer Zeile. Pro Teilschritt (5a–5d) wird abgehakt, und jede Zeile verweist auf ihren Test. Gehört zu `2026-10-14-ui-layouts-design.md`.
 
 Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 
@@ -113,36 +113,36 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 
 ## Mixer (5d)
 
-| Handlung | Wirkung | Stand |
-|---|---|---|
-| Kanal wählen | 13 Kanäle, Auswahl markiert | ⏳ (5d) |
-| Lautstärke-Fader | je Kanal | ⏳ (5d) |
-| M / S | Mute / Solo | ⏳ (5d) |
-| Pan, Reverb-Send | Regler des gewählten Kanals | ⏳ (5d) |
+| Handlung | Wirkung | Stand | Test |
+|---|---|---|---|
+| Kanal wählen | 13 Kanäle, Auswahl markiert | ✅ | `mixer.test.ts`, `mix-song.spec.ts` |
+| Lautstärke-Fader | je Kanal, Doppelklick 80 | ✅ | `mixer.test.ts`, `mix-song.spec.ts` |
+| M / S | Mute / Solo (`aria-pressed`), Zusammenfassung | ✅ | `mixer.test.ts`, `mix-song.spec.ts`, `core/mixer.test.ts` |
+| Pan, Reverb-Send | Regler des gewählten Kanals, Pan rastet beim Ziehen in der Mitte | ✅ | `mixer.test.ts`, `format.test.ts`, `mix-song.spec.ts`, `knob.test.ts` |
 
 ## FX (5d)
 
-| Handlung | Wirkung | Stand |
-|---|---|---|
-| Size, Damp, Return | Reverb | ⏳ (5d) |
-| Filter, Reso | DJ-Filter | ⏳ (5d) |
-| Stutter 1/4, 1/8, 1/16, 1/32 halten | Stutter an, solange gehalten | ⏳ (5d) |
+| Handlung | Wirkung | Stand | Test |
+|---|---|---|---|
+| Size, Damp, Return | Reverb | ✅ | `mixer.test.ts`, `format.test.ts`, `mix-song.spec.ts` |
+| Filter, Reso | DJ-Filter, Filter rastet beim Ziehen in der Mitte | ✅ | `mixer.test.ts`, `format.test.ts`, `mix-song.spec.ts` |
+| Stutter 1/4, 1/8, 1/16, 1/32 halten | Stutter an, solange gehalten; Loslassen, Abbruch, Zeigerverlust schalten aus | ✅ | `mixer.test.ts`, `mix-song.spec.ts` |
 
 ## Song (5d)
 
-| Handlung | Wirkung | Stand |
-|---|---|---|
-| „+ X anhängen“ | aktuelles Pattern anhängen (höchstens 32) | ⏳ (5d) |
-| − / + | Wiederholungen | ⏳ (5d) |
-| ← / → | Position verschieben | ⏳ (5d) |
-| Entfernen, Leeren | Position bzw. Song löschen | ⏳ (5d) |
-| Wiedergabe-Markierung | gespielte Position | ⏳ (5d) |
+| Handlung | Wirkung | Stand | Test |
+|---|---|---|---|
+| „+ X anhängen“ | aktuelles Pattern anhängen (höchstens 32) | ✅ | `song-patterns.test.ts`, `mix-song.spec.ts` |
+| − / + | Wiederholungen (1–16) | ✅ | `song-patterns.test.ts`, `mix-song.spec.ts` |
+| ← / → | Position verschieben, Auswahl folgt | ✅ | `song-patterns.test.ts`, `mix-song.spec.ts` |
+| Entfernen, Leeren | Position bzw. Song löschen | ✅ | `song-patterns.test.ts`, `mix-song.spec.ts` |
+| Wiedergabe-Markierung | gespielte Position | ✅ | `song-patterns.test.ts` |
 
 ## Vorlagen und Pattern-Werkzeuge (5d)
 
-| Handlung | Wirkung | Stand |
-|---|---|---|
-| House, Electro, Hip-Hop, Trap | Vorlage laden (mit Zurück), Markierung | ⏳ (5d) |
-| Kopieren, Einfügen | Pattern-Zwischenablage, Meldung | ⏳ (5d), als Kürzel schon da |
-| Pattern leeren | mit Zurück | ⏳ (5d) |
-| Zurück | einstufig | ⏳ (5d), als Kürzel schon da |
+| Handlung | Wirkung | Stand | Test |
+|---|---|---|---|
+| House, Electro, Hip-Hop, Trap | Vorlage laden (mit Zurück), Markierung | ✅ | `song-patterns.test.ts`, `mix-song.spec.ts` |
+| Kopieren, Einfügen | Pattern-Zwischenablage, Meldung | ✅ | `song-patterns.test.ts`, `mix-song.spec.ts`, `keys.test.ts` |
+| Pattern leeren | mit Zurück | ✅ | `song-patterns.test.ts` |
+| Zurück | einstufig | ✅ | `song-patterns.test.ts`, `mix-song.spec.ts`, `keys.test.ts` |
