@@ -105,8 +105,16 @@ export function makeContext(opts: { state?: State; available?: boolean } = {}) {
 }
 
 /** Zeiger-Ereignis für jsdom (kennt PointerEvent nicht überall) */
-export function pointer(type: string, init: { clientY?: number; pointerId?: number } = {}): Event {
-  const e = new MouseEvent(type, { bubbles: true, cancelable: true, clientY: init.clientY ?? 0 });
+export function pointer(
+  type: string,
+  init: { clientX?: number; clientY?: number; pointerId?: number } = {},
+): Event {
+  const e = new MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX: init.clientX ?? 0,
+    clientY: init.clientY ?? 0,
+  });
   Object.defineProperty(e, 'pointerId', { value: init.pointerId ?? 1 });
   return e;
 }

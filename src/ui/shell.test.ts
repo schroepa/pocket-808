@@ -51,6 +51,7 @@ describe('mountShell', () => {
       'tracks',
       'devices',
       'synth',
+      'smp',
       'transport',
     ]);
   });
