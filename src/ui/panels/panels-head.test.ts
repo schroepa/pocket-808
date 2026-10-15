@@ -5,12 +5,14 @@ import { deck } from './deck.ts';
 import { slots } from './slots.ts';
 
 describe('brand', () => {
-  it('Titel und optionales Zusatzelement', () => {
-    const extra = document.createElement('span');
-    const el = brand(extra);
+  it('Titel und optionale Werkzeuge', () => {
+    const a = document.createElement('span');
+    const b = document.createElement('span');
+    const el = brand(a, b);
     expect(el.querySelector('h1')?.textContent).toBe('Pocket 808');
-    expect(el.contains(extra)).toBe(true);
+    expect([...(el.querySelector('.brand-tools')?.children ?? [])]).toEqual([a, b]);
     expect(brand().getAttribute('data-area')).toBe('brand');
+    expect(brand().querySelector('.brand-tools')).toBeNull();
   });
 });
 

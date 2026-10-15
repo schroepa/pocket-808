@@ -6,7 +6,7 @@
 
 Aufmachen, auf *Start* tippen, und der Beat läuft. Pocket 808 braucht keine Installation, kein Konto und keinen Server. Alles, was du baust, bleibt in deinem Browser.
 
-> Diese README ist ein **lebendes Dokument**. Sie wird mit jeder Änderung am Projekt aktualisiert. Stand: 2026-10-15, Version 0.16.0.
+> Diese README ist ein **lebendes Dokument**. Sie wird mit jeder Änderung am Projekt aktualisiert. Stand: 2026-10-15, Version 0.17.0.
 
 ---
 
@@ -31,6 +31,11 @@ Aufmachen, auf *Start* tippen, und der Beat läuft. Pocket 808 braucht keine Ins
   - **Stutter** zum Halten: Der Klang wiederholt sich in Vierteln, Achteln, Sechzehnteln oder Zweiunddreißigsteln, solange du drückst.
 - **Vom Loop zum Song:** Acht Pattern-Plätze (A–H) lassen sich zu einer Song-Kette mit Wiederholungen verbinden. Dazu kommen vier Vorlagen (House, Electro, Hip-Hop, Trap), Kopieren, Einfügen und Zurück.
 - **Merkt sich alles:** Jede Änderung wird automatisch gespeichert, auch deine Samples.
+- **Mitnehmen und teilen:**
+  - Über den Knopf **Datei** sicherst du das ganze Projekt als `.pocket808.json`, mit allen Pattern, dem Song, Mixer, Effekten und deinen eigenen Samples. Auf dem iPhone öffnet sich dafür das Teilen-Menü („In Dateien sichern“, AirDrop), am Rechner ein Download.
+  - Ein Projekt öffnest du auf jedem Gerät wieder. Vorher fragt die App, ob sie das aktuelle ersetzen soll, und *Zurück* holt es zurück.
+  - **WAV-Export:** das aktuelle Pattern 1×, 2×, 4× oder 8× oder den ganzen Song, in CD-Qualität (44,1 kHz, 16 Bit, Stereo) mit Ausklang für Hall und Delay. Gerendert wird schneller als Echtzeit, die laufende Musik spielt dabei weiter.
+  - Am Rechner gehen ⌘/Strg+S und ⌘/Strg+O.
 
 ---
 
@@ -128,10 +133,18 @@ flowchart LR
 - **Reverb:** Die Impulsantwort wird aus Rauschen mit exponentiellem Abfall berechnet, die Höhen werden über die Zeit gedämpft. Ändert sich die Raumgröße, wird der Hall entprellt neu berechnet und knackfrei getauscht.
 - **Live-Parameter:** Mixer, Effekte, Tempo und Synth-Werte wirken während der Wiedergabe. Die Engine hört per Effekt auf genau die Teile des Zustands, die sie braucht, und setzt nur, was sich geändert hat.
 - **Testbar:** Kontext, Offline-Kontext, Zeitquelle, Zeitgeber und Zufall lassen sich austauschen. In Tests läuft die Engine deterministisch und ohne echte Uhr.
+- **WAV-Export:** Genau diese Austauschbarkeit macht den Export einfach. Eine zweite Engine-Instanz bekommt einen `OfflineAudioContext`, eine Kopie des Zustands und eine eigene Uhr, und der Scheduler wird in 25-ms-Schritten von Hand getaktet, bis der letzte Takt geplant ist (`audio/export.ts`). Danach rechnet der Browser alles in einem Rutsch. Ein Referenztest prüft, dass der Export genauso klingt wie die Wiedergabe.
 
-### Oberfläche (im Neubau)
+### Projektdatei
 
-Die Oberfläche bekommt gerade **drei eigene Layouts**. Welches gilt, entscheidet die App selbst:
+- Eine `.pocket808.json` enthält einen Kopf (`format`, `version`, App-Version, Datum), den Zustand im selben Format wie der Browserspeicher und die Samples als 16-Bit-PCM in Base64.
+- Beim Öffnen läuft der Zustand durch dieselbe Prüfung wie jeder Speicherstand: Werte werden begrenzt, alte Formate migriert, Unbekanntes ignoriert. Auch Dateien aus späteren Versionen öffnen sich, soweit möglich.
+- Kaputte oder fremde Dateien ändern nichts. Ein beschädigtes Sample leert nur sein eigenes Pad.
+- Kodieren und Prüfen sind reine Funktionen in `core/project.ts`, mit einem Eigenschaftstest für die Rundreise.
+
+### Oberfläche
+
+Die Oberfläche hat **drei eigene Layouts**. Welches gilt, entscheidet die App selbst:
 
 | Layout | Bedingung |
 |---|---|
@@ -156,7 +169,7 @@ So sieht es auf den einzelnen Geräten aus:
   - Mixer und FX: 13 Kanalzüge mit Fader, Mute und Solo, Pan (rastet beim Ziehen in der Mitte ein) und Reverb-Send für den gewählten Kanal; Reverb (Return, Size, Damp), DJ-Filter (Tiefpass links, Hochpass rechts, Mitte aus) und Stutter zum Halten, das beim Loslassen, Abbrechen oder Verlieren des Zeigers immer ausgeht.
   - Song und Vorlagen: Song-Kette aus Blöcken mit Wiederholungen, verschieben, entfernen, leeren; die gespielte Position leuchtet. Vorlagen (House, Electro, Hip-Hop, Trap), Kopieren, Einfügen, Pattern leeren und Zurück.
   - Der Synth ist umgezogen: Piano-Roll mit Takthälften und Notenlängen, die fünf SH-101-Module mit Drehreglern, senkrechten ADSR-Schiebereglern und live gezeichneter Hüllkurve, Presets je Stimme. Die Bedienlogik steckt als reine Funktionen in `core/synth.ts`.
-  - Die Oberfläche kennt die Audio-Engine nicht direkt, sondern nur eine schmale Schnittstelle. Plattform-Eigenheiten (iOS-Stummschalter, Wake Lock, Hintergrund, Artifact-Host, Dateiauswahl) liegen in einer eigenen Schicht.
+  - Die Oberfläche kennt die Audio-Engine nicht direkt, sondern nur eine schmale Schnittstelle. Plattform-Eigenheiten (iOS-Stummschalter, Wake Lock, Hintergrund, Artifact-Host, Dateiauswahl, Teilen bzw. Download) liegen in einer eigenen Schicht.
 - **Design:**
   - Flach, ohne Konturen und Schatten; aktive Elemente leuchten in einem gedämpften Kupferton („wie im Club“).
   - Touch zuerst, mit großen Zielen.
@@ -172,10 +185,10 @@ Pocket 808 wird mit mehr Testcode als App-Code gebaut. Jeder Commit läuft durch
 
 | Ebene | Was geprüft wird | Umfang |
 |---|---|---|
-| **Unit** | `core`, `store`, `audio`, `ui` und `platform` einzeln (Oberfläche in jsdom), mit Eigenschafts- und Modelltests (fast-check); Abdeckung ≥ 90 % pro Datei erzwungen | 452 Tests |
-| **Referenz** | Die neue Engine klingt wie die bewährte alte App, die eingefroren als Vergleichsmaßstab in `tests/reference/legacy/oracle.html` liegt (sie wird nicht mehr ausgeliefert): Beide rendern dieselben Szenarien offline (`node-web-audio-api`) und werden über **Klang-Fingerabdrücke** (Spitze, RMS-Verlauf in 10 ms, spektraler Schwerpunkt) verglichen, dazu Speicherstände, Scheduler-Sequenzen und das Umrechnen importierter Samples (bitgleich) | 162 Tests, 15 Mix-Szenarien, 50 Drum-Varianten |
+| **Unit** | `core`, `store`, `audio`, `ui` und `platform` einzeln (Oberfläche in jsdom), mit Eigenschafts- und Modelltests (fast-check); Abdeckung ≥ 90 % pro Datei erzwungen | 511 Tests |
+| **Referenz** | Die neue Engine klingt wie die bewährte alte App, die eingefroren als Vergleichsmaßstab in `tests/reference/legacy/oracle.html` liegt (sie wird nicht mehr ausgeliefert): Beide rendern dieselben Szenarien offline (`node-web-audio-api`) und werden über **Klang-Fingerabdrücke** (Spitze, RMS-Verlauf in 10 ms, spektraler Schwerpunkt) verglichen, dazu Speicherstände, Scheduler-Sequenzen und das Umrechnen importierter Samples (bitgleich) | 164 Tests, 15 Mix-Szenarien, 50 Drum-Varianten, WAV-Export |
 | **Bench** | Performance-Budget: Audio-Knoten pro Sekunde und Renderzeit für ein Demo- und ein Worst-Case-Pattern | Demo 47 Knoten/s, Worst-Case 429 Knoten/s |
-| **E2E** | Playwright auf iPhone hoch und quer, iPad hoch und quer (WebKit) und Desktop (Chromium): Funktion, Kürzel, kein horizontaler Scroll, Screenshots je Gerät, Barrierefreiheit mit axe (keine schweren Verstöße), alte Speicherstände, Artifact-Host, keine Long Tasks beim Spielen, Touch-Ziele ≥ 44 px, Größenbudget | 138 Tests |
+| **E2E** | Playwright auf iPhone hoch und quer, iPad hoch und quer (WebKit) und Desktop (Chromium): Funktion, Kürzel, kein horizontaler Scroll, Screenshots je Gerät, Barrierefreiheit mit axe (keine schweren Verstöße), alte Speicherstände, Artifact-Host, Projekt sichern und öffnen, WAV-Export, keine Long Tasks beim Spielen, Touch-Ziele ≥ 44 px, Größenbudget | 163 Tests |
 
 - **Toleranzen kalibriert:** Die Toleranzen der Klang-Fingerabdrücke sind kalibriert. Ein Halbton Verstimmung oder 10 % mehr Decay werden erkannt, Rauschschwankungen nicht.
 - **Mutationsprüfung:** Wir bauen absichtlich Fehler ein, zum Beispiel einen ausgebauten Live-Effekt, falschen Swing oder eine Closed Hat, die die Open Hat nicht mehr abwürgt. Der passende Test muss rot werden, sonst fehlt ein Test.
@@ -197,7 +210,7 @@ Pocket 808 steht auf einem neuen technischen Fundament: TypeScript, getrennte Sc
 | 5b | Synth in der neuen UI: Piano-Roll, SH-101-Module mit Hüllkurvenanzeige, Presets | ✅ |
 | 5c | Sampler in der neuen UI: Pads, Wellenform mit Griffen, Laden und Mikrofon-Aufnahme, Rückwärts, Steps | ✅ |
 | 5d | Mixer, FX, Song, Vorlagen in der neuen UI; Desktop-Pult mit stehender Kopfleiste | ✅ |
-| 6 | Umstellung: die neue App ist live, alte App und alte Tests entfernt | ✅ (Test auf dem iPhone steht aus) |
+| 6 | Umstellung: die neue App ist live, alte App und alte Tests entfernt | ✅ (auf dem iPhone abgenommen) |
 
 ---
 
@@ -249,7 +262,7 @@ docs/superpowers/plans/  Implementierungspläne
 Nach dem Fundament, in dieser Reihenfolge:
 
 1. ~~Mixer und FX~~
-2. Projekt speichern und laden (`.pocket808.json`), Audio-Export (WAV/MP3)
+2. ~~Projekt speichern und laden (`.pocket808.json`), Audio-Export (WAV)~~ – MP3 bei Bedarf später
 3. Velocity und Accent, Wahrscheinlichkeit und Bedingungen pro Step
 4. Synth: Akkorde, Arpeggiator, Slide und Accent, LFO
 5. Sampler: Chop-Modus, melodische Tastatur, Pitch pro Step

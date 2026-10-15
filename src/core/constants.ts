@@ -13,6 +13,8 @@ import type {
 export const STEPS = 16;
 export const PAD_COUNT = 8;
 export const ROWS = 12;
+/** App-Version (gleich package.json, Werkzeugtest), steht in Projektdateien */
+export const APP_VERSION = '0.17.0';
 export const STORAGE_KEY = 'pocket808.v1';
 export const SAMPLE_STORAGE_KEY = 'pocket808.smp.v1';
 

@@ -60,6 +60,9 @@ export function fakeAudio(available = true) {
     stutterOn: vi.fn(),
     stutterOff: vi.fn(),
     decode: vi.fn(() => Promise.resolve(Float32Array.from([0, 0, 0.5, 0.2]))),
+    exportWav: vi.fn<UiAudio['exportWav']>(() =>
+      Promise.resolve<Blob | null>(new Blob(['RIFF'], { type: 'audio/wav' })),
+    ),
   } satisfies UiAudio;
   return audio;
 }
@@ -86,6 +89,8 @@ export function makeContext(opts: { state?: State; available?: boolean } = {}) {
         name: 'Kick',
       }),
     ),
+    pickProject: vi.fn(() => Promise.resolve<{ text: string; name: string } | null>(null)),
+    save: vi.fn(() => Promise.resolve<'shared' | 'downloaded' | 'cancelled'>('downloaded')),
   };
   const readout = createReadout(scope, voiceLine(store, audio.available), timer);
   const recording: { stop: Mock<() => void>; finish: (b: ArrayBuffer | null) => void } = {

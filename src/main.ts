@@ -6,7 +6,10 @@ import { serialize } from './core/persist.ts';
 import type { DrumSample } from './core/samples.ts';
 import type { VoiceId } from './core/types.ts';
 import { must } from './core/util.ts';
-import { pickAudioFile } from './platform/files.ts';
+import { renderOffline } from './audio/export.ts';
+import { encodeWav } from './core/wav.ts';
+import { pickAudioFile, pickTextFile } from './platform/files.ts';
+import { saveFile } from './platform/share.ts';
 import { createRecorder, type RecorderEnv } from './platform/recorder.ts';
 import { connectHost, hostState, type HostHot } from './platform/host.ts';
 import { createIosUnlock } from './platform/ios.ts';
@@ -123,12 +126,31 @@ function boot(hostData: unknown): Store {
       engine.stutterOff();
     },
     decode: (d) => engine.decode(d),
+    exportWav: async (state, playFor, seconds, onProgress, signal) => {
+      const buf = await renderOffline({
+        state,
+        pads: samples.pads.peek(),
+        drums: Object.fromEntries(samples.drums.peek()),
+        playFor,
+        seconds,
+        createContext: (ch, len, sr) => new OfflineAudioContext(ch, len, sr),
+        onProgress,
+        signal,
+      });
+      if (!buf) return null;
+      const wav = encodeWav([buf.getChannelData(0), buf.getChannelData(1)], buf.sampleRate);
+      return new Blob([wav], { type: 'audio/wav' });
+    },
   };
   mountShell(must(document.getElementById('app') ?? undefined, '#app'), {
     store,
     samples,
     audio,
-    files: { pickAudio: (opts) => pickAudioFile(document, opts) },
+    files: {
+      pickAudio: (opts) => pickAudioFile(document, opts),
+      pickProject: () => pickTextFile(document, '.json,application/json'),
+      save: (blob, name) => saveFile({ navigator, document, URL, File }, blob, name),
+    },
     recorder: createRecorder({
       mediaDevices: navigator.mediaDevices,
       MediaRecorder:

@@ -1,4 +1,4 @@
-import type { Part, VoiceId } from '../core/types.ts';
+import type { Part, State, VoiceId } from '../core/types.ts';
 import type { SampleBank } from '../store/samples.ts';
 import type { ReadonlySignal } from '../store/signals.ts';
 import type { Store } from '../store/store.ts';
@@ -23,11 +23,23 @@ export interface UiAudio {
   stutterOn(fraction: number): void;
   stutterOff(): void;
   decode(data: ArrayBuffer): Promise<Float32Array>;
+  /** WAV offline rendern (eigene Engine-Instanz); null bei Abbruch */
+  exportWav(
+    state: State,
+    playFor: number,
+    seconds: number,
+    onProgress: (fraction: number) => void,
+    signal: AbortSignal,
+  ): Promise<Blob | null>;
 }
 
 /** Datei wählen (platform/files.ts über main.ts); null bei Abbruch */
 export interface UiFiles {
   pickAudio(opts?: { capture?: boolean }): Promise<{ data: ArrayBuffer; name: string } | null>;
+  /** Projektdatei wählen (.json) */
+  pickProject(): Promise<{ text: string; name: string } | null>;
+  /** Datei hinausgeben: Teilen-Menü (iPhone) oder Download */
+  save(blob: Blob, name: string): Promise<'shared' | 'downloaded' | 'cancelled'>;
 }
 
 /** Mikrofon-Aufnahme (platform/recorder.ts über main.ts) */

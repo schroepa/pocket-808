@@ -166,6 +166,16 @@ html[data-layout='desktop'] {
 [data-layout='desktop'] .stripe {
   display: none;
 }
+/* schmale Spalte: Datei- und Kürzel-Knopf unter den Titel */
+[data-layout='desktop'] .brand {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+}
+[data-layout='desktop'] .brand-tools {
+  margin-left: 0;
+}
 [data-layout='desktop'] :is(.slots, .transport) {
   align-content: center;
 }

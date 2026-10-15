@@ -168,3 +168,30 @@ describe('feine Benachrichtigung (Spezifikation: nur die betroffene Zelle)', () 
     expect(effectRuns).toBe(1);
   });
 });
+
+describe('ganzen Zustand ersetzen (Projekt öffnen)', () => {
+  it('replaceState: Zurück stellt den vorherigen Zustand komplett her und ruft revert', () => {
+    const before = initialState();
+    const store = createStore(before);
+    const revert = vi.fn();
+    store.replaceState({ ...baseState(), tempo: 77 }, revert);
+    expect(store.state.value.tempo).toBe(77);
+    expect(store.canUndo.value).toBe(true);
+    store.undo();
+    expect(store.state.value).toEqual(before);
+    expect(revert).toHaveBeenCalledTimes(1);
+    expect(store.canUndo.value).toBe(false);
+    store.undo();
+    expect(revert).toHaveBeenCalledTimes(1);
+  });
+
+  it('ein späterer Undo-Schritt ersetzt die Ablage, revert entfällt', () => {
+    const store = createStore(initialState());
+    const revert = vi.fn();
+    store.replaceState({ ...initialState(), tempo: 99 }, revert);
+    store.clearPattern();
+    store.undo();
+    expect(revert).not.toHaveBeenCalled();
+    expect(store.state.value.tempo).toBe(99);
+  });
+});

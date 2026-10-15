@@ -146,3 +146,14 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 | Kopieren, Einfügen | Pattern-Zwischenablage, Meldung | ✅ | `song-patterns.test.ts`, `mix-song.spec.ts`, `keys.test.ts` |
 | Pattern leeren | mit Zurück | ✅ | `song-patterns.test.ts` |
 | Zurück | einstufig | ✅ | `song-patterns.test.ts`, `mix-song.spec.ts`, `keys.test.ts` |
+
+## Projekt und Export (Roadmap-Etappe 2)
+
+| Handlung | Wirkung | Stand | Test |
+|---|---|---|---|
+| Datei (Kopfzeile) | Dialog „Projekt und Export“ | ✅ | `project.test.ts`, `project.spec.ts`, `a11y.spec.ts` |
+| Projekt sichern, ⌘/Strg+S | `.pocket808.json` mit Zustand und Samples; Teilen-Menü bzw. Download | ✅ | `core/project.test.ts`, `share.test.ts`, `project.spec.ts` |
+| Projekt öffnen, ⌘/Strg+O | prüfen, fragen, ersetzen; Zurück stellt Zustand und Samples wieder her | ✅ | `project.test.ts`, `store.test.ts`, `project.spec.ts` |
+| Fremde oder kaputte Datei | Meldung „Keine Pocket-808-Datei“, nichts ändert sich | ✅ | `core/project.test.ts`, `project.spec.ts` |
+| WAV erzeugen | Pattern 1/2/4/8× oder Song, Länge, Fortschritt, Abbrechen, max. 5 min | ✅ | `export.test.ts`, `project.test.ts`, `next-mix.test.ts` |
+| WAV sichern | 44,1 kHz, 16 Bit, Stereo | ✅ | `wav.test.ts`, `project.spec.ts` |

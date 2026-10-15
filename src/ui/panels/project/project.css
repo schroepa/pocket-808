@@ -1,0 +1,74 @@
+@layer components {
+  .file-menu {
+    margin-left: auto;
+  }
+  .file-dialog {
+    width: min(480px, calc(100vw - 32px));
+    max-height: calc(100dvh - 32px);
+    padding: 20px;
+    border: 0;
+    border-radius: var(--radius-panel);
+    background: var(--panel);
+    color: var(--ink);
+    overflow-y: auto;
+  }
+  .file-dialog::backdrop {
+    background: color-mix(in srgb, var(--chassis) 75%, transparent);
+  }
+  .file-dialog h2 {
+    margin-bottom: 16px;
+    font: 700 20px var(--font-display);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .file-sec {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .file-sec .cap-label {
+    margin: 0;
+  }
+  .replace-ask {
+    display: grid;
+    gap: 8px;
+    padding: 12px;
+    border-radius: 10px;
+    background: var(--well);
+  }
+  .replace-ask[hidden],
+  .export-reps[hidden],
+  .file-dialog .chip[hidden] {
+    display: none;
+  }
+  .export-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  /* kurze Beschriftungen (1×): trotzdem 44 px breit */
+  .file-dialog .seg button {
+    min-width: var(--touch);
+  }
+  .export-len,
+  .file-msg {
+    font: 14px var(--font-lcd);
+    color: var(--ink-dim);
+    text-transform: uppercase;
+  }
+  .file-msg {
+    min-height: 1.3em;
+    margin-bottom: 12px;
+    color: var(--acc);
+  }
+  /* Telefon: Dialog füllt den Bildschirm */
+  [data-layout='mobile'] .file-dialog {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    border-radius: 0;
+    padding: calc(20px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));
+  }
+}
