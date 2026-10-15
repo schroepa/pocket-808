@@ -141,6 +141,12 @@ function boot(hostData: unknown): Store {
     setFill: (on) => {
       engine.setFill(on);
     },
+    punchOn: (k) => {
+      engine.punchOn(k);
+    },
+    punchOff: (k) => {
+      engine.punchOff(k);
+    },
     decode: (d) => engine.decode(d),
     exportWav: async (state, playFor, seconds, onProgress, signal) => {
       const buf = await renderOffline({

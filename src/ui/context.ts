@@ -5,6 +5,9 @@ import type { Store } from '../store/store.ts';
 import type { Scope } from './dom.ts';
 import type { Readout } from './readout.ts';
 
+/** Punch-in-Effekte (gleich der Engine, ohne die Schicht zu importieren) */
+export type PunchKind = 'loop8' | 'loop16' | 'half' | 'tape' | 'crush' | 'lp' | 'hp' | 'echo';
+
 /** Was die Oberfläche von der Audioseite braucht (main.ts verbindet die Engine). */
 export interface UiAudio {
   /** false: kein Web Audio, die App bleibt bedienbar */
@@ -24,6 +27,9 @@ export interface UiAudio {
   stutterOff(): void;
   /** Fill-Taste gehalten bzw. losgelassen */
   setFill(on: boolean): void;
+  /** Punch-in-Effekt halten bzw. loslassen */
+  punchOn(kind: PunchKind): void;
+  punchOff(kind: PunchKind): void;
   decode(data: ArrayBuffer): Promise<Float32Array>;
   /** WAV offline rendern (eigene Engine-Instanz); null bei Abbruch */
   exportWav(

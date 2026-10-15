@@ -59,6 +59,7 @@ describe('mountShell', () => {
       'smp',
       'mix',
       'fx',
+      'punch',
       'song',
       'patterns',
       'transport',

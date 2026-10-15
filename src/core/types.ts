@@ -128,7 +128,8 @@ export interface State {
   part: Part;
   noteLen: 1 | 2 | 4;
   synth: Record<Part, SynthPatch>;
-  open: { synth: boolean; smp: boolean; mix: boolean; fx: boolean };
+  /** aufgeklappte Geräte; punch fehlt in alten Ständen (Etappe 4b) */
+  open: { synth: boolean; smp: boolean; mix: boolean; fx: boolean; punch?: boolean };
   smp: { sel: number; pads: Pad[] };
   mix: Record<ChannelId, MixChannel>;
   fx: Fx;
