@@ -11,7 +11,9 @@ import { brand } from './panels/brand.ts';
 import { deck } from './panels/deck.ts';
 import { fxDevice, mixerDevice } from './panels/mixer/device.ts';
 import { samplerDevice } from './panels/sampler/device.ts';
+import { patternsPanel } from './panels/patterns.ts';
 import { slots } from './panels/slots.ts';
+import { songPanel } from './panels/song.ts';
 import { stepEditor } from './panels/step-editor.ts';
 import { synthDevice } from './panels/synth/device.ts';
 import { tracks } from './panels/tracks.ts';
@@ -55,8 +57,8 @@ export function mountShell(
       brand(shortcutHelp(c)),
       deck(c),
       slots(c),
-      stepEditor(c),
-      tracks(c),
+      // Spalte „Sequencer“: nur auf dem Desktop ein eigener Block, sonst display: contents
+      h('div', { class: 'col-main' }, [stepEditor(c), tracks(c), songPanel(c), patternsPanel(c)]),
       devices(c, layout, [synthDevice(c), samplerDevice(c), mixerDevice(c), fxDevice(c)]),
       transport(c),
     ]),
