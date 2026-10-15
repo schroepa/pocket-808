@@ -3,6 +3,8 @@ export interface ShareEnv {
   navigator: {
     canShare?: (data: ShareData) => boolean;
     share?: (data: ShareData) => Promise<void>;
+    /** > 0 auf Touch-Geräten (iPhone, iPad); Safari auf dem Mac kann teilen, aber nicht sichern */
+    maxTouchPoints?: number;
   };
   document: Pick<Document, 'createElement' | 'body'>;
   URL: { createObjectURL(b: Blob): string; revokeObjectURL(u: string): void };
@@ -20,7 +22,8 @@ export async function saveFile(
 ): Promise<'shared' | 'downloaded' | 'cancelled'> {
   const file = new env.File([blob], name, { type: blob.type });
   const nav = env.navigator;
-  if (nav.share && nav.canShare?.({ files: [file] })) {
+  const touch = (nav.maxTouchPoints ?? 0) > 0;
+  if (touch && nav.share && nav.canShare?.({ files: [file] })) {
     try {
       await nav.share({ files: [file] });
       return 'shared';

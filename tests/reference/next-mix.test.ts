@@ -66,11 +66,14 @@ describe.concurrent('WAV-Export (audio/export.ts)', () => {
   it('plant genau einen Takt, meldet Fortschritt und lässt sich abbrechen', async ({ expect }) => {
     const r = await runNext<{
       steps: number[];
+      firstTime: number;
       progress: number[];
       abortedBefore: boolean;
       abortedDuring: boolean;
     }>('exportBounds', {});
     expect(r.steps).toEqual(Array.from({ length: 16 }, (_, i) => i));
+    // der erste Schlag liegt auf Sample 0 (Loop-tauglich für die DAW)
+    expect(r.firstTime).toBeCloseTo(0, 6);
     expect(r.progress.length).toBeGreaterThan(1);
     expect(r.progress.every((f, i) => f >= (r.progress[i - 1] ?? 0) && f <= 1)).toBe(true);
     expect(r.abortedBefore).toBe(true);

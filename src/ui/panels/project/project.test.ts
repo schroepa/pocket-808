@@ -159,7 +159,11 @@ describe('Datei-Dialog: Audio exportieren', () => {
   });
 
   it('erzeugt mit Fortschritt, dann WAV sichern', async () => {
-    const { root, audio, files, scope } = setup({ ...baseState(), tempo: 90, mode: 'song' });
+    const { root, audio, files, store, scope } = setup({
+      ...baseState(),
+      tempo: 90,
+      mode: 'song',
+    });
     let finish: (b: Blob | null) => void = () => undefined;
     audio.exportWav.mockImplementationOnce(
       () =>
@@ -189,6 +193,10 @@ describe('Datei-Dialog: Audio exportieren', () => {
     save.click();
     await flush();
     expect(files.save).toHaveBeenCalledWith(wav, expect.stringMatching(/^pocket808-pattern-A-1x-/));
+    // andere Bedienung (z. B. Slot-Wechsel durch die Song-Wiedergabe) lässt das Ergebnis stehen
+    store.selectSlot('B');
+    store.update((s) => ({ ...s, swing: 0.1 }));
+    expect(save.hidden).toBe(false);
     btn(root, '2×').click();
     expect(save.hidden).toBe(true);
     scope.dispose();

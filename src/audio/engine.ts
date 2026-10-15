@@ -84,7 +84,10 @@ export interface Engine {
 }
 
 const LOOKAHEAD_MS = 25;
-const HORIZON_S = 0.2;
+/** Vorlauf des Schedulers (Sekunden) */
+export const HORIZON_S = 0.2;
+/** Abstand des ersten Steps zur Uhr beim Start (Sekunden) */
+export const START_DELAY = 0.08;
 const sameAudible = (a: Record<ChannelId, boolean>, b: Record<ChannelId, boolean>): boolean =>
   CHANNELS.every((id) => a[id] === b[id]);
 /** Wert nur lesen, um im Effekt eine Abhängigkeit anzulegen. */
@@ -367,7 +370,7 @@ export function createEngine(o: EngineOptions): Engine {
       step = 0;
       cursor = songStart();
       queue.length = 0;
-      nextTime = now() + 0.08;
+      nextTime = now() + START_DELAY;
       interval = timer.setInterval(pump, LOOKAHEAD_MS);
       pump();
     },

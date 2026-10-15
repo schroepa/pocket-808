@@ -30,10 +30,11 @@ export function exportSection(
   const job = signal<Job>({ kind: 'idle' });
   const idle: Job = { kind: 'idle' };
 
-  // Ein fertiges Ergebnis verfällt, sobald sich Umfang oder Inhalt ändern
+  // Ein fertiges Ergebnis verfällt, sobald Umfang oder Wiederholungen sich ändern (Spezifikation);
+  // andere Bedienung, etwa der Slot-Wechsel der laufenden Song-Wiedergabe, lässt es stehen
   bind(
     scope,
-    () => plan.value,
+    () => `${range.value}|${reps.value}`,
     () => {
       if (job.peek().kind === 'done') job.value = idle;
     },

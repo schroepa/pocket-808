@@ -2,7 +2,7 @@ import type { Rng } from '../core/random.ts';
 import type { DrumSample } from '../core/samples.ts';
 import type { State, VoiceId } from '../core/types.ts';
 import { createStore } from '../store/store.ts';
-import { createEngine, type ScheduledStep } from './engine.ts';
+import { createEngine, HORIZON_S, START_DELAY, type ScheduledStep } from './engine.ts';
 import type { EngineTimer } from './timer.ts';
 import type { OfflineFactory } from './voices.ts';
 
@@ -20,6 +20,8 @@ export interface RenderOptions {
   playFor: number;
   /** Länge der Aufnahme inklusive Ausklang (Sekunden) */
   seconds: number;
+  /** Stille vor dem ersten Step (Sekunden, Standard 0: der erste Schlag liegt auf Sample 0) */
+  leadIn?: number;
   sampleRate?: number;
   createContext: (channels: number, length: number, sampleRate: number) => OfflineAudioContext;
   createOffline?: OfflineFactory;
@@ -33,8 +35,6 @@ export interface RenderOptions {
 }
 
 const TICK = 0.025;
-/** Vorlauf des Schedulers (engine.ts HORIZON_S) */
-const HORIZON = 0.2;
 
 const nextTask = (): Promise<void> =>
   new Promise((resolve) => {
@@ -81,9 +81,11 @@ export async function renderOffline(o: RenderOptions): Promise<AudioBuffer | nul
   try {
     engine.prepare();
     await engine.prerenderAll();
+    // start() setzt den ersten Step auf Uhr + START_DELAY; so landet er bei leadIn
+    now = (o.leadIn ?? 0) - START_DELAY;
     engine.start();
     // Alle Steps vor playFor planen, keinen danach: zuletzt genau bis kurz vor playFor
-    const last = o.playFor - HORIZON - 1e-6;
+    const last = o.playFor - HORIZON_S - 1e-6;
     let n = 0;
     for (now = 0; now < last; now += TICK) {
       tick();

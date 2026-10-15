@@ -502,6 +502,8 @@ export async function exportDemo(args: { seed?: number }): Promise<StereoPrint> 
     drums: {},
     playFor: 4,
     seconds: 4,
+    // wie die Live-Wiedergabe (erster Step nach 80 ms), damit der Fingerabdruck vergleichbar ist
+    leadIn: 0.08,
     createContext: createOffline,
     createOffline,
     random,
@@ -516,12 +518,14 @@ export async function exportDemo(args: { seed?: number }): Promise<StereoPrint> 
 /** Grenzen und Abbruch des Export-Wegs: geplante Steps, Fortschritt, Abbruch. */
 export async function exportBounds(): Promise<{
   steps: number[];
+  firstTime: number;
   progress: number[];
   abortedBefore: boolean;
   abortedDuring: boolean;
 }> {
   const s = structuredClone(initialState());
   const steps: number[] = [];
+  const times: number[] = [];
   const progress: number[] = [];
   const base = {
     pads: [],
@@ -536,7 +540,10 @@ export async function exportBounds(): Promise<{
     state: { ...s, mode: 'pattern' },
     playFor: bar,
     seconds: bar + 0.5,
-    onScheduled: (e) => steps.push(e.step),
+    onScheduled: (e) => {
+      steps.push(e.step);
+      times.push(e.time);
+    },
     onProgress: (f) => progress.push(f),
     yieldEvery: 4,
   });
@@ -561,7 +568,13 @@ export async function exportBounds(): Promise<{
       if (f > 0.2) during.abort();
     },
   });
-  return { steps, progress, abortedBefore: a === null, abortedDuring: b === null };
+  return {
+    steps,
+    firstTime: times[0] ?? -1,
+    progress,
+    abortedBefore: a === null,
+    abortedDuring: b === null,
+  };
 }
 
 export const SCENARIOS: Record<string, (args: never) => Promise<unknown>> = {

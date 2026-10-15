@@ -29,7 +29,7 @@ describe('saveFile', () => {
   it('teilt die Datei, wenn der Browser Dateien teilen kann (iPhone)', async () => {
     const share = vi.fn(() => Promise.resolve());
     const canShare = vi.fn(() => true);
-    const { e, clicks } = env({ share, canShare });
+    const { e, clicks } = env({ share, canShare, maxTouchPoints: 5 });
     expect(await saveFile(e, blob, 'a.json')).toBe('shared');
     const arg = (share.mock.calls[0] as unknown as [ShareData])[0];
     expect(arg.files?.[0]?.name).toBe('a.json');
@@ -39,14 +39,14 @@ describe('saveFile', () => {
 
   it('Abbruch im Teilen-Menü ist kein Fehler und lädt nichts herunter', async () => {
     const share = vi.fn(() => Promise.reject(new DOMException('weg', 'AbortError')));
-    const { e, clicks } = env({ share, canShare: () => true });
+    const { e, clicks } = env({ share, canShare: () => true, maxTouchPoints: 5 });
     expect(await saveFile(e, blob, 'a.json')).toBe('cancelled');
     expect(clicks).toEqual([]);
   });
 
   it('anderer Fehler beim Teilen: Download als Rückfall', async () => {
     const share = vi.fn(() => Promise.reject(new DOMException('nein', 'NotAllowedError')));
-    const { e, clicks } = env({ share, canShare: () => true });
+    const { e, clicks } = env({ share, canShare: () => true, maxTouchPoints: 5 });
     expect(await saveFile(e, blob, 'a.json')).toBe('downloaded');
     expect(clicks).toEqual([{ href: 'blob:x', download: 'a.json' }]);
   });
@@ -63,5 +63,13 @@ describe('saveFile', () => {
     vi.useRealTimers();
     const old = env({});
     expect(await saveFile(old.e, blob, 'c.wav')).toBe('downloaded');
+  });
+
+  it('Desktop (Safari auf dem Mac kann teilen, hat aber kein „Sichern“): Download', async () => {
+    const share = vi.fn(() => Promise.resolve());
+    const { e, clicks } = env({ share, canShare: () => true, maxTouchPoints: 0 });
+    expect(await saveFile(e, blob, 'a.json')).toBe('downloaded');
+    expect(share).not.toHaveBeenCalled();
+    expect(clicks).toHaveLength(1);
   });
 });
