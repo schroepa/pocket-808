@@ -90,7 +90,9 @@ export function makeContext(opts: { state?: State; available?: boolean } = {}) {
       }),
     ),
     pickProject: vi.fn(() => Promise.resolve<{ text: string; name: string } | null>(null)),
-    save: vi.fn(() => Promise.resolve<'shared' | 'downloaded' | 'cancelled'>('downloaded')),
+    save: vi.fn(() =>
+      Promise.resolve<'shared' | 'downloaded' | 'cancelled' | 'failed'>('downloaded'),
+    ),
   };
   const readout = createReadout(scope, voiceLine(store, audio.available), timer);
   const recording: { stop: Mock<() => void>; finish: (b: ArrayBuffer | null) => void } = {

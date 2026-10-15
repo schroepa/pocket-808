@@ -39,7 +39,7 @@ export interface UiFiles {
   /** Projektdatei wählen (.json) */
   pickProject(): Promise<{ text: string; name: string } | null>;
   /** Datei hinausgeben: Teilen-Menü (iPhone) oder Download */
-  save(blob: Blob, name: string): Promise<'shared' | 'downloaded' | 'cancelled'>;
+  save(blob: Blob, name: string): Promise<'shared' | 'downloaded' | 'cancelled' | 'failed'>;
 }
 
 /** Mikrofon-Aufnahme (platform/recorder.ts über main.ts) */

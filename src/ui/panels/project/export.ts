@@ -149,7 +149,11 @@ export function exportSection(
     label: 'WAV sichern',
     onClick: () => {
       const j = job.peek();
-      if (j.kind === 'done') void c.files.save(j.blob, j.name);
+      if (j.kind !== 'done') return;
+      void c.files.save(j.blob, j.name).then((r) => {
+        if (r === 'failed') say('Sichern nicht möglich');
+        else if (r !== 'cancelled') say('WAV gesichert');
+      });
     },
   });
   bind(

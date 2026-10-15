@@ -72,7 +72,7 @@ npm run build         # dist/index.html (eine Datei)
 
 ## Veröffentlichung
 
-Live: Jeder Push nach `main` wird von Vercel ausgeliefert (https://pocket-808.vercel.app, Build `npm run build`). `dist/index.html` (nach `npm run build`) wird zusätzlich als Claude-Artifact veröffentlicht (`<title>` "Pocket 808"). Das Artifact hängt nicht automatisch am Repo und muss separat aktualisiert werden.
+Live: Jeder Push nach `main` wird von Vercel ausgeliefert (https://pocket-808.vercel.app, Build `npm run build`). `dist/index.html` (nach `npm run build`) wird zusätzlich als Claude-Artifact veröffentlicht (`<title>` "Pocket 808", https://claude.ai/artifact/XvHhCwsXvL9NmUdvxv2vxe, Capability `downloads: true`). Sichern läuft dort über `claude.use("downloads")` (`platform/share.ts`); nicht erlaubte Endungen wie `.wav` werden als ZIP verpackt (`platform/zip.ts`). Das Artifact hängt nicht automatisch am Repo und muss separat aktualisiert werden.
 
 ## Roadmap (in dieser Reihenfolge, je Etappe fertig, testen, bestätigen lassen)
 
