@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fileBaseName, pickAudioFile } from './files.ts';
+import { fileBaseName, pickAudioFile, pickTextFile } from './files.ts';
 
 describe('fileBaseName', () => {
   it.each([
@@ -75,5 +75,47 @@ describe('pickAudioFile', () => {
     Object.defineProperty(get(), 'files', { value: [f] });
     get().dispatchEvent(new Event('change'));
     await expect(p).rejects.toThrow('weg');
+  });
+});
+
+describe('pickTextFile', () => {
+  function capture() {
+    let input: HTMLInputElement | null = null;
+    const doc = {
+      body: document.body,
+      createElement: (tag: string) => {
+        const el = document.createElement(tag);
+        if (el instanceof HTMLInputElement) {
+          input = el;
+          el.click = () => undefined;
+        }
+        return el;
+      },
+    };
+    const get = (): HTMLInputElement => {
+      if (!input) throw new Error('kein input');
+      return input;
+    };
+    return { doc, get };
+  }
+  it('liefert Text und vollen Namen; Feld wird wieder entfernt', async () => {
+    const { doc, get } = capture();
+    const p = pickTextFile(doc as never, '.json,application/json');
+    const el = get();
+    expect(el.accept).toBe('.json,application/json');
+    expect(el.hasAttribute('capture')).toBe(false);
+    expect(el.isConnected).toBe(true);
+    Object.defineProperty(el, 'files', {
+      value: [new File(['{"a":1}'], 'mein-beat.pocket808.json')],
+    });
+    el.dispatchEvent(new Event('change'));
+    expect(await p).toEqual({ text: '{"a":1}', name: 'mein-beat.pocket808.json' });
+    expect(el.isConnected).toBe(false);
+  });
+  it('Abbrechen liefert null', async () => {
+    const { doc, get } = capture();
+    const p = pickTextFile(doc as never, '.json');
+    get().dispatchEvent(new Event('cancel'));
+    expect(await p).toBeNull();
   });
 });
