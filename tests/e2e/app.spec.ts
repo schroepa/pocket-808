@@ -1,11 +1,11 @@
-import { expect, test } from '../e2e/fixtures.ts';
+import { expect, test } from './fixtures.ts';
 
 const EXPECTED: Record<string, string> = {
-  'next-mobile': 'mobile',
-  'next-mobile-quer': 'mobile',
-  'next-tablet': 'tablet',
-  'next-tablet-quer': 'tablet',
-  'next-desktop': 'desktop',
+  mobile: 'mobile',
+  'mobile-quer': 'mobile',
+  tablet: 'tablet',
+  'tablet-quer': 'tablet',
+  desktop: 'desktop',
 };
 
 test.beforeEach(async ({ page }) => {

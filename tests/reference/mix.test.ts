@@ -2,7 +2,7 @@ import { describe, it } from 'vitest';
 import { expectStereo } from './expect.ts';
 import { MIX_NAMES, type StereoPrint } from './legacy/scenarios.ts';
 
-// Szenarien aus legacy/tests/mix-scn.cjs. 'live' fehlt bewusst: Es automatisiert über DOM-Klicks.
+// Szenarien aus dem früheren legacy/tests/mix-scn.cjs. 'live' fehlt bewusst: Es automatisiert über DOM-Klicks.
 const EXPECTED = [
   'demo',
   'base',

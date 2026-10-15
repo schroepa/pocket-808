@@ -1,4 +1,4 @@
-import { expect, test } from '../e2e/fixtures.ts';
+import { expect, test } from './fixtures.ts';
 
 test.skip(({ browserName }) => browserName !== 'chromium', 'Long Tasks misst nur Chromium');
 

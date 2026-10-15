@@ -1,28 +1,48 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from './fixtures.ts';
 
-// Bekannte Verstöße der Legacy-App (serious/critical). Ziel bis Ende Schritt 5: leere Listen.
-const BASELINE = new URL('./axe-baseline.json', import.meta.url);
-
-test('keine neuen schweren Barrierefreiheits-Verstöße', async ({ page }, info) => {
+test('keine schweren Verstöße (axe)', async ({ page }) => {
   await page.goto('/');
-  for (const id of ['synHead', 'smpHead', 'mixHead', 'fxHead'])
-    await page.locator(`#${id}`).click();
-  const { violations } = await new AxeBuilder({ page }).analyze();
-  const found = violations
-    .filter((v) => v.impact === 'serious' || v.impact === 'critical')
-    .flatMap((v) => v.nodes.map((n) => `${v.id} @ ${n.target.join(' ')}`))
-    .sort();
+  const r = await new AxeBuilder({ page }).analyze();
+  const bad = r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+  expect(bad.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual(
+    [],
+  );
+});
 
-  const all = existsSync(BASELINE)
-    ? (JSON.parse(readFileSync(BASELINE, 'utf8')) as Record<string, string[]>)
-    : {};
-  if (process.env.AXE_UPDATE === '1') {
-    all[info.project.name] = found;
-    writeFileSync(BASELINE, JSON.stringify(all, null, 2) + '\n');
-    return;
+test('keine schweren Verstöße mit offenem Synth (axe)', async ({ page }) => {
+  await page.goto('/');
+  const head = page.locator('#dev-head-synth');
+  if ((await head.getAttribute('aria-expanded')) === 'false') await head.click();
+  const r = await new AxeBuilder({ page }).analyze();
+  const bad = r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+  expect(bad.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual(
+    [],
+  );
+});
+
+test('keine schweren Verstöße mit offenem Sampler (axe)', async ({ page }) => {
+  await page.goto('/');
+  const head = page.locator('#dev-head-smp');
+  if ((await head.getAttribute('role')) === 'tab') await head.click();
+  else if ((await head.getAttribute('aria-expanded')) === 'false') await head.click();
+  const r = await new AxeBuilder({ page }).analyze();
+  const bad = r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+  expect(bad.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual(
+    [],
+  );
+});
+
+test('keine schweren Verstöße mit offenem Mixer und FX (axe)', async ({ page }) => {
+  await page.goto('/');
+  for (const id of ['mix', 'fx']) {
+    const head = page.locator(`#dev-head-${id}`);
+    if ((await head.getAttribute('role')) === 'tab') await head.click();
+    else if ((await head.getAttribute('aria-expanded')) === 'false') await head.click();
+    const r = await new AxeBuilder({ page }).analyze();
+    const bad = r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+    expect(bad.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual(
+      [],
+    );
   }
-  const known = new Set(all[info.project.name] ?? []);
-  expect(found.filter((f) => !known.has(f))).toEqual([]);
 });

@@ -1,4 +1,4 @@
-import { expect, test } from '../e2e/fixtures.ts';
+import { expect, test } from './fixtures.ts';
 
 test('Startansicht', async ({ page }) => {
   await page.goto('/');

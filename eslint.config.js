@@ -30,8 +30,6 @@ export default defineConfig(
   {
     ignores: [
       'dist/',
-      'dist-next/',
-      'legacy/',
       'coverage/',
       'playwright-report/',
       'test-results/',

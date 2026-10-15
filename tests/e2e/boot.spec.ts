@@ -1,4 +1,4 @@
-import { expect, test } from '../e2e/fixtures.ts';
+import { expect, test } from './fixtures.ts';
 
 test('die neue App startet ohne Fehler', async ({ page, pageErrors }) => {
   await page.goto('/');

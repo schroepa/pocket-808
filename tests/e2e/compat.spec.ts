@@ -1,4 +1,4 @@
-import { expect, test } from '../e2e/fixtures.ts';
+import { expect, test } from './fixtures.ts';
 
 test('alter Speicherstand lädt (Tempo, Auswahl, Steps)', async ({ page }) => {
   await page.addInitScript(() => {

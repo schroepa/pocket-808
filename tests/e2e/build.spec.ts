@@ -1,23 +1,22 @@
 import { readFileSync, statSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
-// Ausgangsgröße der gebauten Legacy-App plus 10 % Puffer (Spezifikation: Größenbudget)
-const BUDGET_BYTES = 135_140; // 122 854 B × 1,1
+// Größe nach 5c (94 461 B, mit Synth und Sampler) plus 20 % Puffer; nach 5a waren es 70 855 B
+const BUDGET_BYTES = 113_360;
 const DIST = new URL('../../dist/index.html', import.meta.url);
 
 test.describe('gebaute dist/index.html', () => {
-  test.skip(({ browserName }) => browserName !== 'chromium', 'nur einmal prüfen');
+  test.beforeEach(() => {
+    test.skip(test.info().project.name !== 'desktop', 'nur einmal prüfen');
+  });
 
   test('bleibt im Größenbudget', () => {
     expect(statSync(DIST).size).toBeLessThanOrEqual(BUDGET_BYTES);
   });
-
-  test('deklariert UTF-8 (ohne Angabe raten Browser falsch, Umlaute zerfallen)', () => {
-    const html = readFileSync(DIST, 'utf8');
-    expect(html.slice(0, 200)).toMatch(/<meta charset="utf-8">/i);
+  test('deklariert UTF-8', () => {
+    expect(readFileSync(DIST, 'utf8').slice(0, 300)).toMatch(/<meta charset="utf-8"/i);
   });
-
-  test('ist eigenständig: nur Google Fonts als externe Ressource', () => {
+  test('ist eigenständig: nur Google Fonts extern', () => {
     const html = readFileSync(DIST, 'utf8');
     expect(html).not.toMatch(/<script[^>]+src=/);
     const links = [...html.matchAll(/<link[^>]+href="([^"]+)"/g)].map((m) => m[1] ?? '');

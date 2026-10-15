@@ -4,7 +4,7 @@ import type { StereoPrint } from './legacy/scenarios.ts';
 import { runLegacy } from './run.ts';
 import { TOLERANCE } from './tolerance.ts';
 
-// Standardwerte aus legacy/index.html (DEFAULTS). tuneStep = Tune-Änderung, die die von Tune
+// Standardwerte der alten App (legacy/oracle.html, DEFAULTS). tuneStep = Tune-Änderung, die die von Tune
 // gesteuerte Frequenz um einen Halbton (≈ 6 %) verschiebt:
 //   BD: Tonhöhe 38 + 44·Tune Hz, SD: Tonhöhe 150 + 80·Tune Hz, CH: Hochpass 6000 + 3000·Tune Hz.
 // Stimmen mit Rauschen: Spitze und Schwerpunkt <2 kHz hängen statistisch vom Rauschen ab (anderer
