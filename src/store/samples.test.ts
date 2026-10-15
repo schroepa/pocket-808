@@ -89,3 +89,51 @@ describe('createSampleBank', () => {
     expect(bank.pads.value[0]).toBeNull();
   });
 });
+
+describe('SampleBank.replaceAll', () => {
+  it('ersetzt Pads und Drums mit einem Schreibvorgang; fremde Schlüssel bleiben, alte D: entfallen', () => {
+    const storage = memory({
+      [SAMPLE_STORAGE_KEY]: JSON.stringify({ 'D:BD': { d: 'AAA=', n: 'Alt' }, x: { d: 'y' } }),
+    });
+    let writes = 0;
+    const set = storage.setItem;
+    storage.setItem = (k, v) => {
+      writes++;
+      set(k, v);
+    };
+    const bank = createSampleBank(storage, { BD: { pcm, name: 'Alt' } }, [pcm]);
+    let runs = 0;
+    const stop = effect(() => {
+      if (bank.pads.value.length + bank.drums.value.size >= 0) runs++;
+    });
+    bank.replaceAll([null, pcm], { SD: { pcm, name: 'Snap' } });
+    stop();
+    expect(writes).toBe(1);
+    expect(runs).toBe(2);
+    expect(bank.pads.value).toEqual([null, pcm, null, null, null, null, null, null]);
+    expect([...bank.drums.value.keys()]).toEqual(['SD']);
+    const saved = JSON.parse(storage.data.get(SAMPLE_STORAGE_KEY) ?? '{}') as Record<
+      string,
+      { d: string; n?: string }
+    >;
+    expect(saved['0']).toEqual({ d: '' });
+    expect(decodePcm(saved['1']?.d ?? '')).toHaveLength(3);
+    expect(saved['D:BD']).toBeUndefined();
+    expect(saved['D:SD']?.n).toBe('Snap');
+    expect(saved.x).toEqual({ d: 'y' });
+  });
+
+  it('ein gesperrter Speicher hält das Ersetzen nicht auf', () => {
+    const bank = createSampleBank(
+      {
+        getItem: () => null,
+        setItem: () => {
+          throw new Error('voll');
+        },
+      },
+      {},
+    );
+    bank.replaceAll([pcm], {});
+    expect(bank.pads.value[0]).toBe(pcm);
+  });
+});

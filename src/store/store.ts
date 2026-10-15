@@ -23,7 +23,7 @@ import {
   removeEntry,
 } from '../core/song.ts';
 import type { Pattern, Preset, Slot, State, SubKey, VoiceId } from '../core/types.ts';
-import { restoreSnapshot, snapshot, type Snapshot } from '../core/undo.ts';
+import { restoreSnapshot, snapshot } from '../core/undo.ts';
 import { batch, computed, signal, type Equals, type ReadonlySignal } from './signals.ts';
 
 export type SubPatternKind = keyof typeof SUB_PATTERNS;
@@ -49,6 +49,8 @@ export interface Store {
   copy(): void;
   paste(): void;
   undo(): void;
+  /** ganzen Zustand ersetzen (Projekt öffnen); Zurück stellt ihn wieder her und ruft revert */
+  replaceState(next: State, revert?: () => void): void;
   appendToSong(): void;
   bumpRepeat(index: number, delta: number): void;
   moveEntry(index: number, delta: number): void;
@@ -66,7 +68,8 @@ export function createStore(initial: State, opts: { freeze?: boolean } = {}): St
   const freeze = opts.freeze ?? true;
   const prepare = (s: State): State => (freeze ? deepFreeze(s) : s);
   const state = signal(prepare(initial));
-  const undoSnap = signal<Snapshot | null>(null);
+  /** ein Schritt Zurück: wie der Zustand wiederhergestellt wird, danach optional after */
+  const undoSnap = signal<{ restore: (s: State) => State; after?: () => void } | null>(null);
   const clip = signal<Pattern | null>(null);
   const songEpoch = signal(0);
 
@@ -76,7 +79,8 @@ export function createStore(initial: State, opts: { freeze?: boolean } = {}): St
   /** Legacy snap(): Schnappschuss, dann Änderung – als eine Welle. */
   const withUndo = (fn: (s: State) => State): void => {
     batch(() => {
-      undoSnap.value = snapshot(state.peek());
+      const snap = snapshot(state.peek());
+      undoSnap.value = { restore: (s) => restoreSnapshot(s, snap) };
       update(fn);
     });
   };
@@ -130,7 +134,15 @@ export function createStore(initial: State, opts: { freeze?: boolean } = {}): St
       if (!u) return;
       batch(() => {
         undoSnap.value = null;
-        update((s) => restoreSnapshot(s, u));
+        update(u.restore);
+      });
+      u.after?.();
+    },
+    replaceState: (next, revert) => {
+      const prev = state.peek();
+      batch(() => {
+        undoSnap.value = { restore: () => prev, ...(revert ? { after: revert } : {}) };
+        update(() => next);
       });
     },
     appendToSong: () => {
