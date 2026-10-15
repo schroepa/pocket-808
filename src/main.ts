@@ -9,7 +9,7 @@ import { must } from './core/util.ts';
 import { renderOffline } from './audio/export.ts';
 import { encodeWav } from './core/wav.ts';
 import { pickAudioFile, pickTextFile } from './platform/files.ts';
-import { saveFile } from './platform/share.ts';
+import { saveFile, type ArtifactDownloads } from './platform/share.ts';
 import { createRecorder, type RecorderEnv } from './platform/recorder.ts';
 import { connectHost, hostState, type HostHot } from './platform/host.ts';
 import { createIosUnlock } from './platform/ios.ts';
@@ -42,6 +42,19 @@ function openStorage(): StorageLike {
       },
     };
   }
+}
+
+/** Im Claude-Artifact: Download-Freigabe (claude.use), kommt später an; sonst bleibt sie null */
+let artifactDownloads: ArtifactDownloads | null = null;
+const claude = (window as unknown as { claude?: { use?: (name: string) => Promise<unknown> } })
+  .claude;
+if (typeof claude?.use === 'function') {
+  claude.use('downloads').then(
+    (d) => {
+      artifactDownloads = (d as ArtifactDownloads | null) ?? null;
+    },
+    () => undefined,
+  );
 }
 
 function boot(hostData: unknown): Store {
@@ -149,7 +162,12 @@ function boot(hostData: unknown): Store {
     files: {
       pickAudio: (opts) => pickAudioFile(document, opts),
       pickProject: () => pickTextFile(document, '.json,application/json'),
-      save: (blob, name) => saveFile({ navigator, document, URL, File }, blob, name),
+      save: (blob, name) =>
+        saveFile(
+          { navigator, document, URL, File, downloads: () => artifactDownloads },
+          blob,
+          name,
+        ),
     },
     recorder: createRecorder({
       mediaDevices: navigator.mediaDevices,

@@ -313,3 +313,31 @@ describe('Datei-Dialog: Randfälle', () => {
     scope.dispose();
   });
 });
+
+describe('Datei-Dialog: Rückmeldungen beim Sichern', () => {
+  it('Projekt: Sichern nicht möglich', async () => {
+    const { root, files, scope } = setup();
+    files.save.mockResolvedValueOnce('failed');
+    btn(root, 'Projekt sichern').click();
+    await flush();
+    expect(status(root)).toBe('Sichern nicht möglich');
+    scope.dispose();
+  });
+  it('WAV: gesichert bzw. nicht möglich', async () => {
+    const { root, files, scope } = setup();
+    btn(root, 'WAV erzeugen').click();
+    await flush();
+    btn(root, 'WAV sichern').click();
+    await flush();
+    expect(status(root)).toBe('WAV gesichert');
+    files.save.mockResolvedValueOnce('failed');
+    btn(root, 'WAV sichern').click();
+    await flush();
+    expect(status(root)).toBe('Sichern nicht möglich');
+    files.save.mockResolvedValueOnce('cancelled');
+    btn(root, 'WAV sichern').click();
+    await flush();
+    expect(status(root)).toBe('Sichern nicht möglich');
+    scope.dispose();
+  });
+});

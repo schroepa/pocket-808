@@ -35,7 +35,8 @@ export function projectSection(
       new Blob([text], { type: 'application/json' }),
       projectFileName(now),
     );
-    if (r !== 'cancelled') ui.say('Projekt gesichert');
+    if (r === 'failed') ui.say('Sichern nicht möglich');
+    else if (r !== 'cancelled') ui.say('Projekt gesichert');
   };
 
   const open = async (): Promise<void> => {
