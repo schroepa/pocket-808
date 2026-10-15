@@ -111,6 +111,8 @@ export function stepOptsPanel(
           }),
         ),
       ),
+    ]),
+    h('div', { class: 'opt-row' }, [
       knob(scope, {
         label: 'Chance',
         value: computed(() => opt.value.p),
@@ -122,8 +124,6 @@ export function stepOptsPanel(
         readout: c.readout,
         tag,
       }),
-    ]),
-    h('div', { class: 'opt-row' }, [
       selectField(scope, {
         label: 'Bedingung',
         options: STEP_CONDS.map((x) => x.label),
@@ -132,6 +132,8 @@ export function stepOptsPanel(
           write({ c: STEP_CONDS[i]?.value ?? 'all' });
         },
       }),
+    ]),
+    h('div', { class: 'opt-row opt-end' }, [
       chip(scope, {
         label: 'Zurücksetzen',
         onClick: () => {

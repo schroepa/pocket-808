@@ -26,6 +26,13 @@
   .opt-row .fld {
     flex: 1 1 140px;
   }
+  .opt-quick {
+    flex: 1 1 auto;
+    justify-content: flex-end;
+  }
+  .opt-end {
+    justify-content: flex-end;
+  }
   .opt-off {
     font: 13px var(--font-lcd);
     color: var(--ink-dim);
