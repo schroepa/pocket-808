@@ -19,6 +19,9 @@ const SPIED = vi.hoisted(
       'muteReverb',
       'replaceReverb',
       'stutterOn',
+      'stutterOff',
+      'punchOn',
+      'punchOff',
     ] as const,
 );
 type Spies = { [K in (typeof SPIED)[number]]: MockInstance<Graph[K]> };
@@ -47,6 +50,7 @@ function fakeContext() {
     exponentialRampToValueAtTime: vi.fn(),
     cancelScheduledValues: vi.fn(),
     cancelAndHoldAtTime: vi.fn(),
+    setValueCurveAtTime: vi.fn(),
   });
   const node = () => ({
     connect: vi.fn(),
@@ -396,6 +400,42 @@ describe('createEngine', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('Punch: ersetzende Effekte lösen sich ab, andere kombinieren; Stopp löst alles', () => {
+    const store = createStore(baseState());
+    const timer = manualTimer();
+    const engine = createEngine({
+      store,
+      createContext: () => fakeContext() as never,
+      timer,
+      clock: () => 1,
+      prerender: false,
+    });
+    engine.prepare();
+    const g = must(graphs.at(-1), 'Graph');
+    const offs = () => g.punchOff.mock.calls.map((c) => c[0]);
+    engine.punchOn('tape');
+    engine.punchOn('crush');
+    expect(offs()).toEqual(['tape']);
+    engine.stutterOn(0.5);
+    expect(offs()).toEqual(['tape', 'crush']);
+    engine.punchOn('loop8');
+    expect(g.stutterOff).toHaveBeenCalledTimes(1);
+    engine.punchOn('lp');
+    engine.punchOn('echo');
+    engine.punchOn('half');
+    engine.punchOn('echo');
+    expect(g.punchOn.mock.calls.map((c) => c[0])).toEqual(['tape', 'crush', 'lp', 'echo']);
+    engine.punchOff('crush');
+    expect(offs()).toEqual(['tape', 'crush']);
+    engine.start();
+    engine.stop();
+    expect(offs().sort()).toEqual(['crush', 'echo', 'lp', 'tape']);
+    expect(g.stutterOff).toHaveBeenCalledTimes(2);
+    engine.stutterOff();
+    expect(g.stutterOff).toHaveBeenCalledTimes(2);
+    engine.dispose();
   });
 
   it('prepare meldet einen Fehler beim Aufbau, schließt den Kontext und versucht es erneut', () => {

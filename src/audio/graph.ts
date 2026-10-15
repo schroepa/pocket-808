@@ -45,6 +45,26 @@ export interface Graph {
   replaceReverb(ir: Float32Array, fx: Fx, t: number): void;
   stutterOn(t: number, period: number): void;
   stutterOff(t: number): void;
+  /** Punch-Effekt ein (erst bei der ersten Benutzung angelegt); fx: Ausgangswerte der Filter */
+  punchOn(kind: GraphPunch, t: number, tempo: number, fx: Fx): void;
+  /** Punch-Effekt aus; Filter kehren zu den FX-Werten zurück */
+  punchOff(kind: GraphPunch, t: number, fx: Fx): void;
+}
+
+/** Punch-Effekte, die im Graphen leben (Loops nutzen den Stutter, Half-Time den Scheduler) */
+export type GraphPunch = 'tape' | 'crush' | 'echo' | 'lp' | 'hp';
+
+/** Bandstopp: Dauer bis zum Stillstand (s) */
+const TAPE_S = 1;
+/** Filterfahrten: Dauer (s) und Ziel (Hz) */
+const SWEEP_S = 1.5;
+const LP_TARGET = 250;
+const CRUSH_LEVEL = 0.8;
+const HP_TARGET = 2000;
+
+interface Insert {
+  inp: GainNode;
+  out: GainNode;
 }
 
 interface Stutter {
@@ -181,6 +201,74 @@ export function createGraph(
     return st;
   };
 
+  // Punch-Einsätze: Abgriff hinter dem Bus, Einspeisung vor dem DJ-Filter (wie der Stutter)
+  const insert = (middle: AudioNode[]): Insert => {
+    const inp = c.createGain();
+    const out = c.createGain();
+    inp.gain.value = 0;
+    out.gain.value = 0;
+    bus.connect(inp);
+    let prev: AudioNode = inp;
+    for (const n of middle) {
+      prev.connect(n);
+      prev = n;
+    }
+    prev.connect(out);
+    out.connect(djIn);
+    return { inp, out };
+  };
+  let tape: (Insert & { dly: DelayNode }) | null = null;
+  const makeTape = () => {
+    const dly = c.createDelay(1);
+    dly.delayTime.value = 0;
+    return { ...insert([dly]), dly };
+  };
+  let crush: Insert | null = null;
+  const makeCrush = (): Insert => {
+    const sh = c.createWaveShaper();
+    // Treppe mit 12 Stufen: grob quantisiert wie ein alter Sampler
+    sh.curve = Float32Array.from(
+      { length: 4096 },
+      (_, i) => Math.round((i / 4095) * 2 * 6 - 6) / 6,
+    );
+    return insert([sh]);
+  };
+  let echo: (Insert & { dly: DelayNode }) | null = null;
+  const makeEcho = () => {
+    const dly = c.createDelay(2);
+    const lp = c.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 3000;
+    const fbk = c.createGain();
+    fbk.gain.value = 0.55;
+    const e = insert([dly, lp]);
+    lp.connect(fbk);
+    fbk.connect(dly);
+    e.out.gain.value = 0.7;
+    return { ...e, dly };
+  };
+  /**
+   * Weich von einem bekannten Wert zu einem neuen (Muster des Stutters): halten, Anker setzen, Rampe.
+   * Ohne Anker beginnt eine Rampe beim letzten Ereignis (oft 0 s) statt jetzt.
+   */
+  const fade = (p: AudioParam, from: number, to: number, t: number, dur = 0.008): void => {
+    holdAt(p, t);
+    p.setValueAtTime(from, t);
+    p.linearRampToValueAtTime(to, t + dur);
+  };
+  /** trockenes Signal weich aus- bzw. einblenden (ersetzende Effekte) */
+  const dry = (on: boolean, t: number): void => {
+    fade(dryG.gain, on ? 0 : 1, on ? 1 : 0, t);
+  };
+  /** laufende Filterfahrt: Start (Zeit, Frequenz) für die Rückkehr beim Loslassen */
+  const sweeps = new Map<'lp' | 'hp', { t0: number; from: number; to: number }>();
+  const sweepAt = (k: 'lp' | 'hp', t: number): number | null => {
+    const sw = sweeps.get(k);
+    if (!sw) return null;
+    const x = Math.min(1, Math.max(0, (t - sw.t0) / SWEEP_S));
+    return sw.from * Math.pow(sw.to / sw.from, x);
+  };
+
   const graph: Graph = {
     ctx,
     bus,
@@ -264,6 +352,72 @@ export function createGraph(
       dryG.gain.setValueAtTime(1, t + P - 0.001);
       dryG.gain.linearRampToValueAtTime(0, t + P + 0.003);
       st.on = true;
+    },
+    punchOn(kind, t, tempo, fx) {
+      if (kind === 'lp' || kind === 'hp') {
+        const f = kind === 'lp' ? djLP.frequency : djHP.frequency;
+        const from = kind === 'lp' ? djFilter(fx).lp : djFilter(fx).hp;
+        const to = kind === 'lp' ? LP_TARGET : HP_TARGET;
+        sweeps.set(kind, { t0: t, from, to });
+        holdAt(f, t);
+        f.setValueAtTime(from, t);
+        f.exponentialRampToValueAtTime(to, t + SWEEP_S);
+        return;
+      }
+      if (kind === 'echo') {
+        echo ??= makeEcho();
+        echo.dly.delayTime.setValueAtTime(Math.min(1.9, (3 * 60) / tempo / 4), t);
+        fade(echo.inp.gain, 0, 1, t);
+        return;
+      }
+      if (kind === 'tape') {
+        tape ??= makeTape();
+        const tp = tape;
+        // Verzögerung wächst quadratisch: Tonhöhe fällt linear von 1 auf 0 in TAPE_S
+        const curve = Float32Array.from({ length: 64 }, (_, i) => (i / 63) ** 2 * (TAPE_S / 2));
+        tp.dly.delayTime.cancelScheduledValues(t);
+        tp.dly.delayTime.setValueCurveAtTime(curve, t, TAPE_S);
+        for (const p of [tp.inp.gain, tp.out.gain]) holdAt(p, t);
+        tp.inp.gain.setValueAtTime(1, t);
+        tp.out.gain.setValueAtTime(0, t);
+        tp.out.gain.linearRampToValueAtTime(1, t + 0.008);
+        tp.out.gain.linearRampToValueAtTime(0, t + TAPE_S);
+        dry(false, t);
+        return;
+      }
+      crush ??= makeCrush();
+      holdAt(crush.inp.gain, t);
+      crush.inp.gain.setValueAtTime(1, t);
+      fade(crush.out.gain, 0, CRUSH_LEVEL, t);
+      dry(false, t);
+    },
+    punchOff(kind, t, fx) {
+      if (kind === 'lp' || kind === 'hp') {
+        const cur = sweepAt(kind, t);
+        if (cur === null) return;
+        sweeps.delete(kind);
+        const f = kind === 'lp' ? djLP.frequency : djHP.frequency;
+        holdAt(f, t);
+        f.setValueAtTime(cur, t);
+        f.exponentialRampToValueAtTime(kind === 'lp' ? djFilter(fx).lp : djFilter(fx).hp, t + 0.05);
+        return;
+      }
+      if (kind === 'echo') {
+        if (!echo) return;
+        fade(echo.inp.gain, 1, 0, t);
+        return;
+      }
+      const ins = kind === 'tape' ? tape : crush;
+      if (!ins) return;
+      // Tape ist nach TAPE_S schon stumm; Crush steht auf CRUSH_LEVEL
+      fade(ins.out.gain, kind === 'crush' ? CRUSH_LEVEL : 0, 0, t);
+      holdAt(ins.inp.gain, t + 0.02);
+      ins.inp.gain.setValueAtTime(0, t + 0.02);
+      if (kind === 'tape' && tape) {
+        holdAt(tape.dly.delayTime, t + 0.02);
+        tape.dly.delayTime.setValueAtTime(0, t + 0.02);
+      }
+      dry(true, t);
     },
     stutterOff(t) {
       const st = stutter;

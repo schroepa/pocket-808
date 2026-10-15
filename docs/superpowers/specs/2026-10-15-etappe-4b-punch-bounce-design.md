@@ -57,7 +57,7 @@ Stand: 2026-10-15. Zweiter Teil der Etappe „Performance“ mit Ideen von Teena
   - Tape: Pegel im Haltefenster mindestens 20 dB tiefer, danach wieder wie ohne Effekt (±3 dB).
   - Tiefpass: Schwerpunkt im Haltefenster < 0,6 × ohne. Hochpass: > 1,4 × ohne. Danach jeweils ±15 %.
   - Crush: Schwerpunkt oder Pegel ändern sich deutlich (> 15 % bzw. > 1 dB), danach ±15 %.
-  - Echo (nur BD auf Step 0, Echo gehalten 0–0,3 s): Zwischen 1 und 2 s klingt es noch (> −60 dB), ohne Echo ist dort Stille.
+  - Echo (nur BD auf Step 0, Echo gehalten 0–0,3 s): Zwischen 1 und 2 s klingt es noch (mindestens 30 dB über der Stille ohne Echo).
   - Half: Der Abstand der geplanten Steps verdoppelt sich, solange gehalten.
 - **Unit:**
   - Engine: Ausschluss der ersetzenden Effekte, Freigabe beim Loslassen, Dispose.
