@@ -6,7 +6,7 @@
 
 Aufmachen, auf *Start* tippen, und der Beat läuft. Pocket 808 braucht keine Installation, kein Konto und keinen Server. Alles, was du baust, bleibt in deinem Browser.
 
-> Diese README ist ein **lebendes Dokument**. Sie wird mit jeder Änderung am Projekt aktualisiert. Stand: 2026-10-15, Version 0.19.0.
+> Diese README ist ein **lebendes Dokument**. Sie wird mit jeder Änderung am Projekt aktualisiert. Stand: 2026-10-15, Version 0.20.0.
 
 ---
 
@@ -36,6 +36,14 @@ Aufmachen, auf *Start* tippen, und der Beat läuft. Pocket 808 braucht keine Ins
   - Mixer mit 13 Kanälen: Pegel, Panorama, Reverb-Send, Mute und Solo.
   - DJ-Filter (Tiefpass nach links, Hochpass nach rechts) und Reverb mit einstellbarer Raumgröße.
   - **Stutter** zum Halten: Der Klang wiederholt sich in Vierteln, Achteln, Sechzehnteln oder Zweiunddreißigsteln, solange du drückst.
+- **Punch-in wie bei den Pocket Operators:** Das Gerät **Punch** hat acht Effekte, die wirken, solange du die Taste hältst, auch mehrere zugleich:
+  - Loop 1/8 und 1/16
+  - Half-Time
+  - Tape-Stopp (Tonhöhe und Pegel fallen in einer Sekunde ab wie ein angehaltenes Band)
+  - Crush
+  - Tiefpass- und Hochpass-Fahrt
+  - Echo, das nach dem Loslassen ausklingt
+- **Bounce wie beim EP-133:** Ein Tipp rendert das aktuelle Pattern auf das gewählte Sampler-Pad. Dort spielst du es weiter, rückwärts, gestimmt oder in Stücken.
 - **Vom Loop zum Song:** Acht Pattern-Plätze (A–H) lassen sich zu einer Song-Kette mit Wiederholungen verbinden. Dazu kommen vier Vorlagen (House, Electro, Hip-Hop, Trap), Kopieren, Einfügen und Zurück.
 - **Merkt sich alles:** Jede Änderung wird automatisch gespeichert, auch deine Samples.
 - **Mitnehmen und teilen:**
@@ -193,10 +201,10 @@ Pocket 808 wird mit mehr Testcode als App-Code gebaut. Jeder Commit läuft durch
 
 | Ebene | Was geprüft wird | Umfang |
 |---|---|---|
-| **Unit** | `core`, `store`, `audio`, `ui` und `platform` einzeln (Oberfläche in jsdom), mit Eigenschafts- und Modelltests (fast-check); Abdeckung ≥ 90 % pro Datei erzwungen | 560 Tests |
-| **Referenz** | Die neue Engine klingt wie die bewährte alte App, die eingefroren als Vergleichsmaßstab in `tests/reference/legacy/oracle.html` liegt (sie wird nicht mehr ausgeliefert): Beide rendern dieselben Szenarien offline (`node-web-audio-api`) und werden über **Klang-Fingerabdrücke** (Spitze, RMS-Verlauf in 10 ms, spektraler Schwerpunkt) verglichen, dazu Speicherstände, Scheduler-Sequenzen und das Umrechnen importierter Samples (bitgleich) | 172 Tests, 15 Mix-Szenarien, 50 Drum-Varianten, WAV-Export, Step-Optionen, Locks und Fill |
+| **Unit** | `core`, `store`, `audio`, `ui` und `platform` einzeln (Oberfläche in jsdom), mit Eigenschafts- und Modelltests (fast-check); Abdeckung ≥ 90 % pro Datei erzwungen | 566 Tests |
+| **Referenz** | Die neue Engine klingt wie die bewährte alte App, die eingefroren als Vergleichsmaßstab in `tests/reference/legacy/oracle.html` liegt (sie wird nicht mehr ausgeliefert): Beide rendern dieselben Szenarien offline (`node-web-audio-api`) und werden über **Klang-Fingerabdrücke** (Spitze, RMS-Verlauf in 10 ms, spektraler Schwerpunkt) verglichen, dazu Speicherstände, Scheduler-Sequenzen und das Umrechnen importierter Samples (bitgleich) | 178 Tests, 15 Mix-Szenarien, 50 Drum-Varianten, WAV-Export, Step-Optionen, Locks und Fill, Punch-Effekte |
 | **Bench** | Performance-Budget: Audio-Knoten pro Sekunde und Renderzeit für ein Demo- und ein Worst-Case-Pattern | Demo 47 Knoten/s, Worst-Case 429 Knoten/s |
-| **E2E** | Playwright auf iPhone hoch und quer, iPad hoch und quer (WebKit) und Desktop (Chromium): Funktion, Kürzel, kein horizontaler Scroll, Screenshots je Gerät, Barrierefreiheit mit axe (keine schweren Verstöße), alte Speicherstände, Artifact-Host, Projekt sichern und öffnen, WAV-Export, Step-Optionen, Fill und Locks, keine Long Tasks beim Spielen, Touch-Ziele ≥ 44 px, Größenbudget | 188 Tests |
+| **E2E** | Playwright auf iPhone hoch und quer, iPad hoch und quer (WebKit) und Desktop (Chromium): Funktion, Kürzel, kein horizontaler Scroll, Screenshots je Gerät, Barrierefreiheit mit axe (keine schweren Verstöße), alte Speicherstände, Artifact-Host, Projekt sichern und öffnen, WAV-Export, Step-Optionen, Fill und Locks, Punch und Bounce, keine Long Tasks beim Spielen, Touch-Ziele ≥ 44 px, Größenbudget | 203 Tests |
 
 - **Toleranzen kalibriert:** Die Toleranzen der Klang-Fingerabdrücke sind kalibriert. Ein Halbton Verstimmung oder 10 % mehr Decay werden erkannt, Rauschschwankungen nicht.
 - **Mutationsprüfung:** Wir bauen absichtlich Fehler ein, zum Beispiel einen ausgebauten Live-Effekt, falschen Swing oder eine Closed Hat, die die Open Hat nicht mehr abwürgt. Der passende Test muss rot werden, sonst fehlt ein Test.
@@ -272,7 +280,7 @@ Nach dem Fundament, in dieser Reihenfolge:
 1. ~~Mixer und FX~~
 2. ~~Projekt speichern und laden (`.pocket808.json`), Audio-Export (WAV)~~ – MP3 bei Bedarf später
 3. ~~Velocity und Accent, Wahrscheinlichkeit und Bedingungen pro Step~~
-4. **Performance**, inspiriert von Teenage Engineering: ~~Fill-Taste und Parameter-Locks pro Step~~ (4a), Punch-in-Effekte zum Halten wie bei Pocket Operator und EP-133, ein Pattern auf ein Pad bouncen (4b)
+4. ~~**Performance**, inspiriert von Teenage Engineering: Fill-Taste und Parameter-Locks pro Step (4a), Punch-in-Effekte zum Halten und Bounce aufs Pad (4b)~~
 5. **Spielspaß:** animiertes Display wie beim OP-1, Würfel für Variationen, Mixer- und Mute-Szenen
 6. Synth: Akkorde, Arpeggiator, Slide und Accent, LFO
 7. Sampler: Chop-Modus, melodische Tastatur, Pitch pro Step
