@@ -1,0 +1,162 @@
+@layer components {
+  .sampler-body {
+    container: sampler / inline-size;
+  }
+  .pads {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .pad {
+    position: relative;
+    display: grid;
+    place-content: center;
+    gap: 3px;
+    height: 60px;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    background: var(--cell);
+    font: 700 18px var(--font-display);
+  }
+  .pad small {
+    max-width: 68px;
+    overflow: hidden;
+    font: 11px/1.1 var(--font-lcd);
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: color-mix(in srgb, var(--ink) 72%, var(--cell));
+  }
+  .pad.empty {
+    color: color-mix(in srgb, var(--ink) 72%, var(--cell));
+  }
+  .pad.has::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--acc);
+    box-shadow: 0 0 6px var(--acc);
+  }
+  .pad.sel {
+    z-index: 1;
+    background: var(--acc);
+    color: var(--chassis);
+    box-shadow: 0 0 14px rgba(211, 146, 90, 0.3);
+  }
+  .pad.sel small {
+    color: var(--chassis);
+  }
+  .pad.sel.has::after {
+    background: var(--chassis);
+    box-shadow: none;
+  }
+  .pad:active {
+    filter: brightness(1.3);
+  }
+  .screen {
+    position: relative;
+    margin-bottom: 12px;
+    padding: 6px;
+    border-radius: 10px;
+    background: var(--well);
+  }
+  .screen canvas {
+    display: block;
+    width: 100%;
+    height: 88px;
+    touch-action: none;
+    cursor: ew-resize;
+  }
+  .wave-empty {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    padding: 0 16px;
+    text-align: center;
+    font: 13px var(--font-lcd);
+    color: color-mix(in srgb, var(--ink) 72%, var(--well));
+    pointer-events: none;
+  }
+  .smp-msg {
+    position: absolute;
+    inset: auto 6px 6px;
+    padding: 6px 8px 4px;
+    border-radius: 6px;
+    background: #1a1612;
+    font: 12px/1.3 var(--font-lcd);
+    text-transform: uppercase;
+    color: var(--acc);
+  }
+  .smp-tools {
+    margin-bottom: 12px;
+  }
+  .knob-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px 0;
+    justify-items: center;
+    margin-bottom: 16px;
+  }
+  .row-split {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .smp-steps {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 8px 5px;
+  }
+  @container sampler (min-width: 640px) {
+    .smp-steps {
+      grid-template-columns: repeat(16, 1fr);
+    }
+  }
+  .ss {
+    position: relative;
+    height: var(--touch);
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--acc) 12%, var(--cell));
+    font: 12px var(--font-lcd);
+    color: var(--ink);
+  }
+  .ss.q {
+    background: color-mix(in srgb, var(--acc) 22%, var(--cell));
+  }
+  .ss.on {
+    z-index: 1;
+    background: var(--acc);
+    color: var(--chassis);
+    box-shadow: 0 0 16px rgba(211, 146, 90, 0.42);
+  }
+  .ss.sub::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    width: 14px;
+    height: 3px;
+    margin-left: -7px;
+    background: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.55) 0 2px, transparent 2px 4px);
+  }
+  .ss.now {
+    filter: brightness(1.7);
+  }
+  .ss.subsel {
+    z-index: 1;
+    filter: brightness(1.3);
+    box-shadow: 0 0 16px rgba(212, 212, 220, 0.5);
+  }
+}

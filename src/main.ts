@@ -7,6 +7,7 @@ import type { DrumSample } from './core/samples.ts';
 import type { VoiceId } from './core/types.ts';
 import { must } from './core/util.ts';
 import { pickAudioFile } from './platform/files.ts';
+import { createRecorder, type RecorderEnv } from './platform/recorder.ts';
 import { connectHost, hostState, type HostHot } from './platform/host.ts';
 import { createIosUnlock } from './platform/ios.ts';
 import { watchLifecycle } from './platform/lifecycle.ts';
@@ -57,7 +58,7 @@ function boot(hostData: unknown): Store {
   );
   const store = createStore(booted.state);
   const persist = persistState(store.state, storage);
-  const samples = createSampleBank(storage, booted.drums);
+  const samples = createSampleBank(storage, booted.drums, booted.pads);
 
   const unlock = createIosUnlock({
     navigator: navigator,
@@ -83,6 +84,16 @@ function boot(hostData: unknown): Store {
     prev = new Map(next);
   });
 
+  // Pad-Samples an die Engine geben, nur geänderte Pads
+  let prevPads = samples.pads.peek();
+  effect(() => {
+    const next = samples.pads.value;
+    next.forEach((pcm, i) => {
+      if (pcm !== prevPads[i]) engine.setPadSample(i, pcm);
+    });
+    prevPads = next;
+  });
+
   const audio: UiAudio = {
     available,
     playing: engine.playing,
@@ -102,13 +113,27 @@ function boot(hostData: unknown): Store {
     auditionNote: (p, d, l) => {
       engine.auditionNote(p, d, l);
     },
+    auditionPad: (i) => {
+      engine.auditionPad(i);
+    },
     decode: (d) => engine.decode(d),
   };
   mountShell(must(document.getElementById('app') ?? undefined, '#app'), {
     store,
     samples,
     audio,
-    files: { pickAudio: () => pickAudioFile(document) },
+    files: { pickAudio: (opts) => pickAudioFile(document, opts) },
+    recorder: createRecorder({
+      mediaDevices: navigator.mediaDevices,
+      MediaRecorder:
+        typeof MediaRecorder === 'undefined'
+          ? undefined
+          : (MediaRecorder as unknown as RecorderEnv['MediaRecorder']),
+      setTimeout: (fn, ms) => window.setTimeout(fn, ms),
+      clearTimeout: (h) => {
+        window.clearTimeout(h as number);
+      },
+    }),
     timer: browserTimer,
     win: window,
   });

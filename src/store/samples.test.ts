@@ -64,4 +64,28 @@ describe('createSampleBank', () => {
     bank.setDrum('BD', { pcm, name: 'K' });
     expect(bank.drums.value.has('BD')).toBe(true);
   });
+
+  it('Pad-Samples: Start, setzen und leeren; Drum-Einträge bleiben', () => {
+    const storage = memory();
+    const factory = Float32Array.from([0.1]);
+    const bank = createSampleBank(storage, {}, [factory, null]);
+    expect(bank.pads.value[0]).toBe(factory);
+    expect(bank.pads.value[1]).toBeNull();
+    bank.setDrum('BD', { pcm, name: 'K' });
+    bank.setPad(1, pcm);
+    expect(bank.pads.value[1]).toBe(pcm);
+    let saved = JSON.parse(storage.data.get(SAMPLE_STORAGE_KEY) ?? '{}') as Record<
+      string,
+      { d: string }
+    >;
+    expect(decodePcm(saved['1']?.d ?? '')[1]).toBeCloseTo(0.5, 3);
+    bank.setPad(0, null);
+    saved = JSON.parse(storage.data.get(SAMPLE_STORAGE_KEY) ?? '{}') as Record<
+      string,
+      { d: string }
+    >;
+    expect(saved['0']).toEqual({ d: '' });
+    expect(saved['D:BD']).toBeDefined();
+    expect(bank.pads.value[0]).toBeNull();
+  });
 });

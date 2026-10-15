@@ -99,17 +99,17 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 
 ## Sampler (5c)
 
-| Handlung | Wirkung | Stand |
-|---|---|---|
-| Pad tippen | wählen und vorhören; Inhaltspunkt | ⏳ (5c) |
-| Wellenform | Start- und Endmarke ziehen, Lauflicht | ⏳ (5c) |
-| Laden | Datei dekodieren (`engine.decode`), Meldung bei Fehler | ⏳ (5c) |
-| Rec | mit dem Mikrofon aufnehmen (Rückfall Dateiauswahl mit capture) | ⏳ (5c) |
-| Leeren | Pad leeren | ⏳ (5c) |
-| Rev | rückwärts abspielen | ⏳ (5c) |
-| Tune, Attack, Decay, Level | Regler je Pad | ⏳ (5c) |
-| Sampler-Steps, Sub-Steps | wie Drums, je Pad | ⏳ (5c) |
-| Meldungen | `role=status` | ⏳ (5c) |
+| Handlung | Wirkung | Stand | Test |
+|---|---|---|---|
+| Pad tippen | wählen und vorhören; Inhaltspunkt | ✅ | `sampler.test.ts`, `sampler.spec.ts` |
+| Wellenform | Start- und Endmarke ziehen, Lauflicht | ✅ | `sampler.test.ts` |
+| Laden | Datei dekodieren (`engine.decode`), Meldung bei Fehler | ✅ | `sampler.test.ts`, `sampler.spec.ts` |
+| Rec | mit dem Mikrofon aufnehmen (Rückfall Dateiauswahl mit capture) | ✅ | `sampler.test.ts` |
+| Leeren | Pad leeren | ✅ | `sampler.test.ts`, `sampler.spec.ts` |
+| Rev | rückwärts abspielen | ✅ | `sampler.test.ts`, `sampler.spec.ts` |
+| Tune, Attack, Decay, Level | Regler je Pad | ✅ | `sampler.test.ts` |
+| Sampler-Steps, Sub-Steps | wie Drums, je Pad | ✅ | `sampler.test.ts`, `sampler.spec.ts` |
+| Meldungen | `role=status` | ✅ | `sampler.test.ts` |
 
 ## Mixer (5d)
 

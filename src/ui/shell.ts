@@ -2,13 +2,14 @@ import type { Timer } from '../store/persist.ts';
 import type { SampleBank } from '../store/samples.ts';
 import type { ReadonlySignal } from '../store/signals.ts';
 import type { Store } from '../store/store.ts';
-import type { UiAudio, UiContext, UiFiles } from './context.ts';
+import type { UiAudio, UiContext, UiFiles, UiRecorder } from './context.ts';
 import { devices } from './devices.ts';
 import { createScope, h } from './dom.ts';
 import { installKeys, shortcutHelp } from './keys.ts';
 import { watchLayout, type Layout } from './layout.ts';
 import { brand } from './panels/brand.ts';
 import { deck } from './panels/deck.ts';
+import { samplerDevice } from './panels/sampler/device.ts';
 import { slots } from './panels/slots.ts';
 import { stepEditor } from './panels/step-editor.ts';
 import { synthDevice } from './panels/synth/device.ts';
@@ -23,6 +24,7 @@ export interface ShellDeps {
   samples: SampleBank;
   audio: UiAudio;
   files: UiFiles;
+  recorder: UiRecorder;
   timer: Timer;
   win: Pick<Window, 'matchMedia' | 'requestAnimationFrame' | 'cancelAnimationFrame'>;
 }
@@ -43,6 +45,7 @@ export function mountShell(
     samples: deps.samples,
     audio: deps.audio,
     files: deps.files,
+    recorder: deps.recorder,
     readout,
     scope,
   };
@@ -53,7 +56,7 @@ export function mountShell(
       slots(c),
       stepEditor(c),
       tracks(c),
-      devices(c, layout, [synthDevice(c)]),
+      devices(c, layout, [synthDevice(c), samplerDevice(c)]),
       transport(c),
     ]),
   );
