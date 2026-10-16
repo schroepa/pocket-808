@@ -45,6 +45,8 @@ export interface Graph {
   replaceReverb(ir: Float32Array, fx: Fx, t: number): void;
   stutterOn(t: number, period: number): void;
   stutterOff(t: number): void;
+  /** Momentaner Absolut-Peak am Master (0..1+), fürs LCD; Offline ungenutzt */
+  peak(): number;
 }
 
 interface Stutter {
@@ -89,6 +91,11 @@ export function createGraph(
   djIn.connect(djLP);
   comp.connect(clip);
   clip.connect(master);
+  // Peak-Meter: ein Analyser nach dem Master, vor dem Limiter (kein Einfluss auf den Klang)
+  const meter = c.createAnalyser();
+  meter.fftSize = 256;
+  meter.smoothingTimeConstant = 0.25;
+  const peakBuf = new Float32Array(meter.fftSize);
   // Limiter am Ausgang: erlaubt hohe Lautheit, ohne dass Spitzen übersteuern
   const lim = c.createDynamicsCompressor();
   lim.threshold.value = -1.5;
@@ -98,7 +105,8 @@ export function createGraph(
   lim.release.value = 0.08;
   const safe = c.createWaveShaper();
   safe.curve = new Float32Array([-0.98, 0.98]);
-  master.connect(lim);
+  master.connect(meter);
+  meter.connect(lim);
   lim.connect(safe);
   safe.connect(c.destination);
 
@@ -274,6 +282,19 @@ export function createGraph(
       st.out.gain.linearRampToValueAtTime(0, t + 0.008);
       st.inp.gain.setValueAtTime(0, t);
       st.fb.gain.linearRampToValueAtTime(0, t + 0.02);
+    },
+    peak() {
+      try {
+        meter.getFloatTimeDomainData(peakBuf);
+      } catch {
+        return 0;
+      }
+      let p = 0;
+      for (const sample of peakBuf) {
+        const a = Math.abs(sample);
+        if (a > p) p = a;
+      }
+      return p;
     },
   };
 

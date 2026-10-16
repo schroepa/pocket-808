@@ -88,6 +88,14 @@ function fakeContext() {
     createWaveShaper: vi.fn(node),
     createDelay: vi.fn(node),
     createConvolver: vi.fn(node),
+    createAnalyser: vi.fn(() => ({
+      ...node(),
+      fftSize: 256,
+      smoothingTimeConstant: 0.25,
+      getFloatTimeDomainData: (buf: Float32Array) => {
+        buf.fill(0);
+      },
+    })),
     createOscillator: vi.fn(node),
     createBufferSource: vi.fn(node),
     createBuffer: vi.fn((_c: number, n: number) => buffer(n)),
@@ -201,6 +209,34 @@ describe('createEngine', () => {
     expect(onGesture).toHaveBeenCalledTimes(4);
     expect(ctx.resume).toHaveBeenCalledTimes(4);
     engine.dispose();
+  });
+
+  it('Peak und Fill/Stutter-Signale fürs LCD', () => {
+    const store = createStore(baseState());
+    const engine = createEngine({
+      store,
+      createContext: () => fakeContext() as never,
+      timer: manualTimer(),
+      prerender: false,
+    });
+    expect(engine.peak()).toBe(0);
+    engine.prepare();
+    expect(engine.peak()).toBe(0);
+    expect(engine.fillHeld.value).toBe(false);
+    engine.setFill(true);
+    expect(engine.fillHeld.value).toBe(true);
+    engine.stutterOn(0.5);
+    expect(engine.stutterHeld.value).toBe(true);
+    engine.stutterOff();
+    expect(engine.stutterHeld.value).toBe(false);
+    engine.start();
+    engine.setFill(true);
+    engine.stutterOn(0.25);
+    engine.stop();
+    expect(engine.fillHeld.value).toBe(false);
+    expect(engine.stutterHeld.value).toBe(false);
+    engine.dispose();
+    expect(engine.peak()).toBe(0);
   });
 
   it('resume weckt nur einen nicht laufenden Kontext und legt keinen an', () => {

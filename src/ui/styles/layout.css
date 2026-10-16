@@ -156,6 +156,8 @@ html[data-layout='desktop'] {
   top: 0;
   z-index: 5;
   align-self: stretch;
+  /* sonst sprengt die LCD-Mindestbreite das 12er-Raster (Play hängt rechts raus) */
+  min-width: 0;
   margin: -8px;
   padding: 8px;
   background: var(--chassis);

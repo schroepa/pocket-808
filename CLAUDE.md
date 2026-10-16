@@ -80,7 +80,7 @@ Live: Jeder Push nach `main` wird von Vercel ausgeliefert (https://pocket-808.ve
 2. ~~Projekt speichern/laden (JSON, `.pocket808.json`), Audio-Export (WAV)~~ (MP3 bei Bedarf später)
 3. ~~Velocity/Accent, Wahrscheinlichkeit und Bedingungen pro Step~~
 4. Performance (Teenage-Engineering-Ideen): ~~4a Fill-Taste und Parameter-Locks (Tune/Decay, Pads auch Start)~~; 4b Punch-in-FX zum Halten (wie Pocket Operator/EP-133), Pattern auf ein Pad bouncen
-5. Spielspaß: animiertes LCD (OP-1), Würfel/Variationen (Tombola), Mixer-/Mute-Szenen (OP-XY)
+5. Spielspaß: ~~animiertes LCD mit Peak (OP-1)~~ (5a), Würfel/Variationen (Tombola), Mixer-/Mute-Szenen (OP-XY, 8 Slots)
 6. Synth: Akkorde, Arpeggiator, Slide/Accent, LFO
 7. Sampler: Chop-Modus, melodische Tastatur, Pitch pro Step
 8. Live-Aufnahme, Pattern-Länge 8–32, Tap-Tempo und Count-in, mehrstufiges Undo

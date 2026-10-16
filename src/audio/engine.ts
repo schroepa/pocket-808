@@ -77,6 +77,12 @@ export interface Engine {
   drumsReady(): boolean;
   readonly playing: ReadonlySignal<boolean>;
   readonly playhead: ReadonlySignal<{ step: number; songIndex: number }>;
+  /** Fill-Taste gehalten (für LCD-Glyph) */
+  readonly fillHeld: ReadonlySignal<boolean>;
+  /** Stutter gehalten (für LCD-Glyph) */
+  readonly stutterHeld: ReadonlySignal<boolean>;
+  /** Master-Peak 0..1+ fürs LCD; 0 ohne Graph */
+  peak(): number;
   start(): void;
   stop(): void;
   /** pro Bildschirm-Frame aufrufen: Abspielposition, im Song-Modus folgt die Ansicht */
@@ -130,6 +136,8 @@ export function createEngine(o: EngineOptions): Engine {
   const synthLast: Partial<Record<Part, SynthVoice>> = {};
   const playing = signal(false);
   const playhead = signal({ step: -1, songIndex: -1 });
+  const fillHeld = signal(false);
+  const stutterHeld = signal(false);
   let interval: unknown = null;
   let step = 0;
   let nextTime = 0;
@@ -436,9 +444,13 @@ export function createEngine(o: EngineOptions): Engine {
     timer.clearInterval(interval);
     interval = null;
     queue.length = 0;
+    if (stutterHeld.peek()) graph?.stutterOff(now() + 0.005);
     batch(() => {
       playing.value = false;
       playhead.value = { step: -1, songIndex: -1 };
+      fill = false;
+      fillHeld.value = false;
+      stutterHeld.value = false;
     });
   };
 
@@ -451,6 +463,9 @@ export function createEngine(o: EngineOptions): Engine {
     drumsReady: () => VOICE_IDS.every((id) => drums?.ready(id) ?? false),
     playing,
     playhead,
+    fillHeld,
+    stutterHeld,
+    peak: () => graph?.peak() ?? 0,
     resume,
     start() {
       if (playing.peek() || !gesture()) return;
@@ -496,12 +511,15 @@ export function createEngine(o: EngineOptions): Engine {
     },
     stutterOn(fraction) {
       if (!gesture()) return;
+      stutterHeld.value = true;
       graph?.stutterOn(now() + 0.01, stutterPeriod(state().tempo, fraction));
     },
     setFill(on) {
       fill = on;
+      fillHeld.value = on;
     },
     stutterOff() {
+      stutterHeld.value = false;
       graph?.stutterOff(now() + 0.005);
     },
     setPadSample(pad, pcm) {
