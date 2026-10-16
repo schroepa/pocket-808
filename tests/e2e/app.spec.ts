@@ -21,8 +21,10 @@ test('richtiges Layout und kein horizontaler Scroll', async ({ page }, info) => 
     'data-layout',
     EXPECTED[info.project.name] ?? '',
   );
+  // clientWidth (nicht innerWidth): eine vertikale Scrollbar darf keinen
+  // falschen horizontalen Overflow melden
   const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - window.innerWidth,
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   );
   expect(overflow).toBeLessThanOrEqual(0);
 });
@@ -46,6 +48,8 @@ test('Step, Spur, Pattern und Tempo bleiben nach Neuladen erhalten', async ({ pa
   );
   await expect(page.locator('[data-area=editor] h2')).toContainText('SD');
   await expect(page.locator('.lcd-digits')).toHaveText('200');
+  await expect(page.getByRole('meter', { name: 'Pegel' })).toBeVisible();
+  await expect(page.locator('.lcd-step')).toHaveCount(16);
 });
 
 test('Änderung wird beim Wechsel in den Hintergrund sofort gespeichert', async ({ page }) => {

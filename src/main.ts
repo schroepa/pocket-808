@@ -114,6 +114,9 @@ function boot(hostData: unknown): Store {
     available,
     playing: engine.playing,
     playhead: engine.playhead,
+    fillHeld: engine.fillHeld,
+    stutterHeld: engine.stutterHeld,
+    peak: () => engine.peak(),
     start: () => {
       engine.start();
     },

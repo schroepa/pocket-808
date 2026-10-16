@@ -25,6 +25,8 @@ describe('deck', () => {
     store.update((s) => ({ ...s, tempo: 95 }));
     expect(digits()).toBe('095');
     expect(el.querySelector('.lcd-sub')?.textContent).toBe('BD · Bass Drum');
+    expect(el.querySelector('.lcd-peak')).toBeTruthy();
+    expect(el.querySelectorAll('.lcd-step')).toHaveLength(16);
   });
 
   it('Tempo-, Swing- und Master-Regler schreiben in den Store', () => {

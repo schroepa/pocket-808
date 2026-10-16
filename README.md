@@ -6,7 +6,7 @@
 
 Aufmachen, auf *Start* tippen, und der Beat läuft. Pocket 808 braucht keine Installation, kein Konto und keinen Server. Alles, was du baust, bleibt in deinem Browser.
 
-> Diese README ist ein **lebendes Dokument**. Sie wird mit jeder Änderung am Projekt aktualisiert. Stand: 2026-10-15, Version 0.19.0.
+> Diese README ist ein **lebendes Dokument**. Sie wird mit jeder Änderung am Projekt aktualisiert. Stand: 2026-10-16, Version 0.20.0.
 
 ---
 
@@ -49,6 +49,7 @@ Aufmachen, auf *Start* tippen, und der Beat läuft. Pocket 808 braucht keine Ins
 
 ## Warum es sich gut anfühlt
 
+- **Lebendiges LCD** (OP-1-Touch): Tempo groß, Statuszeile, 16 Step-Punkte mit Play-Pulse, Glyphs für Pattern/Song, Fill und Stutter, plus ein gedrosselter Master-Peak-Balken.
 - **Sofort da:**
   - Audio-Kontext und Klangerzeugung entstehen schon beim Laden, noch stumm.
   - Der Start-Tipp weckt den Kontext nur noch auf, darum gibt es keine Verzögerung.
@@ -273,7 +274,7 @@ Nach dem Fundament, in dieser Reihenfolge:
 2. ~~Projekt speichern und laden (`.pocket808.json`), Audio-Export (WAV)~~ – MP3 bei Bedarf später
 3. ~~Velocity und Accent, Wahrscheinlichkeit und Bedingungen pro Step~~
 4. **Performance**, inspiriert von Teenage Engineering: ~~Fill-Taste und Parameter-Locks pro Step~~ (4a), Punch-in-Effekte zum Halten wie bei Pocket Operator und EP-133, ein Pattern auf ein Pad bouncen (4b)
-5. **Spielspaß:** animiertes Display wie beim OP-1, Würfel für Variationen, Mixer- und Mute-Szenen
+5. **Spielspaß:** ~~animiertes Display mit Peak wie beim OP-1~~ (5a), Würfel für Variationen (Tombola), Mixer- und Mute-Szenen (8 Slots)
 6. Synth: Akkorde, Arpeggiator, Slide und Accent, LFO
 7. Sampler: Chop-Modus, melodische Tastatur, Pitch pro Step
 8. Live-Aufnahme, Pattern-Länge 8–32, Tap-Tempo und Count-in, mehrstufiges Undo

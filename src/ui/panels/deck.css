@@ -46,15 +46,20 @@
     gap: 14px;
     align-items: center;
     justify-content: center;
+    min-width: 0;
+    max-width: 100%;
   }
   .lcd {
     flex: 1 1 150px;
     min-width: 0;
+    max-width: 100%;
     display: grid;
-    gap: 6px;
-    padding: 10px 12px;
+    gap: 4px;
+    padding: 8px 12px;
     border-radius: 14px;
     background: var(--well);
+    touch-action: none;
+    overflow: hidden;
   }
   .lcd-main {
     display: flex;
@@ -73,6 +78,54 @@
     letter-spacing: 0.1em;
     color: var(--acc);
     opacity: 0.8;
+  }
+  .lcd-peak {
+    height: 4px;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--cell) 80%, var(--well));
+    overflow: hidden;
+  }
+  .lcd-peak-fill {
+    height: 100%;
+    width: 0;
+    border-radius: 2px;
+    background: var(--acc);
+  }
+  .lcd-steps {
+    display: grid;
+    grid-template-columns: repeat(16, minmax(0, 1fr));
+    gap: 3px;
+  }
+  .lcd-step {
+    display: block;
+    height: 4px;
+    border-radius: 1px;
+    background: color-mix(in srgb, var(--cell) 70%, transparent);
+  }
+  .lcd-step.on {
+    z-index: 1;
+    background: var(--acc);
+  }
+  .lcd-step.pulse {
+    box-shadow: var(--glow-acc);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .lcd-step.pulse {
+      box-shadow: none;
+    }
+  }
+  .lcd-glyphs {
+    display: flex;
+    gap: 8px;
+    font: 11px var(--font-lcd);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+  .lcd-glyph.on {
+    z-index: 1;
+    color: var(--acc);
+    text-shadow: 0 0 8px color-mix(in srgb, var(--acc) 40%, transparent);
   }
   .lcd-sub {
     min-height: 1.2em;

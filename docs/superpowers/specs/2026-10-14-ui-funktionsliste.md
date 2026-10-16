@@ -13,6 +13,7 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 | Swing-Regler | 0–100 %, Doppeltipp 0 | ✅ | `panels-head.test.ts` |
 | Master-Regler | 0–100, Doppeltipp 80 | ✅ | `panels-head.test.ts` |
 | LCD-Zeile | gewählte Stimme bzw. 1,4 s lang eine Meldung | ✅ | `readout.test.ts` |
+| LCD Peak / Steps / Glyphs | Master-Peak (~20 Hz), 16 Step-Punkte, PTN/SNG · FILL · STU | ✅ | `lcd.test.ts`, `panels-head.test.ts` |
 | Ohne Web Audio | Zeile „Kein Audio in diesem Browser“, Bearbeiten bleibt möglich | ✅ | `readout.test.ts` |
 
 ## Pattern-Slots (5a)

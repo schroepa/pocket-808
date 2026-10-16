@@ -11,6 +11,12 @@ export interface UiAudio {
   readonly available: boolean;
   readonly playing: ReadonlySignal<boolean>;
   readonly playhead: ReadonlySignal<{ step: number; songIndex: number }>;
+  /** Fill gehalten (LCD) */
+  readonly fillHeld: ReadonlySignal<boolean>;
+  /** Stutter gehalten (LCD) */
+  readonly stutterHeld: ReadonlySignal<boolean>;
+  /** Master-Peak fürs LCD (0..1+) */
+  peak(): number;
   start(): void;
   stop(): void;
   tick(): void;

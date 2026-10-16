@@ -43,23 +43,36 @@ export function manualTimer(): ManualTimer {
 export function fakeAudio(available = true) {
   const playing = signal(false);
   const playhead = signal({ step: -1, songIndex: -1 });
+  const fillHeld = signal(false);
+  const stutterHeld = signal(false);
   const audio = {
     available,
     playing,
     playhead,
+    fillHeld,
+    stutterHeld,
+    peak: vi.fn(() => 0),
     start: vi.fn(() => {
       playing.value = true;
     }),
     stop: vi.fn(() => {
       playing.value = false;
+      fillHeld.value = false;
+      stutterHeld.value = false;
     }),
     tick: vi.fn(),
     audition: vi.fn(),
     auditionNote: vi.fn(),
     auditionPad: vi.fn(),
-    stutterOn: vi.fn(),
-    stutterOff: vi.fn(),
-    setFill: vi.fn(),
+    stutterOn: vi.fn(() => {
+      stutterHeld.value = true;
+    }),
+    stutterOff: vi.fn(() => {
+      stutterHeld.value = false;
+    }),
+    setFill: vi.fn((on: boolean) => {
+      fillHeld.value = on;
+    }),
     decode: vi.fn(() => Promise.resolve(Float32Array.from([0, 0, 0.5, 0.2]))),
     exportWav: vi.fn<UiAudio['exportWav']>(() =>
       Promise.resolve<Blob | null>(new Blob(['RIFF'], { type: 'audio/wav' })),
