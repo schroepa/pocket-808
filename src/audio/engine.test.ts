@@ -231,10 +231,15 @@ describe('createEngine', () => {
     store.update((s) => setLfo(s, 'BA', { t: 'pit' }));
     engine.auditionNote('BA', 0, 1);
     const pitOscs = ctx.createOscillator.mock.results.slice(-3).map((r) => r.value as N);
+    const pitGain = must(
+      gains().find((g) => g.targets.includes(must(pitOscs[0], 'Osz').detune)),
+      'LFO-Gain auf Pitch',
+    );
+    expect(pitGain).not.toBe(lfoGain);
     for (const o of pitOscs) {
-      expect(lfoGain.targets).toContain(o.detune);
+      expect(pitGain.targets).toContain(o.detune);
       for (const [type, fn] of o.listeners) if (type === 'ended') fn();
-      expect(lfoGain.disconnect).toHaveBeenCalledWith(o.detune);
+      expect(pitGain.disconnect).toHaveBeenCalledWith(o.detune);
     }
     engine.dispose();
   });
@@ -252,16 +257,19 @@ describe('createEngine', () => {
     const store = createStore(st);
     const ctx = fakeContext();
     const timer = manualTimer();
+    let now = 0;
     const engine = createEngine({
       store,
       createContext: () => ctx as never,
       timer,
       prerender: false,
-      clock: () => 0,
+      clock: () => now,
     });
     engine.prepare();
     const note = vi.spyOn(engine.schedule, 'note');
     engine.start();
+    timer.fire();
+    now = 0.2;
     timer.fire();
     const starts = new Set(
       ctx.createOscillator.mock.results
@@ -274,6 +282,87 @@ describe('createEngine', () => {
       expect(t).toBeCloseTo(0.08 + k * gap, 6);
     });
     expect(note).not.toHaveBeenCalled(); // der Scheduler geht nicht über schedule.note
+    engine.dispose();
+  });
+
+  it('Arp plant nur im Vorlauf; Stopp verwirft die übrigen Töne (keine zweite Folge nach Neustart)', () => {
+    const s0 = baseState();
+    const p = s0.patterns[s0.cur];
+    const notes = p.notes.BA.map((_, i) => (i === 0 ? { d: 0, l: 16 } : null));
+    const pat = { ...p, notes: { BA: notes, LD: p.notes.LD.map(() => null) } };
+    const st = setArp({ ...s0, patterns: { ...s0.patterns, [s0.cur]: pat } }, 'BA', {
+      m: 'up',
+      r: 2,
+      o: 1,
+    });
+    const store = createStore(st);
+    const ctx = fakeContext();
+    const timer = manualTimer();
+    let now = 0;
+    const engine = createEngine({
+      store,
+      createContext: () => ctx as never,
+      timer,
+      prerender: false,
+      clock: () => now,
+    });
+    engine.prepare();
+    const starts = () =>
+      ctx.createOscillator.mock.results
+        .map((r) => (r.value as { start: Mock }).start.mock.calls[0]?.[0] as number | undefined)
+        .filter((t): t is number => t !== undefined && t > 0);
+    engine.start();
+    timer.fire();
+    const gap = 60 / st.tempo / 4 / 2;
+    expect(Math.max(...starts())).toBeLessThan(now + 0.2 + gap);
+    now = 0.5;
+    timer.fire();
+    const planned = new Set(starts()).size;
+    expect(Math.max(...starts())).toBeLessThan(now + 0.2 + gap);
+    engine.stop();
+    now = 0.55;
+    engine.start();
+    timer.fire();
+    // nach dem Neustart nur die neue Folge ab ihrem Einsatz, nichts aus der alten dazwischen
+    const restart = Math.min(...starts().filter((t) => t >= now));
+    const after = new Set(starts()).size - planned;
+    expect(starts().filter((t) => t > now + 0.2 + gap)).toEqual([]);
+    expect(after).toBeLessThanOrEqual(Math.ceil(0.25 / gap) + 1);
+    expect(restart).toBeGreaterThan(now);
+    engine.dispose();
+  });
+
+  it('LFO-Zielwechsel ändert den Hub schon verbundener Noten nicht; Depth 0 blendet vor dem Stopp aus', () => {
+    const store = createStore(setLfo(baseState(), 'BA', { d: 1, t: 'pit' }));
+    const ctx = fakeContext();
+    const engine = createEngine({
+      store,
+      createContext: () => ctx as never,
+      timer: manualTimer(),
+      prerender: false,
+    });
+    engine.prepare();
+    type N = ReturnType<typeof ctx.createGain>;
+    const gains = () => ctx.createGain.mock.results.map((r) => r.value as N);
+    engine.auditionNote('BA', 0, 1);
+    const osc = must(ctx.createOscillator.mock.results.at(-1), 'Osz').value as N;
+    const pitGain = must(
+      gains().find((g) => g.targets.includes(osc.detune)),
+      'LFO-Gain auf Pitch',
+    );
+    store.update((s) => setLfo(s, 'BA', { t: 'cut' }));
+    expect((pitGain.gain as unknown as { at: (t: number) => number }).at(1)).toBe(100);
+    engine.auditionNote('BA', 0, 1);
+    const lp = must(ctx.createBiquadFilter.mock.results.at(-1), 'Filter').value as N;
+    const cutGain = must(
+      gains().find((g) => g.targets.includes(lp.detune)),
+      'LFO-Gain auf Cutoff',
+    );
+    expect((cutGain.gain as unknown as { at: (t: number) => number }).at(1)).toBe(2400);
+    store.update((s) => setLfo(s, 'BA', { d: 0 }));
+    const at = (cutGain.gain as unknown as { at: (t: number) => number }).at;
+    expect(at(0)).toBe(2400);
+    expect(at(0.04)).toBe(0); // vor dem Stopp bei 0,05 auf 0 gefahren
     engine.dispose();
   });
 

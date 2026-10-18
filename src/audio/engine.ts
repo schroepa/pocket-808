@@ -231,7 +231,7 @@ export function createEngine(o: EngineOptions): Engine {
       if (cur) cur.set(l, now());
       else lfos[part] = createLfo(g.ctx, l, now());
     } else if (cur) {
-      cur.stop(now() + 0.05);
+      cur.stop(now());
       lfos[part] = undefined;
     }
   };
@@ -455,6 +455,23 @@ export function createEngine(o: EngineOptions): Engine {
   };
 
   /** Lookahead-Scheduler (Legacy pump): plant alle Steps bis 0,2 s voraus. */
+  /** offene Arp-Töne je Part (Etappe 6b): geplant wird nur bis zum Vorlauf */
+  interface ArpTone {
+    t: number;
+    midi: number;
+    dur: number;
+    attrs: NoteAttrs;
+  }
+  const arpQueue: Record<Part, ArpTone[]> = { BA: [], LD: [] };
+  /** Arp-Töne des Parts bis vor `until` planen */
+  const flushArp = (part: Part, until: number): void => {
+    const q = arpQueue[part];
+    while (q[0] && q[0].t < until) {
+      const a = q.shift();
+      if (a) scheduleNote(part, [a.midi], a.t, a.dur, a.attrs);
+    }
+  };
+
   const pump = (): void => {
     const t0 = now();
     if (nextTime < t0 - 0.1) nextTime = t0 + 0.05;
@@ -490,22 +507,27 @@ export function createEngine(o: EngineOptions): Engine {
         const row = pat.notes[id];
         const n = row[step];
         if (n && aud[id]) {
-          // gleitet die Folgenote, bleibt das Gate bis zu ihrem Einsatz offen (gebunden)
+          // eine neue Note löst die übrigen Arp-Töne der vorigen ab (monophon)
+          flushArp(id, t);
+          arpQueue[id] = [];
           const len = effectiveLength(row, step);
-          const legato = row[step + len]?.s === true;
-          const dur = legato ? len * d + 0.01 : len * d * 0.92;
           const midis = noteMidis(id, n, s);
           const arp = s.synth[id].arp;
           if (arp) {
             // Arp: len · r einzelne Töne, Akzent auf allen, Slide nur am ersten
             const gap = d / arp.r;
-            arpSequence(midis, arp, len * arp.r, arpRnd).forEach((m, k) => {
-              scheduleNote(id, [m], t + k * gap, gap * 0.92, {
-                accent: n.a === true,
-                slide: k === 0 && n.s === true,
-              });
-            });
-          } else scheduleNote(id, midis, t, dur, { accent: n.a === true, slide: n.s === true });
+            arpQueue[id] = arpSequence(midis, arp, len * arp.r, arpRnd).map((midi, k) => ({
+              t: t + k * gap,
+              midi,
+              dur: gap * 0.92,
+              attrs: { accent: n.a === true, slide: k === 0 && n.s === true },
+            }));
+          } else {
+            // gleitet die Folgenote, bleibt das Gate bis zu ihrem Einsatz offen (gebunden)
+            const legato = row[step + len]?.s === true;
+            const dur = legato ? len * d + 0.01 : len * d * 0.92;
+            scheduleNote(id, midis, t, dur, { accent: n.a === true, slide: n.s === true });
+          }
         }
       }
       if (aud.SM) {
@@ -526,6 +548,7 @@ export function createEngine(o: EngineOptions): Engine {
       nextTime += d;
       step = (step + 1) % 16;
     }
+    for (const id of PARTS) flushArp(id, horizon);
   };
 
   const stop = (): void => {
@@ -537,6 +560,8 @@ export function createEngine(o: EngineOptions): Engine {
     timer.clearInterval(interval);
     interval = null;
     queue.length = 0;
+    arpQueue.BA = [];
+    arpQueue.LD = [];
     batch(() => {
       playing.value = false;
       playhead.value = { step: -1, songIndex: -1 };
