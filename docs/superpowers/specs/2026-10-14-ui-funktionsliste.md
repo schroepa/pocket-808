@@ -204,3 +204,13 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 | Slide | gleitet in 60 ms von der klingenden Vorgängerin, ohne neuen Attack; Marke links | ✅ | `next-synth-attrs.test.ts`, `synth.test.ts` |
 | Akkord | kein → Dreiklang → Vierklang → Quinte → Oktave, in der Tonart gestapelt, paraphon; Kürzel 3/4/5/8 und LCD-Meldung | ✅ | `core/notes.test.ts`, `next-synth-attrs.test.ts`, `synth.test.ts`, `synth.spec.ts` |
 | Speichern | optionale Felder `a`, `s`, `ch` in der Note, alte Stände bytegleich, kaputte Werte fallen weg | ✅ | `core/notes.test.ts`, `core-persist.test.ts` |
+
+## Arpeggiator und LFO (Roadmap-Etappe 6b)
+
+| Handlung | Wirkung | Stand | Test |
+|---|---|---|---|
+| Arp: Aus / Auf / Ab / Auf-Ab / Zufall | Note bzw. Akkord als Folge einzelner Töne | ✅ | `core/arp.test.ts`, `next-synth-attrs.test.ts`, `engine.test.ts`, `synth.test.ts`, `synth.spec.ts` |
+| Arp-Rate 1/16 / 1/32, Oktaven 1 / 2 | Abstand und Tonvorrat, im Aus vorwählbar | ✅ | `core/arp.test.ts`, `synth.test.ts` |
+| LFO Rate, Depth (Doppeltipp: 0,5 bzw. aus) | 0,1–19 Hz, Hub bis ±2 Oktaven (Cutoff) bzw. ±1 Halbton (Pitch) | ✅ | `engine.test.ts`, `next-synth-attrs.test.ts`, `synth.test.ts` |
+| LFO-Ziel Cutoff / Pitch | gilt ab der nächsten Note | ✅ | `engine.test.ts`, `synth.test.ts`, `synth.spec.ts` |
+| Speichern | optionale Felder `arp`, `lfo` im Patch, alte Stände bytegleich, Presets lassen sie stehen | ✅ | `core/arp.test.ts`, `core-persist.test.ts` |

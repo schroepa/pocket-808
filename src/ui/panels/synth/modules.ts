@@ -182,8 +182,8 @@ export function synthModules(c: UiContext): HTMLElement {
         arpSeg(
           'Arp-Oktaven',
           [
-            { value: '1', label: '1' },
-            { value: '2', label: '2' },
+            { value: '1', label: '1 Okt' },
+            { value: '2', label: '2 Okt' },
           ],
           (a) => String(a.o) as '1' | '2',
           (o) => ({ ...arpNow.peek(), o: o === '2' ? 2 : 1 }),

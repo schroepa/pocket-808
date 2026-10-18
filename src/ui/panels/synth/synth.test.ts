@@ -344,11 +344,11 @@ describe('Arp und LFO', () => {
     expect('arp' in store.state.value.synth.BA).toBe(false);
     radio(el, 'Arp', 'Auf-Ab')?.click();
     expect(store.state.value.synth.BA.arp).toEqual({ m: 'ud', r: 2, o: 1 });
-    radio(el, 'Arp-Oktaven', '2')?.click();
+    radio(el, 'Arp-Oktaven', '2 Okt')?.click();
     expect(store.state.value.synth.BA.arp).toEqual({ m: 'ud', r: 2, o: 2 });
-    expect(radio(el, 'Arp-Oktaven', '2')?.getAttribute('aria-checked')).toBe('true');
+    expect(radio(el, 'Arp-Oktaven', '2 Okt')?.getAttribute('aria-checked')).toBe('true');
     radio(el, 'Arp-Rate', '1/16')?.click();
-    radio(el, 'Arp-Oktaven', '1')?.click();
+    radio(el, 'Arp-Oktaven', '1 Okt')?.click();
     expect(store.state.value.synth.BA.arp).toEqual({ m: 'ud', r: 1, o: 1 });
     radio(el, 'Arp-Rate', '1/32')?.click();
     radio(el, 'Arp', 'Aus')?.click();
