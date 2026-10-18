@@ -6,7 +6,7 @@ import './deck.css';
 const toTempo = (v: number): number => Math.round(60 + v * 140);
 
 /** LCD (Tempo, Meldungen) und die Regler Tempo, Swing, Master (Legacy buildKnobs). */
-export function deck(c: UiContext): HTMLElement {
+export function deck(c: UiContext, strip?: HTMLElement): HTMLElement {
   const { store, scope, readout } = c;
   const digits = h('span', { class: 'lcd-digits' });
   bind(
@@ -27,6 +27,7 @@ export function deck(c: UiContext): HTMLElement {
   const lcd = h('div', { class: 'lcd', attrs: { role: 'group', 'aria-label': 'Anzeige' } }, [
     h('div', { class: 'lcd-main' }, [digits, h('span', { class: 'lcd-unit', text: 'BPM' })]),
     sub,
+    strip ?? null,
   ]);
   const knobs = h('div', { class: 'knob-row' }, [
     knob(scope, {

@@ -173,3 +173,34 @@ describe('Geräte Mixer und FX', () => {
     expect(fx.body(c.scope).querySelectorAll('.stp')).toHaveLength(4);
   });
 });
+
+describe('Szenen im Mixer', () => {
+  it('leer sichern, belegt abrufen, Sichern-Modus überschreibt, Markierung und Zurück', () => {
+    const { c, store } = makeContext();
+    const el = mixerPanel(c);
+    const scene = (n: number) =>
+      el.querySelector<HTMLButtonElement>(`[aria-label="Szene ${String(n)}"]`);
+    const saveMode = [...el.querySelectorAll<HTMLButtonElement>('button')].find(
+      (b) => b.textContent === 'Sichern',
+    );
+    scene(1)?.click();
+    expect(store.state.value.scenes?.[0]?.BD.v).toBe(store.state.value.mix.BD.v);
+    expect(c.readout.text.value).toBe('Szene 1 gesichert');
+    expect(scene(1)?.classList.contains('has')).toBe(true);
+    expect(scene(1)?.getAttribute('aria-pressed')).toBe('true');
+    store.update((s) => ({ ...s, mix: { ...s.mix, BD: { ...s.mix.BD, m: true } } }));
+    scene(1)?.click();
+    expect(store.state.value.mix.BD.m).toBe(false);
+    expect(c.readout.text.value).toBe('Szene 1');
+    store.undo();
+    expect(store.state.value.mix.BD.m).toBe(true);
+    saveMode?.click();
+    expect(saveMode?.getAttribute('aria-pressed')).toBe('true');
+    scene(1)?.click();
+    expect(store.state.value.scenes?.[0]?.BD.m).toBe(true);
+    expect(saveMode?.getAttribute('aria-pressed')).toBe('false');
+    scene(2)?.click();
+    expect(scene(2)?.getAttribute('aria-pressed')).toBe('true');
+    expect(scene(1)?.getAttribute('aria-pressed')).toBe('false');
+  });
+});

@@ -46,6 +46,14 @@ export function patternsPanel(c: UiContext): HTMLElement {
           },
         }),
         chip(scope, {
+          label: 'Würfeln',
+          ariaLabel: 'Variation würfeln',
+          onClick: () => {
+            store.vary(Math.random);
+            readout.flash('Variation gewürfelt');
+          },
+        }),
+        chip(scope, {
           label: 'Pattern leeren',
           onClick: () => {
             store.clearPattern();

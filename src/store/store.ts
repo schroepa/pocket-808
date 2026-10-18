@@ -22,7 +22,9 @@ import {
   moveEntry,
   removeEntry,
 } from '../core/song.ts';
+import { recallScene, saveScene } from '../core/scenes.ts';
 import { setStepOpt, type StepOptPatch } from '../core/stepopts.ts';
+import { vary } from '../core/vary.ts';
 import type { Pattern, Preset, Slot, State, SubKey, VoiceId } from '../core/types.ts';
 import { restoreSnapshot, snapshot } from '../core/undo.ts';
 import { batch, computed, signal, type Equals, type ReadonlySignal } from './signals.ts';
@@ -56,7 +58,12 @@ export interface Store {
   resetStepOpt(key: SubKey, step: number): void;
   /** Parameter-Locks eines Steps lösen (mit Zurück), übrige Optionen bleiben */
   resetStepLocks(key: SubKey, step: number): void;
-  /** ganzen Zustand ersetzen (Projekt öffnen); Zurück stellt ihn wieder her und ruft revert */
+  /** Variation des aktuellen Patterns würfeln (mit Zurück) */
+  vary(rng: () => number): void;
+  /** Mixer als Szene i sichern (ohne Zurück) bzw. abrufen (mit Zurück, ganzer Mixer) */
+  saveScene(i: number): void;
+  recallScene(i: number): void;
+  /** ganzen Zustand (Projekt öffnen); Zurück stellt ihn wieder her und ruft revert */
   replaceState(next: State, revert?: () => void): void;
   appendToSong(): void;
   bumpRepeat(index: number, delta: number): void;
@@ -153,6 +160,22 @@ export function createStore(initial: State, opts: { freeze?: boolean } = {}): St
     },
     resetStepLocks: (key, step) => {
       withUndo((s) => setStepOpt(s, key, step, { t: undefined, d: undefined, s: undefined }));
+    },
+    vary: (rng) => {
+      withUndo((s) => vary(s, rng));
+    },
+    saveScene: (i) => {
+      update((s) => saveScene(s, i));
+    },
+    recallScene: (i) => {
+      const prev = state.peek();
+      const next = recallScene(prev, i);
+      if (next === prev) return;
+      batch(() => {
+        // Zurück betrifft nur den Mixer; spätere Änderungen an Steps usw. bleiben
+        undoSnap.value = { restore: (s) => ({ ...s, mix: prev.mix }) };
+        update(() => next);
+      });
     },
     replaceState: (next, revert) => {
       const prev = state.peek();

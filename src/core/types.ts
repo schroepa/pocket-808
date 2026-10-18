@@ -99,6 +99,13 @@ export interface MixChannel {
   m: boolean;
   s: boolean;
 }
+/** Szene: je Kanal Pegel, Mute und Solo (Etappe 5) */
+export interface SceneChannel {
+  v: number;
+  m: boolean;
+  s: boolean;
+}
+export type SceneMix = Record<ChannelId, SceneChannel>;
 export interface Fx {
   size: number;
   damp: number;
@@ -133,4 +140,6 @@ export interface State {
   smp: { sel: number; pads: Pad[] };
   mix: Record<ChannelId, MixChannel>;
   fx: Fx;
+  /** 8 Mixer-Szenen; fehlt, solange keine gesichert ist */
+  scenes?: (SceneMix | null)[];
 }

@@ -373,6 +373,23 @@ describe('createEngine', () => {
     engine.dispose();
   });
 
+  it('scope: ohne Kontext false; Analyser erst bei der ersten Anforderung', () => {
+    const ctx = fakeContext();
+    const engine = createEngine({
+      store: createStore(baseState()),
+      createContext: () => ctx as never,
+      prerender: false,
+    });
+    const buf = new Float32Array(256);
+    expect(engine.scope(buf)).toBe(false);
+    engine.prepare();
+    expect(ctx.createAnalyser).not.toHaveBeenCalled();
+    expect(engine.scope(buf)).toBe(true);
+    expect(engine.scope(buf)).toBe(true);
+    expect(ctx.createAnalyser).toHaveBeenCalledTimes(1);
+    engine.dispose();
+  });
+
   it('prepare meldet einen Fehler beim Aufbau, schließt den Kontext und versucht es erneut', () => {
     const store = createStore(baseState());
     const broken = fakeContext();

@@ -74,6 +74,12 @@
     color: var(--acc);
     opacity: 0.8;
   }
+  .lcd-scope {
+    display: block;
+    width: 100%;
+    height: 28px;
+    margin-top: 6px;
+  }
   .lcd-sub {
     min-height: 1.2em;
     overflow: hidden;

@@ -111,3 +111,31 @@
     box-shadow: 0 0 16px rgba(211, 146, 90, 0.35);
   }
 }
+@layer components {
+  .scenes {
+    display: grid;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  /* zwei Reihen zu vier: auch auf dem Telefon mindestens 44 px breit */
+  .scene-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .scene-row .chip {
+    position: relative;
+    min-width: 0;
+    padding: 0;
+  }
+  .chip.scene.has::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--acc);
+  }
+}

@@ -143,6 +143,7 @@ function boot(hostData: unknown): Store {
     setFill: (on) => {
       engine.setFill(on);
     },
+    scope: (into) => engine.scope(into),
     punchOn: (k) => {
       engine.punchOn(k);
     },
