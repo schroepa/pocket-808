@@ -148,6 +148,53 @@ describe('pianoRoll', () => {
     expect(pages[1]?.classList.contains('now')).toBe(false);
   });
 
+  it('Werkzeug Akzent und Slide schalten die Note unter dem Tipp um, leere Zellen bleiben leer', () => {
+    const { c, store, audio } = makeContext();
+    store.update((s) => ({ ...s, part: 'BA', noteLen: 2 }));
+    store.clearNotes();
+    const el = pianoRoll(c);
+    const tool = (n: string) => el.querySelector<HTMLButtonElement>(`[aria-label="Werkzeug ${n}"]`);
+    expect(tool('Note')?.getAttribute('aria-pressed')).toBe('true');
+    cell(el, 3, 0)?.click();
+    tool('Akzent')?.click();
+    expect(tool('Akzent')?.getAttribute('aria-pressed')).toBe('true');
+    cell(el, 3, 1)?.click(); // Ausklang zählt zur Note
+    const note = () => store.state.value.patterns[store.state.value.cur].notes.BA[0];
+    expect(note()).toEqual({ d: 3, l: 2, a: true });
+    expect(cell(el, 3, 0)?.classList.contains('acc')).toBe(true);
+    cell(el, 5, 4)?.click(); // leer: nichts
+    expect(store.state.value.patterns[store.state.value.cur].notes.BA[4]).toBeNull();
+    tool('Slide')?.click();
+    cell(el, 3, 0)?.click();
+    expect(note()).toEqual({ d: 3, l: 2, a: true, s: true });
+    expect(cell(el, 3, 0)?.classList.contains('sl')).toBe(true);
+    cell(el, 3, 0)?.click();
+    expect(note()).toEqual({ d: 3, l: 2, a: true });
+    expect(cell(el, 3, 0)?.classList.contains('sl')).toBe(false);
+    expect(audio.auditionNote).toHaveBeenCalledTimes(1); // nur beim Setzen
+  });
+
+  it('Werkzeug Akkord schaltet weiter, zeigt das Kürzel und meldet im LCD', () => {
+    const { c, store } = makeContext();
+    store.update((s) => ({ ...s, part: 'BA', noteLen: 1 }));
+    store.clearNotes();
+    const el = pianoRoll(c);
+    cell(el, 2, 1)?.click();
+    el.querySelector<HTMLButtonElement>('[aria-label="Werkzeug Akkord"]')?.click();
+    const marks: string[] = [];
+    const flashes: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      cell(el, 2, 1)?.click();
+      marks.push(cell(el, 2, 1)?.textContent ?? '');
+      flashes.push(c.readout.text.value);
+    }
+    expect(marks).toEqual(['3', '4', '5', '8', '']);
+    expect(flashes).toEqual(['Dreiklang', 'Vierklang', 'Quinte', 'Oktave', 'Kein Akkord']);
+    expect(cell(el, 2, 1)?.getAttribute('aria-label')).toMatch(/Step 2$/);
+    cell(el, 2, 1)?.click();
+    expect(cell(el, 2, 1)?.getAttribute('aria-label')).toMatch(/Step 2 · Dreiklang$/);
+  });
+
   it('Notenlänge wählen', () => {
     const { c, store } = makeContext();
     const el = pianoRoll(c);
