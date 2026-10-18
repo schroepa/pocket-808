@@ -882,8 +882,9 @@ interface OscLog {
 export async function synthAttrs(args: {
   notes: [number, number, number, Partial<Note>][];
   patch?: Partial<SynthPatch>;
-}): Promise<{ peak: number; oscs: OscLog[]; rms: number[] }> {
+}): Promise<{ peak: number; oscs: OscLog[]; rms: number[]; paramLinks: number }> {
   const oscs: OscLog[] = [];
+  let paramLinks = 0;
   let on = false;
   const { ctx } = await play({
     seconds: 1.5,
@@ -896,6 +897,17 @@ export async function synthAttrs(args: {
       for (const [st, d, l, attrs] of args.notes) s.patterns.A.notes.BA[st] = { d, l, ...attrs };
     },
     instrument: (c) => {
+      // Verbindungen von Gain-Knoten auf AudioParams zählen (LFO auf detune)
+      const makeGain = c.createGain.bind(c);
+      c.createGain = () => {
+        const g = makeGain();
+        const connect = g.connect.bind(g) as (d: AudioNode | AudioParam) => unknown;
+        g.connect = ((d: AudioNode | AudioParam) => {
+          if (on && 'setValueAtTime' in d) paramLinks++;
+          return connect(d);
+        }) as typeof g.connect;
+        return g;
+      };
       const make = c.createOscillator.bind(c);
       c.createOscillator = () => {
         const o = make();
@@ -936,7 +948,7 @@ export async function synthAttrs(args: {
     for (let k = i; k < i + win; k++) sum += (data[k] ?? 0) ** 2;
     rms.push(Math.sqrt(sum / win));
   }
-  return { peak, oscs, rms };
+  return { peak, oscs, rms, paramLinks };
 }
 
 export const SCENARIOS: Record<string, (args: never) => Promise<unknown>> = {

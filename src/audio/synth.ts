@@ -2,6 +2,7 @@ import { WAVES } from '../core/constants.ts';
 import { attackTime, decayTime, releaseTime } from '../core/envelope.ts';
 import type { SynthPatch } from '../core/types.ts';
 import { must } from '../core/util.ts';
+import type { PartLfo } from './lfo.ts';
 import { rampFrom } from './params.ts';
 
 /* SH-101-Stimme wie Legacy synthNote: zwei verstimmte Oszillatoren + Sub, Tiefpass mit Filter-ADSR,
@@ -202,6 +203,8 @@ export function synthNote(o: {
   previous: SynthVoice | undefined;
   accent?: boolean;
   slide?: boolean;
+  /** LFO des Parts (Etappe 6b), wird an Filter bzw. Oszillatoren gelegt */
+  lfo?: PartLfo;
 }): SynthVoice {
   const { ctx, patch: p, time: t } = o;
   const freqs = o.midis.map((m) => 440 * Math.pow(2, (m - 69) / 12));
@@ -273,6 +276,7 @@ export function synthNote(o: {
     sg.connect(amp);
     oscs.push(n);
   }
+  o.lfo?.attach(lp, oscs);
   const out = gn(0.6 * (o.accent ? ACCENT_GAIN : 1));
   amp.connect(out);
   out.connect(o.dest);

@@ -10,6 +10,7 @@ interface Result {
   peak: number;
   oscs: Osc[];
   rms: number[];
+  paramLinks: number;
 }
 const run = (
   notes: [number, number, number, Record<string, unknown>][],
@@ -84,5 +85,62 @@ describe.concurrent('Synth: Akzent, Akkord, Slide', () => {
   it('ohne vorige Note spielt Slide normal', async ({ expect }) => {
     const r = await run([[4, 2, 2, { s: true }]]);
     expect(r.oscs[0]?.ramps).toEqual([]);
+  });
+});
+
+describe.concurrent('Synth: Arpeggiator und LFO', () => {
+  it('Arp Auf, 1/16: ein Dreiklang über 4 Steps spielt Grundton, Terz, Quinte, Grundton', async ({
+    expect,
+  }) => {
+    const plain = await run([[0, 0, 4, { ch: 'tri' }]]);
+    const tones = [...new Set(plain.oscs.map((o) => Math.round(o.first)))].sort((a, b) => a - b);
+    const r = await runNext<Result>('synthAttrs', {
+      notes: [[0, 0, 4, { ch: 'tri' }]],
+      patch: { arp: { m: 'up', r: 1, o: 1 } },
+    });
+    const starts = [...new Set(r.oscs.map((o) => o.start))];
+    expect(starts.map((t) => Math.round(t * 1000))).toEqual([80, 205, 330, 455]);
+    const first = starts.map((t) => Math.round(r.oscs.find((o) => o.start === t)?.first ?? 0));
+    expect(first).toEqual([tones[1], tones[2], tones[3], tones[1]]); // tones[0] ist der Sub
+  });
+
+  it('Arp 1/32 verdoppelt die Töne', async ({ expect }) => {
+    const r = await runNext<Result>('synthAttrs', {
+      notes: [[0, 0, 2, {}]],
+      patch: { arp: { m: 'up', r: 2, o: 2 } },
+    });
+    expect(new Set(r.oscs.map((o) => o.start)).size).toBe(4);
+  });
+
+  it('ohne LFO keine Param-Verbindungen; LFO Cutoff: eine je Note, Pitch: eine je Oszillator', async ({
+    expect,
+  }) => {
+    const notes: [number, number, number, Record<string, unknown>][] = [[0, 0, 8, {}]];
+    const [none, cut, pit] = await Promise.all([
+      run(notes),
+      runNext<Result>('synthAttrs', { notes, patch: { lfo: { r: 0.6, d: 0.8, t: 'cut' } } }),
+      runNext<Result>('synthAttrs', { notes, patch: { lfo: { r: 0.6, d: 0.8, t: 'pit' } } }),
+    ]);
+    expect(none.paramLinks).toBe(0);
+    expect(cut.paramLinks).toBe(1);
+    expect(pit.paramLinks).toBe(none.oscs.length);
+    expect(cut.oscs.length).toBe(none.oscs.length);
+  });
+
+  it('LFO auf Cutoff bewegt den Pegel einer gehaltenen Note hörbar', async ({ expect }) => {
+    const notes: [number, number, number, Record<string, unknown>][] = [[0, 0, 8, {}]];
+    const patch = { as: 1, ad: 0 };
+    const [still, wob] = await Promise.all([
+      runNext<Result>('synthAttrs', { notes, patch }),
+      runNext<Result>('synthAttrs', {
+        notes,
+        patch: { ...patch, lfo: { r: 0.55, d: 1, t: 'cut' } },
+      }),
+    ]);
+    const spread = (r: Result) => {
+      const v = span(r, 0.3, 0.9);
+      return Math.max(...v) / Math.min(...v);
+    };
+    expect(spread(wob)).toBeGreaterThan(spread(still) * 1.5);
   });
 });
