@@ -1,7 +1,18 @@
 import { CHANNELS, PARTS, ROWS, SCALES, SLOTS, SYN_KEYS, VOICE_IDS, WAVES } from './constants.ts';
 import { blankPattern, emptyRow, parsePattern } from './defaults.ts';
+import { SCENE_COUNT } from './scenes.ts';
 import { isStepCond, normalizeOpt } from './stepopts.ts';
-import type { Fx, NoteRow, OptMap, Pattern, Slot, State, StepRow, SubKey } from './types.ts';
+import type {
+  Fx,
+  NoteRow,
+  OptMap,
+  Pattern,
+  SceneMix,
+  Slot,
+  State,
+  StepRow,
+  SubKey,
+} from './types.ts';
 import { must } from './util.ts';
 
 type Obj = Record<string, unknown>;
@@ -226,7 +237,29 @@ export function loadState(src: unknown, base: State): State {
     }
   }
   if ('preset' in src) s.preset = typeof src.preset === 'string' ? src.preset : null;
+  if (isArr(src.scenes)) s.scenes = readScenes(src.scenes, s.mix);
   return s;
+}
+
+/** Szenen prüfen: 8 Einträge, je Kanal Pegel (0..1), Mute und Solo; fehlendes vom Mixer */
+function readScenes(list: unknown[], mix: State['mix']): (SceneMix | null)[] {
+  return Array.from({ length: SCENE_COUNT }, (_, i) => {
+    const e = list[i];
+    if (!isObj(e)) return null;
+    return Object.fromEntries(
+      CHANNELS.map((id) => {
+        const c = isObj(e[id]) ? e[id] : {};
+        return [
+          id,
+          {
+            v: isNum(c.v) ? clamp(c.v, 0, 1) : mix[id].v,
+            m: typeof c.m === 'boolean' ? c.m : false,
+            s: typeof c.s === 'boolean' ? c.s : false,
+          },
+        ];
+      }),
+    ) as SceneMix;
+  });
 }
 
 /**
@@ -255,5 +288,7 @@ export function serialize(state: State): State {
     smp: c.smp,
     mix: c.mix,
     fx: c.fx,
+    // Szenen nur, wenn vorhanden: alte Stände bleiben bytegleich
+    ...(c.scenes ? { scenes: c.scenes } : {}),
   };
 }
