@@ -17,6 +17,7 @@ import {
 } from '../core/stepopts.ts';
 import type {
   ChannelId,
+  Note,
   Part,
   Pattern,
   Slot,
@@ -89,7 +90,8 @@ export interface Engine {
   /** pro Bildschirm-Frame aufrufen: Abspielposition, im Song-Modus folgt die Ansicht */
   tick(now?: number): void;
   audition(voice: VoiceId): void;
-  auditionNote(part: Part, degree: number, length?: number): void;
+  /** Stufe vorhören; mit `note` samt Akkord und Akzent (Slide braucht eine Vorgängerin, entfällt) */
+  auditionNote(part: Part, degree: number, length?: number, note?: Note): void;
   auditionPad(pad: number): void;
   stutterOn(fraction: number): void;
   stutterOff(): void;
@@ -461,7 +463,11 @@ export function createEngine(o: EngineOptions): Engine {
         const row = pat.notes[id];
         const n = row[step];
         if (n && aud[id]) {
-          scheduleNote(id, noteMidis(id, n, s), t, effectiveLength(row, step) * d * 0.92, {
+          // gleitet die Folgenote, bleibt das Gate bis zu ihrem Einsatz offen (gebunden)
+          const len = effectiveLength(row, step);
+          const legato = row[step + len]?.s === true;
+          const dur = legato ? len * d + 0.01 : len * d * 0.92;
+          scheduleNote(id, noteMidis(id, n, s), t, dur, {
             accent: n.a === true,
             slide: n.s === true,
           });
@@ -540,14 +546,17 @@ export function createEngine(o: EngineOptions): Engine {
       if (!gesture()) return;
       scheduleDrum(voice, now() + 0.005);
     },
-    auditionNote(part, degree, length = 1) {
+    auditionNote(part, degree, length = 1, note) {
       if (!gesture()) return;
       const s = state();
       scheduleNote(
         part,
-        [degreeToMidi(part, degree, s, s.synth[part].oct)],
+        note
+          ? noteMidis(part, { ...note, d: degree }, s)
+          : [degreeToMidi(part, degree, s, s.synth[part].oct)],
         now() + 0.005,
         ((length * 60) / s.tempo / 4) * 0.92 + 0.12,
+        { accent: note?.a === true },
       );
     },
     auditionPad(pad) {

@@ -131,13 +131,15 @@ export function pianoRoll(c: UiContext): HTMLElement {
             const t = tool.peek();
             if (t !== 'note') {
               if (!hit.peek()) return;
-              if (t === 'ch') {
-                store.cycleChord(s);
-                const now = store.state.peek();
-                const k = noteAt(currentPattern(now).notes[now.part], s);
-                const ch = k ? currentPattern(now).notes[now.part][k.start]?.ch : undefined;
-                readout.flash(ch ? CHORD_LABELS[ch] : 'Kein Akkord');
-              } else store.toggleNoteFlag(t, s);
+              if (t === 'ch') store.cycleChord(s);
+              else store.toggleNoteFlag(t, s);
+              const now = store.state.peek();
+              const row = currentPattern(now).notes[now.part];
+              const k = noteAt(row, s);
+              const n = k ? row[k.start] : null;
+              if (t === 'ch') readout.flash(n?.ch ? CHORD_LABELS[n.ch] : 'Kein Akkord');
+              // Akzent und Akkord im Stand mit Attributen vorhören; Slide braucht eine Vorgängerin
+              if (n && t !== 's' && !audio.playing.peek()) audio.auditionNote(now.part, d, n.l, n);
               return;
             }
             store.placeNote(d, s);

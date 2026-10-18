@@ -16,16 +16,16 @@ Basslines und Leads sollen nach Acid und nach Harmonie klingen, wie beim TB-303 
   - `s?: true` (Slide)
   - `ch?: 'tri' | 'sev' | 'pow' | 'oct'` (Akkord)
 - Ohne Attribute bleibt die Note `{ d, l }`, alte Stände bleiben dadurch bytegleich.
-- **Akkord-Stufen** (in Skalenstufen):
+- **Akkord-Töne** (nach dem Abschluss-Review über Halbton-Ziele statt fester Stufenabstände, damit die Pentatonik stimmt): Jeder Akkordton ist die Skalenstufe, die dem Ziel am nächsten liegt (bei Gleichstand die tiefere).
 
-| Akkord | Stufen |
-|---|---|
-| `tri` (Dreiklang) | +0, +2, +4 |
-| `sev` (Vierklang) | +0, +2, +4, +6 |
-| `pow` (Quinte) | +0, +4 |
-| `oct` (Oktave) | +0, +Skalenlänge |
+| Akkord | Ziele über dem Grundton (Halbtöne) | in Moll/Dur entspricht das |
+|---|---|---|
+| `tri` (Dreiklang) | Terz (3–4), Quinte (7) | +2, +4 Stufen |
+| `sev` (Vierklang) | Terz, Quinte, Septime (10–11) | +2, +4, +6 Stufen |
+| `pow` (Quinte) | Quinte (7) | +4 Stufen |
+| `oct` (Oktave) | — | +Skalenlänge |
 
-- Die Akkordqualität ergibt sich aus der Skala: In Moll entsteht ein Moll-, in Dur ein Dur-Dreiklang.
+- Die Akkordqualität ergibt sich aus der Skala: In Moll entsteht ein Moll-, in Dur ein Dur-Dreiklang, auf leitereigenen Stufen auch vermindert. In der Moll-Pentatonik ist „Quinte“ eine echte Quinte.
 - **Laden:** `loadState` liest nur gültige Werte (`a`/`s` genau `true`, bekannte Akkorde).
 
 ## Klang
@@ -33,8 +33,9 @@ Basslines und Leads sollen nach Acid und nach Harmonie klingen, wie beim TB-303 
 - **Akzent:** Pegel × 1,35. Die Filter-Hüllkurve öffnet um 0,25 Env-Einheiten weiter (höchstens 16 kHz).
 - **Slide:**
   - Klingt die vorige Note des Parts noch, beginnt die neue mit deren Tonhöhe und gleitet in 60 ms exponentiell auf die eigene.
-  - Die Amp-Hüllkurve beginnt ohne Attack auf dem Sustain-Pegel, die Filter-Hüllkurve auf dem Sustain-Wert.
-  - Die vorige Note wird wie bisher in 6 ms ausgeblendet.
+  - Gebunden (nach dem Abschluss-Review): Die vorige Note hält ihr Gate bis zum Einsatz der Slide-Note (statt 92 % der Länge). Die Amp übernimmt in 6 ms den aktuellen Pegel der Vorgängerin, ohne Attack, und klingt von dort mit dem Decay zum Sustain weiter. Die Filter-Hüllkurve steht auf dem Sustain-Wert.
+  - Die vorige Note blendet in denselben 6 ms aus, von ihrem berechneten Hüllkurvenpegel (Anker statt Halten ohne Anker).
+  - „Klingend“ heißt: Das Gate der Vorgängerin ist höchstens 50 ms vorbei. Ein langer Filter-Release allein zählt nicht.
   - Ohne klingende Vorgängerin spielt eine Slide-Note normal.
 - **Akkord:**
   - Ein gemeinsamer Filter und eine gemeinsame Amp-Hüllkurve (paraphon).

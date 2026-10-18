@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { NOTE_NAMES, SCALES, SYN_PRESETS } from '../../../core/constants.ts';
 import { baseState, synthDefaults } from '../../../core/defaults.ts';
 import type { State } from '../../../core/types.ts';
@@ -171,11 +171,13 @@ describe('pianoRoll', () => {
     cell(el, 3, 0)?.click();
     expect(note()).toEqual({ d: 3, l: 2, a: true });
     expect(cell(el, 3, 0)?.classList.contains('sl')).toBe(false);
-    expect(audio.auditionNote).toHaveBeenCalledTimes(1); // nur beim Setzen
+    // Akzent hört im Stand mit Attributen vor, Slide nicht (braucht eine Vorgängerin)
+    expect(audio.auditionNote).toHaveBeenCalledTimes(2);
+    expect(audio.auditionNote).toHaveBeenLastCalledWith('BA', 3, 2, { d: 3, l: 2, a: true });
   });
 
   it('Werkzeug Akkord schaltet weiter, zeigt das Kürzel und meldet im LCD', () => {
-    const { c, store } = makeContext();
+    const { c, store, audio } = makeContext();
     store.update((s) => ({ ...s, part: 'BA', noteLen: 1 }));
     store.clearNotes();
     const el = pianoRoll(c);
@@ -190,8 +192,12 @@ describe('pianoRoll', () => {
     }
     expect(marks).toEqual(['3', '4', '5', '8', '']);
     expect(flashes).toEqual(['Dreiklang', 'Vierklang', 'Quinte', 'Oktave', 'Kein Akkord']);
+    expect(audio.auditionNote).toHaveBeenCalledWith('BA', 2, 1, { d: 2, l: 1, ch: 'tri' });
     expect(cell(el, 2, 1)?.getAttribute('aria-label')).toMatch(/Step 2$/);
+    audio.playing.value = true;
+    const calls = vi.mocked(audio.auditionNote).mock.calls.length;
     cell(el, 2, 1)?.click();
+    expect(audio.auditionNote).toHaveBeenCalledTimes(calls); // während der Wiedergabe still
     expect(cell(el, 2, 1)?.getAttribute('aria-label')).toMatch(/Step 2 · Dreiklang$/);
   });
 

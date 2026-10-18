@@ -34,11 +34,26 @@ describe('Noten-Attribute', () => {
   });
 
   it('Akkord-Stufen; Oktave folgt der Skalenlänge', () => {
-    expect(chordDegrees(1, undefined, 7)).toEqual([1]);
-    expect(chordDegrees(1, 'tri', 7)).toEqual([1, 3, 5]);
-    expect(chordDegrees(1, 'sev', 7)).toEqual([1, 3, 5, 7]);
-    expect(chordDegrees(1, 'pow', 7)).toEqual([1, 5]);
-    expect(chordDegrees(1, 'oct', 5)).toEqual([1, 6]);
+    const moll = [0, 2, 3, 5, 7, 8, 10];
+    expect(chordDegrees(1, undefined, moll)).toEqual([1]);
+    expect(chordDegrees(1, 'tri', moll)).toEqual([1, 3, 5]);
+    expect(chordDegrees(1, 'sev', moll)).toEqual([1, 3, 5, 7]);
+    expect(chordDegrees(1, 'pow', moll)).toEqual([1, 5]);
+    expect(chordDegrees(1, 'oct', [0, 3, 5, 7, 10])).toEqual([1, 6]);
+  });
+
+  it('Pentatonik: Akkordtöne nach Halbtönen (Terz, Quinte, Septime), nicht nach Stufen', () => {
+    const iv = (scaleName: string, ch: 'tri' | 'sev' | 'pow', d = 0) => {
+      const s = { ...baseState(), key: 0, scale: SCALES.findIndex((x) => x.name === scaleName) };
+      const m = noteMidis('BA', { d, l: 1, ch }, s);
+      return m.map((x) => x - (m[0] ?? 0));
+    };
+    expect(iv('Moll-Pentatonik', 'tri')).toEqual([0, 3, 7]);
+    expect(iv('Moll-Pentatonik', 'pow')).toEqual([0, 7]);
+    expect(iv('Moll-Pentatonik', 'sev')).toEqual([0, 3, 7, 10]);
+    expect(iv('Dur-Pentatonik', 'tri')).toEqual([0, 4, 7]);
+    expect(iv('Moll-Pentatonik', 'pow', 1)).toEqual([0, 7]); // Es → B statt großer Sexte
+    expect(iv('Moll', 'tri', 1)).toEqual([0, 3, 6]); // leitereigen vermindert
   });
 
   it('noteMidis: Moll-Dreiklang auf dem Grundton A', () => {

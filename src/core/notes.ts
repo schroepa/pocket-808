@@ -21,26 +21,44 @@ export const CHORD_MARKS: Readonly<Record<ChordKind, string>> = {
   oct: '8',
 };
 
-/** Stufen eines Akkords auf Stufe d (scaleLen: Töne der Skala, für die Oktave) */
-export function chordDegrees(d: number, ch: ChordKind | undefined, scaleLen: number): number[] {
-  switch (ch) {
-    case 'tri':
-      return [d, d + 2, d + 4];
-    case 'sev':
-      return [d, d + 2, d + 4, d + 6];
-    case 'pow':
-      return [d, d + 4];
-    case 'oct':
-      return [d, d + scaleLen];
-    default:
-      return [d];
-  }
+/** Halbton-Ziele der Akkordtöne über dem Grundton (x,5 = kleine oder große Terz bzw. Septime) */
+const CHORD_TARGETS: Readonly<Record<Exclude<ChordKind, 'oct'>, readonly number[]>> = {
+  tri: [3.5, 7],
+  sev: [3.5, 7, 10.5],
+  pow: [7],
+};
+
+/**
+ * Stufen eines Akkords auf Stufe d in der Skala `scale` (Halbtöne je Stufe). Jeder Akkordton ist
+ * die Skalenstufe, die dem Halbton-Ziel am nächsten liegt (bei Gleichstand die tiefere). So bleibt
+ * der Akkord leitereigen, und in der Pentatonik ist eine Quinte trotzdem eine Quinte.
+ */
+export function chordDegrees(
+  d: number,
+  ch: ChordKind | undefined,
+  scale: readonly number[],
+): number[] {
+  const n = scale.length;
+  if (!ch) return [d];
+  if (ch === 'oct') return [d, d + n];
+  const pitch = (k: number): number => (scale[k % n] ?? 0) + 12 * Math.floor(k / n);
+  const root = pitch(d);
+  return [
+    d,
+    ...CHORD_TARGETS[ch].map((target) => {
+      let best = d + 1;
+      for (let k = d + 2; k <= d + 2 * n; k++) {
+        if (Math.abs(pitch(k) - root - target) < Math.abs(pitch(best) - root - target)) best = k;
+      }
+      return best;
+    }),
+  ];
 }
 
 /** MIDI-Töne einer Note (Grundton zuerst) */
 export function noteMidis(part: Part, n: Note, s: State): number[] {
-  const len = must(SCALES[s.scale], 'Skala').s.length;
-  return chordDegrees(n.d, n.ch, len).map((d) => degreeToMidi(part, d, s, s.synth[part].oct));
+  const scale = must(SCALES[s.scale], 'Skala').s;
+  return chordDegrees(n.d, n.ch, scale).map((d) => degreeToMidi(part, d, s, s.synth[part].oct));
 }
 
 /** Note des aktuellen Parts, die `step` abdeckt, durch fn ersetzen; ohne Note unverändert */

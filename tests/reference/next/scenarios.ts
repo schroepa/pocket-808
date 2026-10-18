@@ -18,6 +18,7 @@ import type {
   Slot,
   State,
   StepOpt,
+  SynthPatch,
   VoiceId,
 } from '../../../src/core/types.ts';
 import { createStore } from '../../../src/store/store.ts';
@@ -880,7 +881,8 @@ interface OscLog {
  */
 export async function synthAttrs(args: {
   notes: [number, number, number, Partial<Note>][];
-}): Promise<{ peak: number; oscs: OscLog[] }> {
+  patch?: Partial<SynthPatch>;
+}): Promise<{ peak: number; oscs: OscLog[]; rms: number[] }> {
   const oscs: OscLog[] = [];
   let on = false;
   const { ctx } = await play({
@@ -890,6 +892,7 @@ export async function synthAttrs(args: {
       isolate(s);
       // leise und trocken, damit der Master-Limiter die Spitze nicht begrenzt
       s.mix.BA = { ...s.mix.BA, v: 0.15, r: 0 };
+      s.synth.BA = { ...s.synth.BA, ...args.patch };
       for (const [st, d, l, attrs] of args.notes) s.patterns.A.notes.BA[st] = { d, l, ...attrs };
     },
     instrument: (c) => {
@@ -922,9 +925,18 @@ export async function synthAttrs(args: {
     },
   });
   const buf = await ctx.startRendering();
+  const data = buf.getChannelData(0);
   let peak = 0;
-  for (const x of buf.getChannelData(0)) peak = Math.max(peak, Math.abs(x));
-  return { peak, oscs };
+  for (const x of data) peak = Math.max(peak, Math.abs(x));
+  // RMS in 2-ms-Fenstern
+  const win = Math.round(SR * 0.002);
+  const rms: number[] = [];
+  for (let i = 0; i + win <= data.length; i += win) {
+    let sum = 0;
+    for (let k = i; k < i + win; k++) sum += (data[k] ?? 0) ** 2;
+    rms.push(Math.sqrt(sum / win));
+  }
+  return { peak, oscs, rms };
 }
 
 export const SCENARIOS: Record<string, (args: never) => Promise<unknown>> = {
