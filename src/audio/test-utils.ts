@@ -130,6 +130,11 @@ export function fakeContext() {
     createConvolver: vi.fn(node),
     createOscillator: vi.fn(node),
     createBufferSource: vi.fn(node),
+    createAnalyser: vi.fn(() => ({
+      ...node(),
+      fftSize: 2048,
+      getFloatTimeDomainData: vi.fn((a: Float32Array) => a.fill(0)),
+    })),
     createBuffer: vi.fn((_c: number, n: number) => buffer(n)),
     decodeAudioData: vi.fn(() =>
       Promise.resolve({

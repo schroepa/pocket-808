@@ -91,6 +91,8 @@ export interface Engine {
   /** Punch-Effekt halten bzw. loslassen; ersetzende Effekte (Loops, Tape, Crush) schließen sich aus */
   punchOn(kind: PunchKind): void;
   punchOff(kind: PunchKind): void;
+  /** Zeitbereich des Master-Ausgangs (LCD); false ohne Kontext */
+  scope(into: Float32Array): boolean;
   setPadSample(pad: number, pcm: Float32Array | null): void;
   setDrumSample(voice: VoiceId, sample: DrumSample | null): void;
   /** Datei dekodieren und ins Sample-Format (22,05 kHz mono) umrechnen */
@@ -548,6 +550,11 @@ export function createEngine(o: EngineOptions): Engine {
         graph?.stutterOn(t, stutterPeriod(state().tempo, kind === 'loop8' ? 0.5 : 0.25));
       } else if (kind === 'half') half = true;
       else graph?.punchOn(kind, t, state().tempo, state().fx);
+    },
+    scope(into) {
+      if (!graph) return false;
+      graph.analyser().getFloatTimeDomainData(into as Float32Array<ArrayBuffer>);
+      return true;
     },
     punchOff(kind) {
       if (!held.has(kind)) return;

@@ -49,6 +49,8 @@ export interface Graph {
   punchOn(kind: GraphPunch, t: number, tempo: number, fx: Fx): void;
   /** Punch-Effekt aus; Filter kehren zu den FX-Werten zurück */
   punchOff(kind: GraphPunch, t: number, fx: Fx): void;
+  /** Abgriff hinter dem Master für das LCD (erst bei der ersten Anforderung angelegt, ohne Ausgang) */
+  analyser(): AnalyserNode;
 }
 
 /** Punch-Effekte, die im Graphen leben (Loops nutzen den Stutter, Half-Time den Scheduler) */
@@ -291,6 +293,8 @@ export function createGraph(
     return sw.from * Math.pow(sw.to / sw.from, x);
   };
 
+  let scopeNode: AnalyserNode | null = null;
+
   const graph: Graph = {
     ctx,
     bus,
@@ -445,6 +449,14 @@ export function createGraph(
         tape.dly.delayTime.setValueAtTime(0, t + 0.02);
       }
       dry(true, t);
+    },
+    analyser() {
+      if (!scopeNode) {
+        scopeNode = c.createAnalyser();
+        scopeNode.fftSize = 512;
+        master.connect(scopeNode);
+      }
+      return scopeNode;
     },
     stutterOff(t) {
       const st = stutter;

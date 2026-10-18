@@ -27,6 +27,8 @@ export interface UiAudio {
   stutterOff(): void;
   /** Fill-Taste gehalten bzw. losgelassen */
   setFill(on: boolean): void;
+  /** Zeitbereich des Master-Ausgangs fürs LCD füllen; false ohne Audio */
+  scope(into: Float32Array): boolean;
   /** Punch-in-Effekt halten bzw. loslassen */
   punchOn(kind: PunchKind): void;
   punchOff(kind: PunchKind): void;

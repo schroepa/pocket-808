@@ -9,6 +9,7 @@ import { installKeys, shortcutHelp } from './keys.ts';
 import { watchLayout, type Layout } from './layout.ts';
 import { brand } from './panels/brand.ts';
 import { deck } from './panels/deck.ts';
+import { lcdScope } from './panels/lcd-scope.ts';
 import { fxDevice, mixerDevice } from './panels/mixer/device.ts';
 import { samplerDevice } from './panels/sampler/device.ts';
 import { patternsPanel } from './panels/patterns.ts';
@@ -54,11 +55,17 @@ export function mountShell(
     readout,
     scope,
   };
+  const raf = {
+    request: (fn: () => void) => deps.win.requestAnimationFrame(fn),
+    cancel: (id: number) => {
+      deps.win.cancelAnimationFrame(id);
+    },
+  };
   const file = projectDialog(c);
   root.replaceChildren(
     h('main', { class: 'shell' }, [
       brand(file.el, shortcutHelp(c)),
-      deck(c),
+      deck(c, lcdScope(c, raf, deps.win.matchMedia('(prefers-reduced-motion: reduce)').matches)),
       slots(c),
       // Spalte 1 auf dem Desktop (zwei Blöcke untereinander), sonst display: contents.
       // Die DOM-Reihenfolge ist zugleich Lese- und Mobile-Reihenfolge: Geräte vor Song.
@@ -78,12 +85,7 @@ export function mountShell(
     save: () => void file.save(),
     open: () => void file.open(),
   });
-  drivePlayhead(scope, deps.audio, {
-    request: (fn) => deps.win.requestAnimationFrame(fn),
-    cancel: (id) => {
-      deps.win.cancelAnimationFrame(id);
-    },
-  });
+  drivePlayhead(scope, deps.audio, raf);
   return {
     layout,
     dispose() {
