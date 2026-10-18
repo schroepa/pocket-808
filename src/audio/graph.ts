@@ -10,7 +10,7 @@ import {
   reverbReturn,
   softClipCurve,
 } from './dsp.ts';
-import { holdAt } from './params.ts';
+import { holdAt, rampFrom } from './params.ts';
 
 /*
  * Master-Kette wie Legacy setupGraph:
@@ -251,15 +251,37 @@ export function createGraph(
    * Weich von einem bekannten Wert zu einem neuen (Muster des Stutters): halten, Anker setzen, Rampe.
    * Ohne Anker beginnt eine Rampe beim letzten Ereignis (oft 0 s) statt jetzt.
    */
-  const fade = (p: AudioParam, from: number, to: number, t: number, dur = 0.008): void => {
-    holdAt(p, t);
-    p.setValueAtTime(from, t);
-    p.linearRampToValueAtTime(to, t + dur);
+  /**
+   * Geplanter Verlauf eines Blend-Parameters (letztes Segment): daraus ergibt sich der echte
+   * Startwert der nächsten Blende, auch mitten in einer laufenden (z. B. Tape kurz getippt).
+   */
+  interface Track {
+    start: number;
+    from: number;
+    to: number;
+    dur: number;
+  }
+  const track = (v: number): Track => ({ start: 0, from: v, to: v, dur: 0 });
+  const valueOf = (k: Track, t: number): number =>
+    t <= k.start
+      ? k.from
+      : t >= k.start + k.dur
+        ? k.to
+        : k.from + ((k.to - k.from) * (t - k.start)) / k.dur;
+  /** weich vom aktuellen geplanten Wert auf to: halten, Anker, Rampe (Muster des Stutters) */
+  const fadeTo = (p: AudioParam, k: Track, to: number, t: number, dur = 0.008): void => {
+    const from = valueOf(k, t);
+    rampFrom(p, from, to, t, dur);
+    Object.assign(k, { start: t, from, to, dur });
   };
+  const dryTrack = track(1);
   /** trockenes Signal weich aus- bzw. einblenden (ersetzende Effekte) */
   const dry = (on: boolean, t: number): void => {
-    fade(dryG.gain, on ? 0 : 1, on ? 1 : 0, t);
+    fadeTo(dryG.gain, dryTrack, on ? 1 : 0, t);
   };
+  const tapeTrack = track(0);
+  const crushTrack = track(0);
+  const echoTrack = track(0);
   /** laufende Filterfahrt: Start (Zeit, Frequenz) für die Rückkehr beim Loslassen */
   const sweeps = new Map<'lp' | 'hp', { t0: number; from: number; to: number }>();
   const sweepAt = (k: 'lp' | 'hp', t: number): number | null => {
@@ -340,7 +362,9 @@ export function createGraph(
     stutterOn(t, P) {
       stutter ??= makeStutter();
       const st = stutter;
-      for (const p of [st.inp.gain, st.fb.gain, st.out.gain, dryG.gain]) holdAt(p, t);
+      for (const p of [st.inp.gain, st.fb.gain, st.out.gain]) holdAt(p, t);
+      // trockenes Signal während der Aufnahme (P) hörbar, auch wenn ein Effekt es vorher stumm hatte
+      dry(true, t);
       st.dly.delayTime.cancelScheduledValues(t);
       st.dly.delayTime.setValueAtTime(P, t);
       st.inp.gain.setValueAtTime(1, t);
@@ -351,6 +375,7 @@ export function createGraph(
       st.out.gain.linearRampToValueAtTime(1, t + P + 0.003);
       dryG.gain.setValueAtTime(1, t + P - 0.001);
       dryG.gain.linearRampToValueAtTime(0, t + P + 0.003);
+      Object.assign(dryTrack, { start: t + P - 0.001, from: 1, to: 0, dur: 0.004 });
       st.on = true;
     },
     punchOn(kind, t, tempo, fx) {
@@ -367,28 +392,31 @@ export function createGraph(
       if (kind === 'echo') {
         echo ??= makeEcho();
         echo.dly.delayTime.setValueAtTime(Math.min(1.9, (3 * 60) / tempo / 4), t);
-        fade(echo.inp.gain, 0, 1, t);
+        fadeTo(echo.inp.gain, echoTrack, 1, t);
         return;
       }
       if (kind === 'tape') {
         tape ??= makeTape();
         const tp = tape;
-        // Verzögerung wächst quadratisch: Tonhöhe fällt linear von 1 auf 0 in TAPE_S
-        const curve = Float32Array.from({ length: 64 }, (_, i) => (i / 63) ** 2 * (TAPE_S / 2));
-        tp.dly.delayTime.cancelScheduledValues(t);
-        tp.dly.delayTime.setValueCurveAtTime(curve, t, TAPE_S);
-        for (const p of [tp.inp.gain, tp.out.gain]) holdAt(p, t);
+        // Verzögerung wächst quadratisch (Tonhöhe fällt linear von 1 auf 0 in TAPE_S), als verankerte
+        // Rampen-Segmente: anders als setValueCurveAtTime überlappen sie nie mit anderer Automation
+        const dt = tp.dly.delayTime;
+        holdAt(dt, t);
+        dt.setValueAtTime(0, t);
+        for (let i = 1; i <= 8; i++)
+          dt.linearRampToValueAtTime((i / 8) ** 2 * (TAPE_S / 2), t + (i / 8) * TAPE_S);
+        holdAt(tp.inp.gain, t);
         tp.inp.gain.setValueAtTime(1, t);
-        tp.out.gain.setValueAtTime(0, t);
-        tp.out.gain.linearRampToValueAtTime(1, t + 0.008);
+        fadeTo(tp.out.gain, tapeTrack, 1, t);
         tp.out.gain.linearRampToValueAtTime(0, t + TAPE_S);
+        Object.assign(tapeTrack, { start: t + 0.008, from: 1, to: 0, dur: TAPE_S - 0.008 });
         dry(false, t);
         return;
       }
       crush ??= makeCrush();
       holdAt(crush.inp.gain, t);
       crush.inp.gain.setValueAtTime(1, t);
-      fade(crush.out.gain, 0, CRUSH_LEVEL, t);
+      fadeTo(crush.out.gain, crushTrack, CRUSH_LEVEL, t);
       dry(false, t);
     },
     punchOff(kind, t, fx) {
@@ -404,13 +432,12 @@ export function createGraph(
       }
       if (kind === 'echo') {
         if (!echo) return;
-        fade(echo.inp.gain, 1, 0, t);
+        fadeTo(echo.inp.gain, echoTrack, 0, t);
         return;
       }
       const ins = kind === 'tape' ? tape : crush;
       if (!ins) return;
-      // Tape ist nach TAPE_S schon stumm; Crush steht auf CRUSH_LEVEL
-      fade(ins.out.gain, kind === 'crush' ? CRUSH_LEVEL : 0, 0, t);
+      fadeTo(ins.out.gain, kind === 'tape' ? tapeTrack : crushTrack, 0, t);
       holdAt(ins.inp.gain, t + 0.02);
       ins.inp.gain.setValueAtTime(0, t + 0.02);
       if (kind === 'tape' && tape) {
@@ -423,8 +450,8 @@ export function createGraph(
       const st = stutter;
       if (!st?.on) return;
       st.on = false;
-      for (const p of [st.inp.gain, st.fb.gain, st.out.gain, dryG.gain]) holdAt(p, t);
-      dryG.gain.linearRampToValueAtTime(1, t + 0.008);
+      for (const p of [st.inp.gain, st.fb.gain, st.out.gain]) holdAt(p, t);
+      dry(true, t);
       st.out.gain.linearRampToValueAtTime(0, t + 0.008);
       st.inp.gain.setValueAtTime(0, t);
       st.fb.gain.linearRampToValueAtTime(0, t + 0.02);

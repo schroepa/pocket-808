@@ -6,6 +6,7 @@ import { createStore } from '../store/store.ts';
 import { createEngine } from './engine.ts';
 import type * as GraphModule from './graph.ts';
 import type { Graph } from './graph.ts';
+import { fakeContext } from './test-utils.ts';
 import type { EngineTimer } from './timer.ts';
 
 // Jeder erzeugte Graph bleibt echt, seine Live-Methoden werden nur mitgeschrieben.
@@ -39,72 +40,6 @@ vi.mock('./graph.ts', async (importOriginal) => {
 });
 
 type Mock = ReturnType<typeof vi.fn>;
-
-/** Minimaler Schein-Kontext: zeichnet nur auf, was geplant wird. */
-function fakeContext() {
-  const param = () => ({
-    value: 0,
-    setValueAtTime: vi.fn(),
-    setTargetAtTime: vi.fn(),
-    linearRampToValueAtTime: vi.fn(),
-    exponentialRampToValueAtTime: vi.fn(),
-    cancelScheduledValues: vi.fn(),
-    cancelAndHoldAtTime: vi.fn(),
-    setValueCurveAtTime: vi.fn(),
-  });
-  const node = () => ({
-    connect: vi.fn(),
-    disconnect: vi.fn(),
-    start: vi.fn(),
-    stop: vi.fn(),
-    gain: param(),
-    pan: param(),
-    frequency: param(),
-    Q: param(),
-    detune: param(),
-    playbackRate: param(),
-    delayTime: param(),
-    threshold: param(),
-    knee: param(),
-    ratio: param(),
-    attack: param(),
-    release: param(),
-    buffer: null,
-    curve: null,
-    type: '',
-    loop: false,
-  });
-  const buffer = (len: number) => ({
-    duration: len / 44100,
-    getChannelData: () => new Float32Array(len),
-  });
-  return {
-    sampleRate: 44100,
-    currentTime: 0,
-    state: 'suspended' as AudioContextState,
-    destination: node(),
-    resume: vi.fn(() => Promise.resolve()),
-    close: vi.fn(() => Promise.resolve()),
-    createGain: vi.fn(node),
-    createStereoPanner: vi.fn(node),
-    createBiquadFilter: vi.fn(node),
-    createDynamicsCompressor: vi.fn(node),
-    createWaveShaper: vi.fn(node),
-    createDelay: vi.fn(node),
-    createConvolver: vi.fn(node),
-    createOscillator: vi.fn(node),
-    createBufferSource: vi.fn(node),
-    createBuffer: vi.fn((_c: number, n: number) => buffer(n)),
-    decodeAudioData: vi.fn(() =>
-      Promise.resolve({
-        numberOfChannels: 1,
-        sampleRate: 44100,
-        length: 4,
-        getChannelData: () => Float32Array.from([0, 0.25, 0.5, 0.25]),
-      }),
-    ),
-  };
-}
 
 function manualTimer(): EngineTimer & { fire(): void } {
   let interval: (() => void) | null = null;

@@ -160,11 +160,15 @@ export function createEngine(o: EngineOptions): Engine {
   const held = new Set<PunchKind>();
   let replacing: PunchKind | 'stutter' | null = null;
   const release = (kind: PunchKind | 'stutter', t: number): void => {
-    if (kind === 'stutter' || kind === 'loop8' || kind === 'loop16') graph?.stutterOff(t);
-    else if (kind === 'half') half = false;
-    else graph?.punchOff(kind, t, state().fx);
-    if (kind !== 'stutter') held.delete(kind);
-    if (replacing === kind) replacing = null;
+    try {
+      if (kind === 'stutter' || kind === 'loop8' || kind === 'loop16') graph?.stutterOff(t);
+      else if (kind === 'half') half = false;
+      else graph?.punchOff(kind, t, state().fx);
+    } finally {
+      // der Zustand der Engine wird immer zurückgesetzt, auch wenn der Graph eine Ausnahme wirft
+      if (kind !== 'stutter') held.delete(kind);
+      if (replacing === kind) replacing = null;
+    }
   };
   /** vor einem ersetzenden Effekt den bisherigen lösen */
   const replace = (kind: PunchKind | 'stutter', t: number): void => {

@@ -1,14 +1,14 @@
 import { factorySamples } from './audio/dsp.ts';
 import { createEngine } from './audio/engine.ts';
 import { bootState } from './core/boot.ts';
-import { SAMPLE_STORAGE_KEY, SMP_MAX, STORAGE_KEY, VOICE_IDS } from './core/constants.ts';
+import { SAMPLE_STORAGE_KEY, SMP_MAX, SMP_RATE, STORAGE_KEY, VOICE_IDS } from './core/constants.ts';
 import { serialize } from './core/persist.ts';
 import type { DrumSample } from './core/samples.ts';
 import type { VoiceId } from './core/types.ts';
 import { must } from './core/util.ts';
 import { renderOffline } from './audio/export.ts';
 import { encodeWav } from './core/wav.ts';
-import { toPcm } from './core/samples.ts';
+import { fadeOut, toPcm } from './core/samples.ts';
 import { stepDuration } from './core/timing.ts';
 import { pickAudioFile, pickTextFile } from './platform/files.ts';
 import { saveFile, type ArtifactDownloads } from './platform/share.ts';
@@ -162,7 +162,11 @@ function boot(hostData: unknown): Store {
       });
       if (!buf) return null;
       return {
-        pcm: toPcm([buf.getChannelData(0), buf.getChannelData(1)], buf.sampleRate),
+        // 5 ms Ausblende: ein hart abgeschnittener Takt würde am Pad-Ende knacken
+        pcm: fadeOut(
+          toPcm([buf.getChannelData(0), buf.getChannelData(1)], buf.sampleRate),
+          Math.round(SMP_RATE * 0.005),
+        ),
         cut: bar > SMP_MAX,
       };
     },

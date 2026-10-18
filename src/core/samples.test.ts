@@ -5,6 +5,7 @@ import {
   applySampleStore,
   decodePcm,
   encodePcm,
+  fadeOut,
   parseSampleStore,
   toPcm,
   trimLeadingSilence,
@@ -143,5 +144,18 @@ describe('trimLeadingSilence', () => {
   it('lässt einen Anfang innerhalb der ersten 40 Samples unverändert', () => {
     const pcm = new Float32Array(10).fill(0.3);
     expect(trimLeadingSilence(pcm).length).toBe(10);
+  });
+});
+
+describe('fadeOut', () => {
+  it('blendet die letzten n Samples linear auf 0 aus, ohne das Original zu ändern', () => {
+    const pcm = new Float32Array(10).fill(1);
+    const out = fadeOut(pcm, 4);
+    expect([...out]).toEqual([1, 1, 1, 1, 1, 1, 0.75, 0.5, 0.25, 0]);
+    expect(pcm[9]).toBe(1);
+  });
+  it('kurze Samples: höchstens so viele wie vorhanden', () => {
+    expect([...fadeOut(Float32Array.from([1, 1]), 5)]).toEqual([0.5, 0]);
+    expect(fadeOut(new Float32Array(0), 5)).toHaveLength(0);
   });
 });

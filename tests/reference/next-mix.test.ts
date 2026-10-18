@@ -30,7 +30,14 @@ describe.concurrent('Neue Engine: Mix und FX = Referenz', () => {
   for (const name of MIX_NAMES) {
     it(name, async ({ expect }) => {
       const print = await runNext<StereoPrint>('mixScenario', { name });
-      expectStereo(expect, `mix/${name}`, print);
+      // stutterRelease: Die alte App (und damit mix/) blendet das trockene Signal mit Halten plus Rampe
+      // ohne Anker ein; node-web-audio-api verrechnet das falsch (Gate bis zum Loslassen halb offen).
+      // Die neue Engine setzt einen Anker und klingt wie im Browser – eigener Fingerabdruck.
+      expectStereo(
+        expect,
+        name === 'stutterRelease' ? 'mix-next/stutterRelease' : `mix/${name}`,
+        print,
+      );
       if (name === 'demo') {
         // CLAUDE.md: Master-Pegel ist auf Spitze ≈ 0,77 abgestimmt
         const peak = Math.max(print.L.peak, print.R.peak);
