@@ -215,6 +215,18 @@ export function loadState(src: unknown, base: State): State {
       if (isInt(p.oct)) t.oct = clamp(p.oct, -2, 2);
       if (typeof p.mute === 'boolean') t.mute = p.mute;
       if ('preset' in p) t.preset = typeof p.preset === 'string' ? p.preset : null;
+      // Etappe 6b: Arp und LFO nur mit gültigen Werten, sonst ganz ohne Feld
+      const a = p.arp;
+      if (
+        isObj(a) &&
+        (a.m === 'up' || a.m === 'down' || a.m === 'ud' || a.m === 'rnd') &&
+        (a.r === 1 || a.r === 2) &&
+        (a.o === 1 || a.o === 2)
+      )
+        t.arp = { m: a.m, r: a.r, o: a.o };
+      const l = p.lfo;
+      if (isObj(l) && isNum(l.r) && isNum(l.d) && (l.t === 'cut' || l.t === 'pit'))
+        t.lfo = { r: clamp(l.r, 0, 1), d: clamp(l.d, 0, 1), t: l.t };
     }
   }
   // alter Synth-Stumm-Schalter wandert in den Mixer
