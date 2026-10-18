@@ -52,6 +52,10 @@ export interface StepOpt {
   d?: number;
   /** Parameter-Lock Sample-Start 0..1 (nur Pads) */
   s?: number;
+  /** Pitch in Halbtönen −12..12 (nur Pads, Etappe 7) */
+  n?: number;
+  /** Slice-Index 0..7 bei Chop (nur Pads, Etappe 7); fehlt = ganzes Pad */
+  k?: number;
 }
 export type OptMap = Partial<Record<SubKey, Partial<Record<number, StepOpt>>>>;
 export type Pattern = Record<VoiceId, StepRow> & {
@@ -118,6 +122,8 @@ export interface Pad {
   dec: number;
   lvl: number;
   rev: boolean;
+  /** Chop (Etappe 7): Anzahl gleich großer Slices zwischen Start und Ende; fehlt = aus */
+  sl?: 2 | 4 | 8;
 }
 export interface MixChannel {
   v: number;

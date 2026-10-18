@@ -21,7 +21,7 @@ export const STEP_CONDS: readonly { value: StepCond; label: string }[] = [
 
 /** Standardwerte; Locks (t, d, s) haben keinen Standard: fehlt das Feld, folgt der Step der Spur */
 const DEFAULT = { v: 1, p: 1, c: 'all' as StepCond };
-export type StepOptions = typeof DEFAULT & Pick<StepOpt, 't' | 'd' | 's'>;
+export type StepOptions = typeof DEFAULT & Pick<StepOpt, 't' | 'd' | 's' | 'n' | 'k'>;
 /** Änderung von Step-Optionen; undefined entfernt ein Feld (z. B. Lock lösen) */
 export type StepOptPatch = { [K in keyof StepOpt]?: StepOpt[K] | undefined };
 
@@ -43,10 +43,13 @@ export function normalizeOpt(o: StepOpt): StepOpt | null {
     const x = o[k];
     if (x !== undefined) out[k] = clamp(x, 0, 1);
   }
+  if (o.n !== undefined && Math.round(clamp(o.n, -12, 12)) !== 0)
+    out.n = Math.round(clamp(o.n, -12, 12));
+  if (o.k !== undefined) out.k = Math.round(clamp(o.k, 0, 7));
   return Object.keys(out).length ? out : null;
 }
 
-const FIELDS = ['v', 'p', 'c', 't', 'd', 's'] as const;
+const FIELDS = ['v', 'p', 'c', 't', 'd', 's', 'n', 'k'] as const;
 const sameOpt = (a: StepOpt | undefined, b: StepOpt | null): boolean =>
   (a === undefined && b === null) || (!!a && !!b && FIELDS.every((k) => a[k] === b[k]));
 
