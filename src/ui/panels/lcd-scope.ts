@@ -10,7 +10,10 @@ export interface Raf {
   cancel(id: number): void;
 }
 
-const SAMPLES = 256;
+/** ganzes Analyser-Fenster (fftSize 512, ≈ 12 ms) */
+const SAMPLES = 512;
+/** Empfindlichkeit: der Mix liegt meist deutlich unter Vollaussteuerung */
+const GAIN = 2.5;
 const HEIGHT = 28;
 
 /**
@@ -51,7 +54,7 @@ export function lcdScope(c: UiContext, raf: Raf, reducedMotion: boolean): HTMLCa
     const mid = 10;
     for (let i = 0; i < SAMPLES; i++) {
       const x = (i / (SAMPLES - 1)) * w;
-      const y = mid - (live ? Math.max(-1, Math.min(1, buf[i] ?? 0)) : 0) * 9;
+      const y = mid - (live ? Math.max(-1, Math.min(1, (buf[i] ?? 0) * GAIN)) : 0) * 9;
       if (i === 0) g.moveTo(x, y);
       else g.lineTo(x, y);
     }

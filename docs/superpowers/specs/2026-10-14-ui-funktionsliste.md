@@ -186,3 +186,11 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 | Loop 1/8, Loop 1/16, Tape, Crush | ersetzen das trockene Signal, schließen sich gegenseitig aus | ✅ | `engine.test.ts`, `next-punch.test.ts` |
 | Half, Tief, Hoch, Echo | Takt bzw. Filter bzw. Zusatz, frei kombinierbar | ✅ | `next-punch.test.ts` |
 | Bounce (Sampler) | Pattern auf das Pad, volles Pad nach Rückfrage, höchstens 3 s | ✅ | `bounce.test.ts`, `punch.spec.ts` |
+
+## Spielspaß (Roadmap-Etappe 5)
+
+| Handlung | Wirkung | Stand | Test |
+|---|---|---|---|
+| LCD-Streifen | Oszilloskop beim Spielen, Step-Punkte, ruhig im Stand bzw. bei „weniger Bewegung“ | ✅ | `lcd-scope.test.ts`, `engine.test.ts`, `spielspass.spec.ts` |
+| Würfeln | Variation von BD, SD, CH, OH, mit Zurück und Meldung | ✅ | `core/vary.test.ts`, `song-patterns.test.ts`, `spielspass.spec.ts` |
+| Szenen 1–8, Sichern | leer sichern, belegt abrufen (mit Zurück), Überschreiben im Sichern-Modus | ✅ | `core/scenes.test.ts`, `mixer.test.ts`, `spielspass.spec.ts` |

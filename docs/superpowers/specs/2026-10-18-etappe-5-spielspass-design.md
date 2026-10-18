@@ -5,7 +5,7 @@ Stand: 2026-10-18. Teenage-Engineering-Ideen, die der Besitzer gewählt hat. Der
 ## 1. Animiertes LCD (wie OP-1)
 
 - **Darstellung:** Im LCD unter der Meldungszeile liegt ein schmaler Streifen (Canvas, 28 px hoch) mit zwei Ebenen:
-  - **Oszilloskop** des Master-Ausgangs: eine Linie in `--acc`, 256 Werte, Zeitbereich.
+  - **Oszilloskop** des Master-Ausgangs: eine Linie in `--acc`, 512 Werte (≈ 12 ms), 2,5-fach verstärkt, Zeitbereich.
   - **16 Step-Punkte**: Der laufende Step leuchtet, Steps mit Inhalt im aktuellen Pattern sind schwach sichtbar.
 - **Wann gezeichnet wird:**
   - Nur während der Wiedergabe und nur, wenn die Seite sichtbar ist, per `requestAnimationFrame`.
