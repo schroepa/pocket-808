@@ -194,3 +194,13 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 | LCD-Streifen | Oszilloskop beim Spielen, Step-Punkte, ruhig im Stand bzw. bei „weniger Bewegung“ | ✅ | `lcd-scope.test.ts`, `engine.test.ts`, `spielspass.spec.ts` |
 | Würfeln | Variation von BD, SD, CH, OH, mit Zurück und Meldung | ✅ | `core/vary.test.ts`, `song-patterns.test.ts`, `spielspass.spec.ts` |
 | Szenen 1–8, Sichern | leer sichern, belegt abrufen (mit Zurück), Überschreiben im Sichern-Modus | ✅ | `core/scenes.test.ts`, `mixer.test.ts`, `spielspass.spec.ts` |
+
+## Synth-Noten (Roadmap-Etappe 6a)
+
+| Handlung | Wirkung | Stand | Test |
+|---|---|---|---|
+| Werkzeug Note / Akzent / Slide / Akkord | Tipp-Verhalten der Piano-Roll, Wahl bleibt nur in der Oberfläche | ✅ | `synth.test.ts`, `synth.spec.ts` |
+| Akzent | Note lauter (× 1,35) und mit mehr Filter-Env, hellere Füllung | ✅ | `core/notes.test.ts`, `next-synth-attrs.test.ts`, `synth.test.ts` |
+| Slide | gleitet in 60 ms von der klingenden Vorgängerin, ohne neuen Attack; Marke links | ✅ | `next-synth-attrs.test.ts`, `synth.test.ts` |
+| Akkord | kein → Dreiklang → Vierklang → Quinte → Oktave, in der Tonart gestapelt, paraphon; Kürzel 3/4/5/8 und LCD-Meldung | ✅ | `core/notes.test.ts`, `next-synth-attrs.test.ts`, `synth.test.ts`, `synth.spec.ts` |
+| Speichern | optionale Felder `a`, `s`, `ch` in der Note, alte Stände bytegleich, kaputte Werte fallen weg | ✅ | `core/notes.test.ts`, `core-persist.test.ts` |

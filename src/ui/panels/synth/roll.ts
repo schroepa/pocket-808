@@ -1,7 +1,9 @@
 import { ROWS, SCALES } from '../../../core/constants.ts';
 import { degreeName } from '../../../core/music.ts';
+import { CHORD_LABELS, CHORD_MARKS } from '../../../core/notes.ts';
 import { currentPattern } from '../../../core/pattern.ts';
 import { noteAt } from '../../../core/synth.ts';
+import type { ChordKind } from '../../../core/types.ts';
 import { must } from '../../../core/util.ts';
 import { computed, signal } from '../../../store/signals.ts';
 import type { UiContext } from '../../context.ts';
@@ -16,10 +18,20 @@ const LENGTHS = [
   [4, '1/4'],
 ] as const;
 
+/** Werkzeug für Tipps in der Roll (Etappe 6a); bleibt nur in der Oberfläche */
+type Tool = 'note' | 'a' | 's' | 'ch';
+const TOOLS: readonly (readonly [Tool, string])[] = [
+  ['note', 'Note'],
+  ['a', 'Akzent'],
+  ['s', 'Slide'],
+  ['ch', 'Akkord'],
+];
+
 /** Piano-Roll des gewählten Parts: eine Takthälfte (8 Steps) × 12 Stufen (Legacy renderRoll). */
 export function pianoRoll(c: UiContext): HTMLElement {
-  const { store, scope, audio } = c;
+  const { store, scope, audio, readout } = c;
   const page = signal(0);
+  const tool = signal<Tool>('note');
   const playStep = computed(() => audio.playhead.value.step);
   const tonality = store.select(
     (s) => ({ key: s.key, scale: s.scale }),
@@ -52,6 +64,17 @@ export function pianoRoll(c: UiContext): HTMLElement {
       active: store.select((s) => s.noteLen === n),
       onClick: () => {
         store.update((s) => ({ ...s, noteLen: n }));
+      },
+    }),
+  );
+
+  const tools = TOOLS.map(([t, label]) =>
+    chip(scope, {
+      label,
+      ariaLabel: `Werkzeug ${label}`,
+      active: computed(() => tool.value === t),
+      onClick: () => {
+        tool.value = t;
       },
     }),
   );
@@ -90,10 +113,14 @@ export function pianoRoll(c: UiContext): HTMLElement {
     );
     const cells = Array.from({ length: 8 }, (_, col) => {
       const step = computed(() => page.value * 8 + col);
+      // Text-Schlüssel: Zustand der Zelle und Attribute der Startnote ("on|a|s|3")
       const hit = store.select((s) => {
-        const k = noteAt(currentPattern(s).notes[s.part], step.value);
+        const row = currentPattern(s).notes[s.part];
+        const k = noteAt(row, step.value);
         if (k?.d !== d) return '';
-        return k.start === step.value ? 'on' : 'tail';
+        if (k.start !== step.value) return 'tail';
+        const n = row[k.start];
+        return `on|${n?.a ? 'a' : ''}|${n?.s ? 's' : ''}|${n?.ch ?? ''}`;
       });
       const b = h('button', {
         class: col % 4 === 0 ? 'pc q' : 'pc',
@@ -101,6 +128,20 @@ export function pianoRoll(c: UiContext): HTMLElement {
         on: {
           click: () => {
             const s = step.peek();
+            const t = tool.peek();
+            if (t !== 'note') {
+              if (!hit.peek()) return;
+              if (t === 'ch') store.cycleChord(s);
+              else store.toggleNoteFlag(t, s);
+              const now = store.state.peek();
+              const row = currentPattern(now).notes[now.part];
+              const k = noteAt(row, s);
+              const n = k ? row[k.start] : null;
+              if (t === 'ch') readout.flash(n?.ch ? CHORD_LABELS[n.ch] : 'Kein Akkord');
+              // Akzent und Akkord im Stand mit Attributen vorhören; Slide braucht eine Vorgängerin
+              if (n && t !== 's' && !audio.playing.peek()) audio.auditionNote(now.part, d, n.l, n);
+              return;
+            }
             store.placeNote(d, s);
             const now = store.state.peek();
             const set = currentPattern(now).notes[now.part][s]?.d === d;
@@ -112,14 +153,22 @@ export function pianoRoll(c: UiContext): HTMLElement {
         scope,
         () => hit.value,
         (v) => {
-          b.classList.toggle('on', v === 'on');
-          b.classList.toggle('tail', v === 'tail');
-          b.setAttribute('aria-pressed', String(v === 'on'));
+          const [state = '', a, sl, ch] = v.split('|');
+          b.classList.toggle('on', state === 'on');
+          b.classList.toggle('tail', state === 'tail');
+          b.classList.toggle('acc', a === 'a');
+          b.classList.toggle('sl', sl === 's');
+          b.textContent = ch ? CHORD_MARKS[ch as ChordKind] : '';
+          b.setAttribute('aria-pressed', String(state === 'on'));
         },
       );
       bind(
         scope,
-        () => `${name.value} Step ${step.value + 1}`,
+        () => {
+          const ch = hit.value.split('|')[3];
+          const extra = ch ? ` · ${CHORD_LABELS[ch as ChordKind]}` : '';
+          return `${name.value} Step ${step.value + 1}${extra}`;
+        },
         (l) => {
           b.setAttribute('aria-label', l);
         },
@@ -149,6 +198,7 @@ export function pianoRoll(c: UiContext): HTMLElement {
     h('div', { class: 'roll-head' }, [
       h('div', { class: 'chips', attrs: { role: 'group', 'aria-label': 'Takthälfte' } }, pages),
       h('div', { class: 'chips', attrs: { role: 'group', 'aria-label': 'Notenlänge' } }, lengths),
+      h('div', { class: 'chips tools', attrs: { role: 'group', 'aria-label': 'Werkzeug' } }, tools),
     ]),
     h('div', { class: 'roll' }, [
       h('div', { class: 'rr hd', attrs: { 'aria-hidden': 'true' } }, [h('span'), ...headCells]),

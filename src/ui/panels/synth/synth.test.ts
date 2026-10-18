@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { NOTE_NAMES, SCALES, SYN_PRESETS } from '../../../core/constants.ts';
 import { baseState, synthDefaults } from '../../../core/defaults.ts';
 import type { State } from '../../../core/types.ts';
@@ -146,6 +146,59 @@ describe('pianoRoll', () => {
     audio.playhead.value = { step: -1, songIndex: -1 };
     expect(el.querySelectorAll('.pc.now')).toHaveLength(0);
     expect(pages[1]?.classList.contains('now')).toBe(false);
+  });
+
+  it('Werkzeug Akzent und Slide schalten die Note unter dem Tipp um, leere Zellen bleiben leer', () => {
+    const { c, store, audio } = makeContext();
+    store.update((s) => ({ ...s, part: 'BA', noteLen: 2 }));
+    store.clearNotes();
+    const el = pianoRoll(c);
+    const tool = (n: string) => el.querySelector<HTMLButtonElement>(`[aria-label="Werkzeug ${n}"]`);
+    expect(tool('Note')?.getAttribute('aria-pressed')).toBe('true');
+    cell(el, 3, 0)?.click();
+    tool('Akzent')?.click();
+    expect(tool('Akzent')?.getAttribute('aria-pressed')).toBe('true');
+    cell(el, 3, 1)?.click(); // Ausklang zählt zur Note
+    const note = () => store.state.value.patterns[store.state.value.cur].notes.BA[0];
+    expect(note()).toEqual({ d: 3, l: 2, a: true });
+    expect(cell(el, 3, 0)?.classList.contains('acc')).toBe(true);
+    cell(el, 5, 4)?.click(); // leer: nichts
+    expect(store.state.value.patterns[store.state.value.cur].notes.BA[4]).toBeNull();
+    tool('Slide')?.click();
+    cell(el, 3, 0)?.click();
+    expect(note()).toEqual({ d: 3, l: 2, a: true, s: true });
+    expect(cell(el, 3, 0)?.classList.contains('sl')).toBe(true);
+    cell(el, 3, 0)?.click();
+    expect(note()).toEqual({ d: 3, l: 2, a: true });
+    expect(cell(el, 3, 0)?.classList.contains('sl')).toBe(false);
+    // Akzent hört im Stand mit Attributen vor, Slide nicht (braucht eine Vorgängerin)
+    expect(audio.auditionNote).toHaveBeenCalledTimes(2);
+    expect(audio.auditionNote).toHaveBeenLastCalledWith('BA', 3, 2, { d: 3, l: 2, a: true });
+  });
+
+  it('Werkzeug Akkord schaltet weiter, zeigt das Kürzel und meldet im LCD', () => {
+    const { c, store, audio } = makeContext();
+    store.update((s) => ({ ...s, part: 'BA', noteLen: 1 }));
+    store.clearNotes();
+    const el = pianoRoll(c);
+    cell(el, 2, 1)?.click();
+    el.querySelector<HTMLButtonElement>('[aria-label="Werkzeug Akkord"]')?.click();
+    const marks: string[] = [];
+    const flashes: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      cell(el, 2, 1)?.click();
+      marks.push(cell(el, 2, 1)?.textContent ?? '');
+      flashes.push(c.readout.text.value);
+    }
+    expect(marks).toEqual(['3', '4', '5', '8', '']);
+    expect(flashes).toEqual(['Dreiklang', 'Vierklang', 'Quinte', 'Oktave', 'Kein Akkord']);
+    expect(audio.auditionNote).toHaveBeenCalledWith('BA', 2, 1, { d: 2, l: 1, ch: 'tri' });
+    expect(cell(el, 2, 1)?.getAttribute('aria-label')).toMatch(/Step 2$/);
+    audio.playing.value = true;
+    const calls = vi.mocked(audio.auditionNote).mock.calls.length;
+    cell(el, 2, 1)?.click();
+    expect(audio.auditionNote).toHaveBeenCalledTimes(calls); // während der Wiedergabe still
+    expect(cell(el, 2, 1)?.getAttribute('aria-label')).toMatch(/Step 2 · Dreiklang$/);
   });
 
   it('Notenlänge wählen', () => {

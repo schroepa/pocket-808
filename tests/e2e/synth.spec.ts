@@ -92,3 +92,28 @@ test('Auswahllisten mit mindestens 16 px Schrift (iOS zoomt sonst beim Antippen)
   expect(sizes.length).toBeGreaterThan(0);
   for (const px of sizes) expect(px).toBeGreaterThanOrEqual(16);
 });
+
+test('Werkzeug: Akkord und Akzent setzen, bleibt nach Neuladen', async ({ page }) => {
+  await openSynth(page);
+  const syn = page.locator('#dev-synth');
+  const cell = syn.locator('.rr:not(.hd)').nth(8).locator('.pc').nth(1);
+  await syn.locator('[aria-label="Notenlänge 1/16"]').click();
+  await cell.click();
+  await syn.locator('[aria-label="Werkzeug Akkord"]').click();
+  await cell.click();
+  await expect(cell).toHaveText('3');
+  await expect(page.locator('.lcd')).toContainText('Dreiklang');
+  await syn.locator('[aria-label="Werkzeug Akzent"]').click();
+  await cell.click();
+  await expect(cell).toHaveClass(/acc/);
+  await page.waitForTimeout(400);
+  await page.reload();
+  await openSynth(page);
+  const again = page.locator('#dev-synth .rr:not(.hd)').nth(8).locator('.pc').nth(1);
+  await expect(again).toHaveText('3');
+  await expect(again).toHaveClass(/acc/);
+  await expect(page.locator('#dev-synth [aria-label="Werkzeug Note"]')).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+});

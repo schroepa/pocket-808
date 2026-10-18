@@ -3,7 +3,9 @@ import { blankPattern, emptyRow, parsePattern } from './defaults.ts';
 import { SCENE_COUNT } from './scenes.ts';
 import { isStepCond, normalizeOpt } from './stepopts.ts';
 import type {
+  ChordKind,
   Fx,
+  Note,
   NoteRow,
   OptMap,
   Pattern,
@@ -24,6 +26,7 @@ const isSlot = (v: unknown): v is Slot =>
   typeof v === 'string' && (SLOTS as readonly string[]).includes(v);
 const bits = (a: unknown[]): StepRow => a.map((x) => (x ? 1 : 0));
 const PAD_SUB_KEY = /^P[0-7]$/;
+const CHORD_KINDS: readonly ChordKind[] = ['tri', 'sev', 'pow', 'oct'];
 
 export const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));
 
@@ -39,11 +42,15 @@ export function parseStored(raw: string | null): unknown {
 
 function readNotes(a: unknown): NoteRow | null {
   if (!isArr(a) || a.length !== 16) return null;
-  return a.map((n) =>
-    isObj(n) && isInt(n.d) && n.d >= 0 && n.d < ROWS
-      ? { d: n.d, l: clamp(Math.round(Number(n.l)) || 1, 1, 16) }
-      : null,
-  );
+  return a.map((n) => {
+    if (!isObj(n) || !isInt(n.d) || n.d < 0 || n.d >= ROWS) return null;
+    const note: Note = { d: n.d, l: clamp(Math.round(Number(n.l)) || 1, 1, 16) };
+    // Attribute (Etappe 6a) nur, wenn gültig: alte Noten bleiben { d, l }
+    if (n.a === true) note.a = true;
+    if (n.s === true) note.s = true;
+    if (CHORD_KINDS.includes(n.ch as ChordKind)) note.ch = n.ch as ChordKind;
+    return note;
+  });
 }
 
 function readPattern(o: unknown, prev: Pattern): Pattern {

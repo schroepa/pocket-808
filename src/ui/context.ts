@@ -1,4 +1,4 @@
-import type { Part, State, VoiceId } from '../core/types.ts';
+import type { Note, Part, State, VoiceId } from '../core/types.ts';
 import type { SampleBank } from '../store/samples.ts';
 import type { ReadonlySignal } from '../store/signals.ts';
 import type { Store } from '../store/store.ts';
@@ -19,7 +19,7 @@ export interface UiAudio {
   tick(): void;
   audition(voice: VoiceId): void;
   /** Stufe des Parts vorhören (Länge in Steps) */
-  auditionNote(part: Part, degree: number, length: number): void;
+  auditionNote(part: Part, degree: number, length: number, note?: Note): void;
   /** Pad vorhören (nur wenn es ein Sample hat) */
   auditionPad(pad: number): void;
   /** Stutter an (Bruchteil eines Schlags: 1, 0,5, 0,25, 0,125) bzw. aus */

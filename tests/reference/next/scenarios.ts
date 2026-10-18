@@ -11,7 +11,16 @@ import { CHANNELS, DRUM_DEFAULTS, SYN_PRESETS, VOICE_IDS } from '../../../src/co
 import { initialState } from '../../../src/core/initial.ts';
 import { audibleChannels } from '../../../src/core/mix.ts';
 import { seededRandom } from '../../../src/core/random.ts';
-import type { DrumParams, Part, Slot, State, StepOpt, VoiceId } from '../../../src/core/types.ts';
+import type {
+  DrumParams,
+  Note,
+  Part,
+  Slot,
+  State,
+  StepOpt,
+  SynthPatch,
+  VoiceId,
+} from '../../../src/core/types.ts';
 import { createStore } from '../../../src/store/store.ts';
 import { must } from '../../../src/core/util.ts';
 import { fingerprint, type Fingerprint } from '../../support/fingerprint.ts';
@@ -101,7 +110,7 @@ export async function synthPreset(args: {
     ctx,
     dest: graph.parts[args.part].inp,
     patch: s.synth[args.part],
-    midi: args.midi,
+    midis: [args.midi],
     time: 0.1,
     duration: 0.5,
     previous: undefined,
@@ -861,7 +870,77 @@ export async function echoTail(args: { echo: boolean }): Promise<number> {
   return segment(buf, 1, 2).rmsDb;
 }
 
+interface OscLog {
+  start: number;
+  first: number;
+  ramps: number[];
+}
+/**
+ * Bass-Noten mit Attributen (Tempo 120): notes = [Step, Stufe, Länge, Attribute].
+ * Liefert die Spitze und je Oszillator Startzeit, erste Frequenz und Rampenziele.
+ */
+export async function synthAttrs(args: {
+  notes: [number, number, number, Partial<Note>][];
+  patch?: Partial<SynthPatch>;
+}): Promise<{ peak: number; oscs: OscLog[]; rms: number[] }> {
+  const oscs: OscLog[] = [];
+  let on = false;
+  const { ctx } = await play({
+    seconds: 1.5,
+    seed: 1,
+    setup: (s) => {
+      isolate(s);
+      // leise und trocken, damit der Master-Limiter die Spitze nicht begrenzt
+      s.mix.BA = { ...s.mix.BA, v: 0.15, r: 0 };
+      s.synth.BA = { ...s.synth.BA, ...args.patch };
+      for (const [st, d, l, attrs] of args.notes) s.patterns.A.notes.BA[st] = { d, l, ...attrs };
+    },
+    instrument: (c) => {
+      const make = c.createOscillator.bind(c);
+      c.createOscillator = () => {
+        const o = make();
+        const log: OscLog = { start: 0, first: 0, ramps: [] };
+        const f = o.frequency;
+        const set = f.setValueAtTime.bind(f);
+        f.setValueAtTime = (v: number, t: number) => {
+          if (log.first === 0) log.first = v;
+          return set(v, t);
+        };
+        const ramp = f.exponentialRampToValueAtTime.bind(f);
+        f.exponentialRampToValueAtTime = (v: number, t: number) => {
+          log.ramps.push(v);
+          return ramp(v, t);
+        };
+        const start = o.start.bind(o);
+        o.start = (when?: number) => {
+          log.start = when ?? 0;
+          if (on) oscs.push(log);
+          start(when);
+        };
+        return o;
+      };
+    },
+    afterPrerender: () => {
+      on = true;
+    },
+  });
+  const buf = await ctx.startRendering();
+  const data = buf.getChannelData(0);
+  let peak = 0;
+  for (const x of data) peak = Math.max(peak, Math.abs(x));
+  // RMS in 2-ms-Fenstern
+  const win = Math.round(SR * 0.002);
+  const rms: number[] = [];
+  for (let i = 0; i + win <= data.length; i += win) {
+    let sum = 0;
+    for (let k = i; k < i + win; k++) sum += (data[k] ?? 0) ** 2;
+    rms.push(Math.sqrt(sum / win));
+  }
+  return { peak, oscs, rms };
+}
+
 export const SCENARIOS: Record<string, (args: never) => Promise<unknown>> = {
+  synthAttrs,
   punchProbe,
   echoTail,
   lockHits,

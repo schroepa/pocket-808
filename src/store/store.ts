@@ -13,6 +13,7 @@ import {
   toggleSampleStep,
   toggleSubStep,
 } from '../core/pattern.ts';
+import { cycleChord, toggleNoteFlag } from '../core/notes.ts';
 import { applyPreset } from '../core/presets.ts';
 import {
   appendToSong,
@@ -44,6 +45,10 @@ export interface Store {
   toggleSubStep(key: SubKey, step: number, k: number): void;
   applySubPattern(key: SubKey, step: number, kind: SubPatternKind): void;
   placeNote(degree: number, step: number): void;
+  /** Akzent (a) oder Slide (s) der Note unter `step` umschalten */
+  toggleNoteFlag(flag: 'a' | 's', step: number): void;
+  /** Akkord der Note unter `step` weiterschalten */
+  cycleChord(step: number): void;
   clearNotes(): void;
   clearTrack(): void;
   clearPattern(): void;
@@ -120,6 +125,12 @@ export function createStore(initial: State, opts: { freeze?: boolean } = {}): St
     },
     placeNote: (degree, step) => {
       update((s) => placeNote(s, degree, step));
+    },
+    toggleNoteFlag: (flag, step) => {
+      update((s) => toggleNoteFlag(s, flag, step));
+    },
+    cycleChord: (step) => {
+      update((s) => cycleChord(s, step));
     },
     clearNotes: () => {
       withUndo(clearNotes);

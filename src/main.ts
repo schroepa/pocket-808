@@ -128,8 +128,8 @@ function boot(hostData: unknown): Store {
     audition: (v) => {
       engine.audition(v);
     },
-    auditionNote: (p, d, l) => {
-      engine.auditionNote(p, d, l);
+    auditionNote: (p, d, l, n) => {
+      engine.auditionNote(p, d, l, n);
     },
     auditionPad: (i) => {
       engine.auditionPad(i);

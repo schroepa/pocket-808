@@ -54,13 +54,37 @@
   .rr.root .pc.q {
     background: color-mix(in srgb, var(--ink) 14%, var(--well));
   }
-  .rr .pc.tail {
+  .roll .rr .pc.tail {
     background: color-mix(in srgb, var(--acc) 42%, var(--well));
   }
-  .rr .pc.on {
+  .roll .rr .pc.on {
     z-index: 1;
     background: var(--acc);
     box-shadow: 0 0 12px color-mix(in srgb, var(--acc) 28%, transparent);
+  }
+  /* Etappe 6a: Akzent heller, Slide als Marke zur vorigen Note, Akkord als Kürzel */
+  .roll .rr .pc.on.acc {
+    background: color-mix(in srgb, var(--acc) 62%, var(--cream));
+  }
+  .rr .pc.sl::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -2px;
+    width: 6px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--cream);
+    transform: translateY(-50%);
+  }
+  .pc {
+    display: grid;
+    place-items: center;
+    font: 12px var(--font-lcd);
+    color: var(--chassis);
+  }
+  .roll-head .tools {
+    flex-basis: 100%;
   }
   .pc.now {
     filter: brightness(1.9);

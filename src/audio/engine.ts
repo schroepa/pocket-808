@@ -1,6 +1,7 @@
 import { CHANNELS, PARTS, VOICE_IDS } from '../core/constants.ts';
 import { audibleChannels } from '../core/mix.ts';
 import { degreeToMidi, effectiveLength } from '../core/music.ts';
+import { noteMidis } from '../core/notes.ts';
 import { subStepsOf } from '../core/pattern.ts';
 import type { Rng } from '../core/random.ts';
 import { toPcm, type DrumSample } from '../core/samples.ts';
@@ -16,6 +17,7 @@ import {
 } from '../core/stepopts.ts';
 import type {
   ChannelId,
+  Note,
   Part,
   Pattern,
   Slot,
@@ -32,6 +34,12 @@ import { impulseResponse, stutterPeriod } from './dsp.ts';
 import { createGraph, type Graph } from './graph.ts';
 import { createSampler, type Sampler } from './sampler.ts';
 import { synthNote, type SynthVoice } from './synth.ts';
+
+/** Akzent und Slide einer Note (Etappe 6a) */
+export interface NoteAttrs {
+  accent?: boolean;
+  slide?: boolean;
+}
 import { browserTimer, type EngineTimer } from './timer.ts';
 import type { OfflineFactory } from './voices.ts';
 
@@ -82,7 +90,8 @@ export interface Engine {
   /** pro Bildschirm-Frame aufrufen: Abspielposition, im Song-Modus folgt die Ansicht */
   tick(now?: number): void;
   audition(voice: VoiceId): void;
-  auditionNote(part: Part, degree: number, length?: number): void;
+  /** Stufe vorhören; mit `note` samt Akkord und Akzent (Slide braucht eine Vorgängerin, entfällt) */
+  auditionNote(part: Part, degree: number, length?: number, note?: Note): void;
   auditionPad(pad: number): void;
   stutterOn(fraction: number): void;
   stutterOff(): void;
@@ -100,7 +109,13 @@ export interface Engine {
   /** Klänge zu einem festen Zeitpunkt planen (Scheduler, Tests, später Live-Aufnahme) */
   readonly schedule: {
     drum(voice: VoiceId, time: number, velocity?: number): void;
-    note(part: Part, midi: number, time: number, duration: number): void;
+    note(
+      part: Part,
+      midis: readonly number[],
+      time: number,
+      duration: number,
+      attrs?: NoteAttrs,
+    ): void;
     pad(pad: number, time: number, velocity?: number): void;
   };
   /** stoppt, löscht Zeitgeber und Effekte und schließt den Kontext; danach ist die Engine stumm */
@@ -368,16 +383,24 @@ export function createEngine(o: EngineOptions): Engine {
       lock,
     );
   };
-  const scheduleNote = (part: Part, midi: number, t: number, duration: number): void => {
+  const scheduleNote = (
+    part: Part,
+    midis: readonly number[],
+    t: number,
+    duration: number,
+    attrs: NoteAttrs = {},
+  ): void => {
     if (!graph || !ctx) return;
     synthLast[part] = synthNote({
       ctx,
       dest: graph.parts[part].inp,
       patch: state().synth[part],
-      midi,
+      midis,
       time: t,
       duration,
       previous: synthLast[part],
+      accent: attrs.accent === true,
+      slide: attrs.slide === true,
     });
   };
   const schedulePad = (pad: number, t: number, velocity = 1, lock?: StepOpt): void => {
@@ -440,12 +463,14 @@ export function createEngine(o: EngineOptions): Engine {
         const row = pat.notes[id];
         const n = row[step];
         if (n && aud[id]) {
-          scheduleNote(
-            id,
-            degreeToMidi(id, n.d, s, s.synth[id].oct),
-            t,
-            effectiveLength(row, step) * d * 0.92,
-          );
+          // gleitet die Folgenote, bleibt das Gate bis zu ihrem Einsatz offen (gebunden)
+          const len = effectiveLength(row, step);
+          const legato = row[step + len]?.s === true;
+          const dur = legato ? len * d + 0.01 : len * d * 0.92;
+          scheduleNote(id, noteMidis(id, n, s), t, dur, {
+            accent: n.a === true,
+            slide: n.s === true,
+          });
         }
       }
       if (aud.SM) {
@@ -521,14 +546,17 @@ export function createEngine(o: EngineOptions): Engine {
       if (!gesture()) return;
       scheduleDrum(voice, now() + 0.005);
     },
-    auditionNote(part, degree, length = 1) {
+    auditionNote(part, degree, length = 1, note) {
       if (!gesture()) return;
       const s = state();
       scheduleNote(
         part,
-        degreeToMidi(part, degree, s, s.synth[part].oct),
+        note
+          ? noteMidis(part, { ...note, d: degree }, s)
+          : [degreeToMidi(part, degree, s, s.synth[part].oct)],
         now() + 0.005,
         ((length * 60) / s.tempo / 4) * 0.92 + 0.12,
+        { accent: note?.a === true },
       );
     },
     auditionPad(pad) {

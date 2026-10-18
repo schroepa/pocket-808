@@ -142,6 +142,35 @@ describe('createEngine', () => {
     engine.dispose();
   });
 
+  it('Vorhören einer Note mit Akkord und Akzent spielt alle Töne, lauter', () => {
+    const store = createStore(baseState());
+    const ctx = fakeContext();
+    const engine = createEngine({
+      store,
+      createContext: () => ctx as never,
+      timer: manualTimer(),
+      prerender: false,
+    });
+    engine.prepare();
+    const gains = () =>
+      ctx.createGain.mock.results.map((r) => (r.value as { gain: { value: number } }).gain.value);
+    const count = (fn: () => void) => {
+      const o = ctx.createOscillator.mock.calls.length;
+      fn();
+      return ctx.createOscillator.mock.calls.length - o;
+    };
+    const plain = count(() => {
+      engine.auditionNote('BA', 0, 1);
+    });
+    expect(gains()).not.toContainEqual(expect.closeTo(0.81, 5));
+    const chord = count(() => {
+      engine.auditionNote('BA', 0, 1, { d: 0, l: 1, ch: 'tri', a: true });
+    });
+    expect(chord).toBe(plain + 4);
+    expect(gains()).toContainEqual(expect.closeTo(0.81, 5));
+    engine.dispose();
+  });
+
   it('resume weckt nur einen nicht laufenden Kontext und legt keinen an', () => {
     const store = createStore(baseState());
     const ctx = fakeContext();
