@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { NOTE_NAMES, SCALES, SYN_PRESETS } from '../../../core/constants.ts';
+import { setArp } from '../../../core/arp.ts';
 import { baseState, synthDefaults } from '../../../core/defaults.ts';
 import type { State } from '../../../core/types.ts';
 import { must } from '../../../core/util.ts';
@@ -322,6 +323,81 @@ describe('synthModules', () => {
       fa?.dispatchEvent(pointer('pointerup'));
     }
     expect(store.state.value.synth[part].fa).toBe(synthDefaults()[part].fa);
+  });
+});
+
+describe('Arp und LFO', () => {
+  const radio = (el: HTMLElement, group: string, label: string) =>
+    [...el.querySelectorAll<HTMLButtonElement>(`[aria-label="${group}"] [role=radio]`)].find(
+      (b) => b.textContent === label,
+    );
+  const key = (el: Element | null | undefined, k: string) => {
+    el?.dispatchEvent(new KeyboardEvent('keydown', { key: k }));
+  };
+
+  it('Arp: Modus schaltet ein und aus, Rate und Oktaven gelten (auch vorgewählt im Aus)', () => {
+    const { c, store } = makeContext();
+    store.update((s) => ({ ...s, part: 'BA' }));
+    const el = synthModules(c);
+    expect(radio(el, 'Arp', 'Aus')?.getAttribute('aria-checked')).toBe('true');
+    radio(el, 'Arp-Rate', '1/32')?.click(); // im Aus vorgewählt, noch kein Feld
+    expect('arp' in store.state.value.synth.BA).toBe(false);
+    radio(el, 'Arp', 'Auf-Ab')?.click();
+    expect(store.state.value.synth.BA.arp).toEqual({ m: 'ud', r: 2, o: 1 });
+    radio(el, 'Arp-Oktaven', '2 Okt')?.click();
+    expect(store.state.value.synth.BA.arp).toEqual({ m: 'ud', r: 2, o: 2 });
+    expect(radio(el, 'Arp-Oktaven', '2 Okt')?.getAttribute('aria-checked')).toBe('true');
+    radio(el, 'Arp-Rate', '1/16')?.click();
+    radio(el, 'Arp-Oktaven', '1 Okt')?.click();
+    expect(store.state.value.synth.BA.arp).toEqual({ m: 'ud', r: 1, o: 1 });
+    radio(el, 'Arp-Rate', '1/32')?.click();
+    radio(el, 'Arp', 'Aus')?.click();
+    expect('arp' in store.state.value.synth.BA).toBe(false);
+    expect(radio(el, 'Arp-Rate', '1/32')?.getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('LFO: Depth und Rate als Knobs mit LCD in Hz, Ziel als Segment, Part-Wechsel zeigt den anderen', () => {
+    const { c, store } = makeContext();
+    store.update((s) => ({ ...s, part: 'LD' }));
+    const el = synthModules(c);
+    const depth = el.querySelector('[role=slider][aria-label="Depth"]');
+    const rate = el.querySelector('[role=slider][aria-label="Rate"]');
+    expect(depth?.getAttribute('aria-valuenow')).toBe('0');
+    key(depth, 'End');
+    expect(store.state.value.synth.LD.lfo).toEqual({ r: 0.5, d: 1, t: 'cut' });
+    key(rate, 'Home');
+    expect(store.state.value.synth.LD.lfo?.r).toBe(0);
+    expect(c.readout.text.value).toBe('LEAD Rate 0.10 Hz');
+    radio(el, 'LFO-Ziel', 'Pitch')?.click();
+    expect(store.state.value.synth.LD.lfo?.t).toBe('pit');
+    store.update((s) => ({ ...s, part: 'BA' }));
+    expect(depth?.getAttribute('aria-valuenow')).toBe('0');
+    expect(radio(el, 'LFO-Ziel', 'Cutoff')?.getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('Doppeltipp: Depth auf 0 (aus), Rate auf 0,5', () => {
+    const { c, store } = makeContext();
+    const el = synthModules(c);
+    const part = store.state.value.part;
+    for (const [label, end, def] of [
+      ['Depth', 'End', 0],
+      ['Rate', 'Home', 0.5],
+    ] as const) {
+      const k = el.querySelector(`[role=slider][aria-label="${label}"]`);
+      key(k, end);
+      for (let i = 0; i < 2; i++) {
+        k?.dispatchEvent(pointer('pointerdown'));
+        k?.dispatchEvent(pointer('pointerup'));
+      }
+      expect(store.state.value.synth[part].lfo?.[label === 'Depth' ? 'd' : 'r']).toBe(def);
+    }
+  });
+
+  it('Zusammenfassung nennt den Arp', () => {
+    const s = baseState();
+    expect(synthSummary(s)).not.toMatch(/Arp/);
+    const on = setArp(s, s.part, { m: 'up', r: 1, o: 1 });
+    expect(synthSummary(on)).toMatch(/ · Arp$/);
   });
 });
 

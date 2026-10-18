@@ -91,6 +91,15 @@ export function fakeContext() {
       return n;
     }),
     disconnect: vi.fn(),
+    /** Ereignis-Hörer (z. B. 'ended'); Tests lösen sie über `listeners` selbst aus */
+    listeners: [] as [string, () => void][],
+    addEventListener: vi.fn(function (
+      this: { listeners: [string, () => void][] },
+      type: string,
+      fn: () => void,
+    ) {
+      this.listeners.push([type, fn]);
+    }),
     start: vi.fn(),
     stop: vi.fn(),
     gain: param(),

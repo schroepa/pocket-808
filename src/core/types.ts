@@ -88,7 +88,27 @@ export type SynthKey =
   | 'dly'
   | 'lvl';
 export type SynthValues = Record<SynthKey, number> & { wave: number };
-export type SynthPatch = { oct: number; mute: boolean; preset: string | null } & SynthValues;
+/** Arpeggiator (Etappe 6b): Modus, Rate (1 = 1/16, 2 = 1/32), Oktaven; fehlt = aus */
+export type ArpMode = 'up' | 'down' | 'ud' | 'rnd';
+export interface ArpSettings {
+  m: ArpMode;
+  r: 1 | 2;
+  o: 1 | 2;
+}
+/** LFO (Etappe 6b): Rate und Depth 0..1, Ziel Cutoff oder Pitch */
+export interface LfoSettings {
+  r: number;
+  d: number;
+  t: 'cut' | 'pit';
+}
+export type SynthPatch = {
+  oct: number;
+  mute: boolean;
+  preset: string | null;
+  /** optional: fehlt, solange nicht gesetzt (alte Stände bleiben bytegleich) */
+  arp?: ArpSettings;
+  lfo?: LfoSettings;
+} & SynthValues;
 export interface Pad {
   name: string;
   start: number;

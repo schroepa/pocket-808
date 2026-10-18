@@ -1,6 +1,7 @@
 import { CHANNELS, PARTS, VOICE_IDS } from '../core/constants.ts';
 import { audibleChannels } from '../core/mix.ts';
 import { degreeToMidi, effectiveLength } from '../core/music.ts';
+import { arpSequence } from '../core/arp.ts';
 import { noteMidis } from '../core/notes.ts';
 import { subStepsOf } from '../core/pattern.ts';
 import type { Rng } from '../core/random.ts';
@@ -17,6 +18,7 @@ import {
 } from '../core/stepopts.ts';
 import type {
   ChannelId,
+  LfoSettings,
   Note,
   Part,
   Pattern,
@@ -33,6 +35,7 @@ import { createDrumBank, type DrumBank, type DrumLock } from './drums.ts';
 import { impulseResponse, stutterPeriod } from './dsp.ts';
 import { createGraph, type Graph } from './graph.ts';
 import { createSampler, type Sampler } from './sampler.ts';
+import { createLfo, type PartLfo } from './lfo.ts';
 import { synthNote, type SynthVoice } from './synth.ts';
 
 /** Akzent und Slide einer Note (Etappe 6a) */
@@ -169,6 +172,9 @@ export function createEngine(o: EngineOptions): Engine {
   /** Durchläufe je Slot seit dem Start (Bedingungen der Step-Optionen) */
   let loops: Partial<Record<Slot, number>> = {};
   const chance = random('prob');
+  const arpRnd = random('arp');
+  /** LFO je Part, nur solange Depth > 0 (Etappe 6b) */
+  const lfos: Record<Part, PartLfo | undefined> = { BA: undefined, LD: undefined };
   /** Fill-Taste gehalten? */
   let fill = false;
   /** Half-Time gehalten: Steps doppelt so lang */
@@ -218,7 +224,27 @@ export function createEngine(o: EngineOptions): Engine {
   };
 
   /** Effekte für Live-Parameter. Erster Lauf nur merken: Anfangswerte setzt createGraph. */
+  /** LFO eines Parts anlegen, ändern oder bei Depth 0 stoppen und verwerfen */
+  const syncLfo = (g: Graph, part: Part, l: LfoSettings | undefined): void => {
+    const cur = lfos[part];
+    if (l && l.d > 0) {
+      if (cur) cur.set(l, now());
+      else lfos[part] = createLfo(g.ctx, l, now());
+    } else if (cur) {
+      cur.stop(now());
+      lfos[part] = undefined;
+    }
+  };
+
   const watchLive = (g: Graph): void => {
+    for (const id of PARTS) {
+      const l = store.select((s) => s.synth[id].lfo);
+      disposers.push(
+        effect(() => {
+          syncLfo(g, id, l.value);
+        }),
+      );
+    }
     const live = <T>(read: () => T, apply: (v: T) => void): void => {
       let first = true;
       disposers.push(
@@ -401,6 +427,7 @@ export function createEngine(o: EngineOptions): Engine {
       previous: synthLast[part],
       accent: attrs.accent === true,
       slide: attrs.slide === true,
+      ...(lfos[part] ? { lfo: lfos[part] } : {}),
     });
   };
   const schedulePad = (pad: number, t: number, velocity = 1, lock?: StepOpt): void => {
@@ -428,6 +455,23 @@ export function createEngine(o: EngineOptions): Engine {
   };
 
   /** Lookahead-Scheduler (Legacy pump): plant alle Steps bis 0,2 s voraus. */
+  /** offene Arp-Töne je Part (Etappe 6b): geplant wird nur bis zum Vorlauf */
+  interface ArpTone {
+    t: number;
+    midi: number;
+    dur: number;
+    attrs: NoteAttrs;
+  }
+  const arpQueue: Record<Part, ArpTone[]> = { BA: [], LD: [] };
+  /** Arp-Töne des Parts bis vor `until` planen */
+  const flushArp = (part: Part, until: number): void => {
+    const q = arpQueue[part];
+    while (q[0] && q[0].t < until) {
+      const a = q.shift();
+      if (a) scheduleNote(part, [a.midi], a.t, a.dur, a.attrs);
+    }
+  };
+
   const pump = (): void => {
     const t0 = now();
     if (nextTime < t0 - 0.1) nextTime = t0 + 0.05;
@@ -463,14 +507,27 @@ export function createEngine(o: EngineOptions): Engine {
         const row = pat.notes[id];
         const n = row[step];
         if (n && aud[id]) {
-          // gleitet die Folgenote, bleibt das Gate bis zu ihrem Einsatz offen (gebunden)
+          // eine neue Note löst die übrigen Arp-Töne der vorigen ab (monophon)
+          flushArp(id, t);
+          arpQueue[id] = [];
           const len = effectiveLength(row, step);
-          const legato = row[step + len]?.s === true;
-          const dur = legato ? len * d + 0.01 : len * d * 0.92;
-          scheduleNote(id, noteMidis(id, n, s), t, dur, {
-            accent: n.a === true,
-            slide: n.s === true,
-          });
+          const midis = noteMidis(id, n, s);
+          const arp = s.synth[id].arp;
+          if (arp) {
+            // Arp: len · r einzelne Töne, Akzent auf allen, Slide nur am ersten
+            const gap = d / arp.r;
+            arpQueue[id] = arpSequence(midis, arp, len * arp.r, arpRnd).map((midi, k) => ({
+              t: t + k * gap,
+              midi,
+              dur: gap * 0.92,
+              attrs: { accent: n.a === true, slide: k === 0 && n.s === true },
+            }));
+          } else {
+            // gleitet die Folgenote, bleibt das Gate bis zu ihrem Einsatz offen (gebunden)
+            const legato = row[step + len]?.s === true;
+            const dur = legato ? len * d + 0.01 : len * d * 0.92;
+            scheduleNote(id, midis, t, dur, { accent: n.a === true, slide: n.s === true });
+          }
         }
       }
       if (aud.SM) {
@@ -491,6 +548,7 @@ export function createEngine(o: EngineOptions): Engine {
       nextTime += d;
       step = (step + 1) % 16;
     }
+    for (const id of PARTS) flushArp(id, horizon);
   };
 
   const stop = (): void => {
@@ -502,6 +560,8 @@ export function createEngine(o: EngineOptions): Engine {
     timer.clearInterval(interval);
     interval = null;
     queue.length = 0;
+    arpQueue.BA = [];
+    arpQueue.LD = [];
     batch(() => {
       playing.value = false;
       playhead.value = { step: -1, songIndex: -1 };

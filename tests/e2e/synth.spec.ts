@@ -117,3 +117,31 @@ test('Werkzeug: Akkord und Akzent setzen, bleibt nach Neuladen', async ({ page }
     'true',
   );
 });
+
+test('Arp und LFO setzen, bleibt nach Neuladen', async ({ page }) => {
+  await openSynth(page);
+  const syn = page.locator('#dev-synth');
+  await syn.locator('[aria-label="Arp"] [role=radio]', { hasText: 'Auf-Ab' }).click();
+  await syn.locator('[aria-label="Arp-Rate"] [role=radio]', { hasText: '1/32' }).click();
+  const depth = syn.locator('[role=slider][aria-label="Depth"]');
+  await depth.focus();
+  await page.keyboard.press('End');
+  await syn.locator('[aria-label="LFO-Ziel"] [role=radio]', { hasText: 'Pitch' }).click();
+  await page.waitForTimeout(400);
+  await page.reload();
+  await openSynth(page);
+  const again = page.locator('#dev-synth');
+  await expect(again.locator('[aria-label="Arp"] [role=radio][aria-checked=true]')).toHaveText(
+    'Auf-Ab',
+  );
+  await expect(again.locator('[aria-label="Arp-Rate"] [role=radio][aria-checked=true]')).toHaveText(
+    '1/32',
+  );
+  await expect(again.locator('[role=slider][aria-label="Depth"]')).toHaveAttribute(
+    'aria-valuenow',
+    '100',
+  );
+  await expect(again.locator('[aria-label="LFO-Ziel"] [role=radio][aria-checked=true]')).toHaveText(
+    'Pitch',
+  );
+});
