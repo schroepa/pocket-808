@@ -8,9 +8,16 @@ export type Bit = 0 | 1;
 /** 16 Steps */
 export type StepRow = Bit[];
 /** Note als Skalenstufe d (0 = Grundton) mit Länge l in Steps */
+/** Akkord einer Note (in Skalenstufen gestapelt, Etappe 6a) */
+export type ChordKind = 'tri' | 'sev' | 'pow' | 'oct';
 export interface Note {
   d: number;
   l: number;
+  /** Akzent: lauter und heller */
+  a?: true;
+  /** Slide: gleitet von der vorigen Note */
+  s?: true;
+  ch?: ChordKind;
 }
 export type NoteRow = (Note | null)[];
 /** Sub-Steps je Drum-Stimme oder Sampler-Pad ('P0'…'P7'): Step-Index → 16 Teil-Schläge */
