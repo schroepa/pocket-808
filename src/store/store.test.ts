@@ -195,3 +195,30 @@ describe('ganzen Zustand ersetzen (Projekt öffnen)', () => {
     expect(store.state.value.tempo).toBe(99);
   });
 });
+
+describe('Würfel und Szenen im Store', () => {
+  it('vary würfelt mit Zurück', () => {
+    const store = createStore(initialState());
+    const before = store.state.value;
+    let i = 0;
+    store.vary(() => [0.1, 0.9, 0.2, 0.05][i++ % 4] ?? 0);
+    expect(store.state.value).not.toBe(before);
+    store.undo();
+    expect(store.state.value.patterns.A).toBe(before.patterns.A);
+  });
+
+  it('Szene sichern ohne Zurück, abrufen mit Zurück (ganzer Mixer)', () => {
+    const store = createStore(baseState());
+    store.saveScene(1);
+    store.update((s) => ({ ...s, mix: { ...s.mix, SD: { ...s.mix.SD, m: true } } }));
+    store.recallScene(1);
+    expect(store.state.value.mix.SD.m).toBe(false);
+    store.undo();
+    expect(store.state.value.mix.SD.m).toBe(true);
+    // leere Szene: nichts passiert, kein Zurück-Schritt
+    const now = store.state.value;
+    store.recallScene(5);
+    expect(store.state.value).toBe(now);
+    expect(store.canUndo.value).toBe(false);
+  });
+});

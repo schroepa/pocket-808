@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { PRESETS } from '../../core/constants.ts';
+import { initialState } from '../../core/initial.ts';
 import { makeContext } from '../test-utils.ts';
 import { patternsPanel } from './patterns.ts';
 import { songPanel } from './song.ts';
@@ -146,5 +147,22 @@ describe('patternsPanel', () => {
     expect(c.readout.text.value).toBe('EINGEFÜGT IN E');
     chip('Pattern leeren').click();
     expect(store.state.value.patterns.E.BD[5]).toBe(0);
+  });
+});
+
+describe('Würfeln', () => {
+  it('würfelt eine Variation mit Meldung; Zurück stellt her', () => {
+    const { c, store } = makeContext({ state: initialState() });
+    const el = patternsPanel(c);
+    const before = store.state.value.patterns.A;
+    const rnd = vi.spyOn(Math, 'random').mockReturnValue(0.1);
+    [...el.querySelectorAll('button')]
+      .find((b) => b.getAttribute('aria-label') === 'Variation würfeln')
+      ?.click();
+    rnd.mockRestore();
+    expect(store.state.value.patterns.A).not.toBe(before);
+    expect(c.readout.text.value).toBe('Variation gewürfelt');
+    store.undo();
+    expect(store.state.value.patterns.A).toBe(before);
   });
 });

@@ -1,10 +1,12 @@
 import { CHANNEL_NAMES, CHANNELS } from '../../../core/constants.ts';
 import { mixDefaults } from '../../../core/defaults.ts';
 import { setChannelValue, toggleSolo } from '../../../core/mixer.ts';
+import { SCENE_COUNT } from '../../../core/scenes.ts';
 import { toggleMute } from '../../../core/synth.ts';
 import type { ChannelId } from '../../../core/types.ts';
 import { computed, signal } from '../../../store/signals.ts';
 import type { UiContext } from '../../context.ts';
+import { chip } from '../../controls/chip.ts';
 import { knob } from '../../controls/knob.ts';
 import { bind, h, listen } from '../../dom.ts';
 import { panText } from './format.ts';
@@ -137,5 +139,56 @@ export function mixerPanel(c: UiContext): HTMLElement {
         tag,
       }),
     ]),
+    sceneRow(c),
+  ]);
+}
+
+/** Szenen wie beim OP-XY: Tipp auf leer sichert, auf belegt ruft ab; „Sichern“ überschreibt einmal */
+function sceneRow(c: UiContext): HTMLElement {
+  const { store, scope, readout } = c;
+  const saving = signal(false);
+  const last = signal(-1);
+  const buttons = Array.from({ length: SCENE_COUNT }, (_, i) =>
+    chip(scope, {
+      label: String(i + 1),
+      ariaLabel: `Szene ${String(i + 1)}`,
+      active: computed(() => last.value === i),
+      onClick: () => {
+        const filled = Boolean(store.state.peek().scenes?.[i]);
+        if (saving.peek() || !filled) {
+          store.saveScene(i);
+          saving.value = false;
+          readout.flash(`Szene ${String(i + 1)} gesichert`);
+        } else {
+          store.recallScene(i);
+          readout.flash(`Szene ${String(i + 1)}`);
+        }
+        last.value = i;
+      },
+    }),
+  );
+  buttons.forEach((b, i) => {
+    b.classList.add('scene');
+    bind(
+      scope,
+      () => Boolean(store.state.value.scenes?.[i]),
+      (has) => {
+        b.classList.toggle('has', has);
+      },
+    );
+  });
+  return h('div', { class: 'scenes' }, [
+    h('div', { class: 'row-split' }, [
+      h('div', { class: 'cap-label', text: 'Szenen' }),
+      chip(scope, {
+        label: 'Sichern',
+        ariaLabel: 'Szene sichern (überschreiben)',
+        active: saving,
+        onClick: () => {
+          saving.value = !saving.peek();
+        },
+      }),
+    ]),
+    h('div', { class: 'scene-row' }, buttons),
   ]);
 }
