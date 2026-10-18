@@ -144,6 +144,7 @@ export function loadState(src: unknown, base: State): State {
       const v = src.open[k];
       if (typeof v === 'boolean') s.open[k] = v;
     }
+    if (typeof src.open.punch === 'boolean') s.open.punch = src.open.punch;
   }
   if (isObj(src.smp)) {
     const q0 = src.smp;

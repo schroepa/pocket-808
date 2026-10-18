@@ -1,13 +1,15 @@
 import { factorySamples } from './audio/dsp.ts';
 import { createEngine } from './audio/engine.ts';
 import { bootState } from './core/boot.ts';
-import { SAMPLE_STORAGE_KEY, STORAGE_KEY, VOICE_IDS } from './core/constants.ts';
+import { SAMPLE_STORAGE_KEY, SMP_MAX, SMP_RATE, STORAGE_KEY, VOICE_IDS } from './core/constants.ts';
 import { serialize } from './core/persist.ts';
 import type { DrumSample } from './core/samples.ts';
 import type { VoiceId } from './core/types.ts';
 import { must } from './core/util.ts';
 import { renderOffline } from './audio/export.ts';
 import { encodeWav } from './core/wav.ts';
+import { fadeOut, toPcm } from './core/samples.ts';
+import { stepDuration } from './core/timing.ts';
 import { pickAudioFile, pickTextFile } from './platform/files.ts';
 import { saveFile, type ArtifactDownloads } from './platform/share.ts';
 import { createRecorder, type RecorderEnv } from './platform/recorder.ts';
@@ -141,7 +143,33 @@ function boot(hostData: unknown): Store {
     setFill: (on) => {
       engine.setFill(on);
     },
+    punchOn: (k) => {
+      engine.punchOn(k);
+    },
+    punchOff: (k) => {
+      engine.punchOff(k);
+    },
     decode: (d) => engine.decode(d),
+    bounce: async (state) => {
+      const bar = 16 * stepDuration(state.tempo);
+      const buf = await renderOffline({
+        state: { ...state, mode: 'pattern' },
+        pads: samples.pads.peek(),
+        drums: Object.fromEntries(samples.drums.peek()),
+        playFor: bar,
+        seconds: Math.min(bar, SMP_MAX),
+        createContext: (ch, len, sr) => new OfflineAudioContext(ch, len, sr),
+      });
+      if (!buf) return null;
+      return {
+        // 5 ms Ausblende: ein hart abgeschnittener Takt würde am Pad-Ende knacken
+        pcm: fadeOut(
+          toPcm([buf.getChannelData(0), buf.getChannelData(1)], buf.sampleRate),
+          Math.round(SMP_RATE * 0.005),
+        ),
+        cut: bar > SMP_MAX,
+      };
+    },
     exportWav: async (state, playFor, seconds, onProgress, signal) => {
       const buf = await renderOffline({
         state,

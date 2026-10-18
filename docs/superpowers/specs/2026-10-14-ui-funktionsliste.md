@@ -177,3 +177,12 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 | Lock Tune/Decay (Drums) | eigene vorgerenderte Variante pro Step | ✅ | `core/stepopts.test.ts`, `next-locks.test.ts`, `step-opts.test.ts` |
 | Lock Tune/Decay/Start (Pads) | live pro Treffer | ✅ | `next-locks.test.ts`, `step-opts.test.ts` |
 | Locks lösen | mit Zurück, übrige Optionen bleiben | ✅ | `step-opts.test.ts` |
+
+## Punch-in und Bounce (Roadmap-Etappe 4b)
+
+| Handlung | Wirkung | Stand | Test |
+|---|---|---|---|
+| Punch (Gerät) | acht Haltetasten, Zusammenfassung der gehaltenen | ✅ | `punch.test.ts`, `punch.spec.ts`, `a11y.spec.ts` |
+| Loop 1/8, Loop 1/16, Tape, Crush | ersetzen das trockene Signal, schließen sich gegenseitig aus | ✅ | `engine.test.ts`, `next-punch.test.ts` |
+| Half, Tief, Hoch, Echo | Takt bzw. Filter bzw. Zusatz, frei kombinierbar | ✅ | `next-punch.test.ts` |
+| Bounce (Sampler) | Pattern auf das Pad, volles Pad nach Rückfrage, höchstens 3 s | ✅ | `bounce.test.ts`, `punch.spec.ts` |

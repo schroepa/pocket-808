@@ -121,9 +121,9 @@ export function devices(
           body.removeAttribute(a);
         }
         if (l === 'mobile') {
-          head.setAttribute('aria-expanded', String(open[id]));
+          head.setAttribute('aria-expanded', String(open[id] === true));
           head.setAttribute('aria-controls', body.id);
-          body.hidden = !open[id];
+          body.hidden = open[id] !== true;
         } else if (l === 'tablet') {
           head.setAttribute('role', 'tab');
           head.setAttribute('aria-selected', String(t === id));

@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
 import { factorySamples, noiseData, softClipCurve } from '../../../src/audio/dsp.ts';
-import { createEngine, type ScheduledStep } from '../../../src/audio/engine.ts';
+import { createEngine, type PunchKind, type ScheduledStep } from '../../../src/audio/engine.ts';
 import { renderOffline } from '../../../src/audio/export.ts';
 import type { EngineTimer } from '../../../src/audio/timer.ts';
 import { createGraph } from '../../../src/audio/graph.ts';
@@ -144,6 +144,8 @@ interface EngineLike {
   stutterOn(f: number): void;
   stutterOff(): void;
   setFill(on: boolean): void;
+  punchOn(kind: PunchKind): void;
+  punchOff(kind: PunchKind): void;
 }
 type Change = (fn: (s: State) => State) => void;
 interface MixCase {
@@ -778,7 +780,90 @@ export async function fillHits(): Promise<number[]> {
   return log.map((h) => h.time);
 }
 
+interface Segment {
+  rmsDb: number;
+  centroidHz: number;
+}
+/** Mittlerer Pegel (dB, Stille −180) und Schwerpunkt eines Zeitfensters des linken Kanals */
+function segment(buf: AudioBuffer, from: number, to: number): Segment {
+  const d = buf.getChannelData(0).subarray(Math.floor(from * SR), Math.floor(to * SR));
+  const f = fingerprint(d, SR);
+  return {
+    rmsDb: f.rmsDb.reduce((a, b) => a + b, 0) / f.rmsDb.length,
+    centroidHz: f.centroidHz,
+  };
+}
+
+/**
+ * Punch-Effekt auf dem Demo-Zustand, gehalten von 2 bis 4 s (kind 'none': ohne Effekt).
+ * Liefert die Fenster 3–4 s (gehalten) und 4,5–5,5 s (danach) sowie die geplanten Step-Zeiten.
+ */
+export async function punchProbe(args: {
+  kind: PunchKind | 'none';
+}): Promise<{ during: Segment; after: Segment; steps: number[] }> {
+  const steps: number[] = [];
+  const kind = args.kind;
+  const { ctx } = await play({
+    seconds: 6,
+    seed: 1,
+    setup: () => undefined,
+    events:
+      kind === 'none'
+        ? []
+        : [
+            {
+              at: 2,
+              run: (e) => {
+                e.punchOn(kind);
+              },
+            },
+            {
+              at: 4,
+              run: (e) => {
+                e.punchOff(kind);
+              },
+            },
+          ],
+    onScheduled: (s) => steps.push(s.time),
+  });
+  const buf = await ctx.startRendering();
+  return { during: segment(buf, 3, 4), after: segment(buf, 4.5, 5.5), steps };
+}
+
+/** Echo-Ausklang: nur BD auf Step 0, Echo gehalten 0–0,3 s; Pegel zwischen 1 und 2 s */
+export async function echoTail(args: { echo: boolean }): Promise<number> {
+  const { ctx } = await play({
+    seconds: 2.2,
+    seed: 1,
+    setup: (s) => {
+      isolate(s);
+      s.tempo = 60;
+      hits(s, { BD: [0] });
+    },
+    events: args.echo
+      ? [
+          {
+            at: 0,
+            run: (e) => {
+              e.punchOn('echo');
+            },
+          },
+          {
+            at: 0.3,
+            run: (e) => {
+              e.punchOff('echo');
+            },
+          },
+        ]
+      : [],
+  });
+  const buf = await ctx.startRendering();
+  return segment(buf, 1, 2).rmsDb;
+}
+
 export const SCENARIOS: Record<string, (args: never) => Promise<unknown>> = {
+  punchProbe,
+  echoTail,
   lockHits,
   fillHits,
   stepOptsHits,

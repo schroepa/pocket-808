@@ -1,0 +1,27 @@
+@layer components {
+  .punch-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .punch-pad {
+    position: relative;
+    min-height: 64px;
+    padding: 0 4px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--cell);
+    color: var(--ink);
+    font: 700 16px var(--font-display);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    touch-action: none;
+    user-select: none;
+  }
+  .punch-pad.on {
+    z-index: 1;
+    background: var(--acc);
+    color: var(--chassis);
+    box-shadow: var(--glow-acc);
+  }
+}

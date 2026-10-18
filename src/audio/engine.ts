@@ -88,6 +88,9 @@ export interface Engine {
   stutterOff(): void;
   /** Fill-Taste gehalten (Bedingungen „Fill“/„Nicht Fill“) */
   setFill(on: boolean): void;
+  /** Punch-Effekt halten bzw. loslassen; ersetzende Effekte (Loops, Tape, Crush) schließen sich aus */
+  punchOn(kind: PunchKind): void;
+  punchOff(kind: PunchKind): void;
   setPadSample(pad: number, pcm: Float32Array | null): void;
   setDrumSample(voice: VoiceId, sample: DrumSample | null): void;
   /** Datei dekodieren und ins Sample-Format (22,05 kHz mono) umrechnen */
@@ -101,6 +104,17 @@ export interface Engine {
   /** stoppt, löscht Zeitgeber und Effekte und schließt den Kontext; danach ist die Engine stumm */
   dispose(): void;
 }
+
+/** Punch-in-Effekte (Gerät „Punch“) */
+export type PunchKind = 'loop8' | 'loop16' | 'half' | 'tape' | 'crush' | 'lp' | 'hp' | 'echo';
+/** ersetzen das trockene Signal und schließen sich gegenseitig (und den FX-Stutter) aus */
+const REPLACING: ReadonlySet<PunchKind | 'stutter'> = new Set([
+  'loop8',
+  'loop16',
+  'tape',
+  'crush',
+  'stutter',
+]);
 
 const LOOKAHEAD_MS = 25;
 /** Vorlauf des Schedulers (Sekunden) */
@@ -140,6 +154,27 @@ export function createEngine(o: EngineOptions): Engine {
   const chance = random('prob');
   /** Fill-Taste gehalten? */
   let fill = false;
+  /** Half-Time gehalten: Steps doppelt so lang */
+  let half = false;
+  /** gehaltene Punch-Effekte und der gerade ersetzende (Loop, Tape, Crush oder FX-Stutter) */
+  const held = new Set<PunchKind>();
+  let replacing: PunchKind | 'stutter' | null = null;
+  const release = (kind: PunchKind | 'stutter', t: number): void => {
+    try {
+      if (kind === 'stutter' || kind === 'loop8' || kind === 'loop16') graph?.stutterOff(t);
+      else if (kind === 'half') half = false;
+      else graph?.punchOff(kind, t, state().fx);
+    } finally {
+      // der Zustand der Engine wird immer zurückgesetzt, auch wenn der Graph eine Ausnahme wirft
+      if (kind !== 'stutter') held.delete(kind);
+      if (replacing === kind) replacing = null;
+    }
+  };
+  /** vor einem ersetzenden Effekt den bisherigen lösen */
+  const replace = (kind: PunchKind | 'stutter', t: number): void => {
+    if (replacing && replacing !== kind) release(replacing, t);
+    replacing = kind;
+  };
   const queue: ScheduledStep[] = [];
   let irTimer: unknown = null;
   let disposed = false;
@@ -383,7 +418,7 @@ export function createEngine(o: EngineOptions): Engine {
       // Step 0 beginnt einen Durchlauf; ein mitten im Takt begonnener Slot zählt sofort als Durchlauf 1
       const n = (loops[slot] = step === 0 ? (loops[slot] ?? 0) + 1 : (loops[slot] ?? 1));
       const pat = s.patterns[slot];
-      const d = stepDuration(s.tempo);
+      const d = stepDuration(s.tempo) * (half ? 2 : 1);
       const t = nextTime + swingDelay(step, s.swing, d);
       const aud = audible.peek();
       for (const id of VOICE_IDS) {
@@ -432,6 +467,10 @@ export function createEngine(o: EngineOptions): Engine {
   };
 
   const stop = (): void => {
+    // gehaltene Effekte nie hängen lassen
+    const t = now();
+    for (const k of [...held]) release(k, t);
+    if (replacing) release(replacing, t);
     if (!playing.peek()) return;
     timer.clearInterval(interval);
     interval = null;
@@ -496,13 +535,29 @@ export function createEngine(o: EngineOptions): Engine {
     },
     stutterOn(fraction) {
       if (!gesture()) return;
-      graph?.stutterOn(now() + 0.01, stutterPeriod(state().tempo, fraction));
+      const t = now() + 0.01;
+      replace('stutter', t);
+      graph?.stutterOn(t, stutterPeriod(state().tempo, fraction));
+    },
+    punchOn(kind) {
+      if (!gesture() || held.has(kind)) return;
+      const t = now() + 0.01;
+      held.add(kind);
+      if (REPLACING.has(kind)) replace(kind, t);
+      if (kind === 'loop8' || kind === 'loop16') {
+        graph?.stutterOn(t, stutterPeriod(state().tempo, kind === 'loop8' ? 0.5 : 0.25));
+      } else if (kind === 'half') half = true;
+      else graph?.punchOn(kind, t, state().tempo, state().fx);
+    },
+    punchOff(kind) {
+      if (!held.has(kind)) return;
+      release(kind, now() + 0.005);
     },
     setFill(on) {
       fill = on;
     },
     stutterOff() {
-      graph?.stutterOff(now() + 0.005);
+      if (replacing === 'stutter') release('stutter', now() + 0.005);
     },
     setPadSample(pad, pcm) {
       pads[pad] = pcm;

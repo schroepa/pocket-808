@@ -127,3 +127,14 @@ export function trimLeadingSilence(pcm: Float32Array): Float32Array {
   const a = pcm.findIndex((x) => Math.abs(x) >= 0.02);
   return pcm.subarray(Math.max(0, (a < 0 ? pcm.length : a) - 40));
 }
+
+/** Letzte n Samples linear auf 0 ausblenden (gegen Knacken am Ende, z. B. nach dem Bounce). */
+export function fadeOut(pcm: Float32Array, n: number): Float32Array {
+  const out = pcm.slice();
+  const m = Math.min(n, out.length);
+  for (let k = 0; k < m; k++) {
+    const i = out.length - m + k;
+    out[i] = Number(out[i]) * ((m - 1 - k) / m);
+  }
+  return out;
+}

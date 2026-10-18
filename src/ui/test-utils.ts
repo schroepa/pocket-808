@@ -60,7 +60,15 @@ export function fakeAudio(available = true) {
     stutterOn: vi.fn(),
     stutterOff: vi.fn(),
     setFill: vi.fn(),
+    punchOn: vi.fn(),
+    punchOff: vi.fn(),
     decode: vi.fn(() => Promise.resolve(Float32Array.from([0, 0, 0.5, 0.2]))),
+    bounce: vi.fn<UiAudio['bounce']>(() =>
+      Promise.resolve<{ pcm: Float32Array; cut: boolean } | null>({
+        pcm: Float32Array.from([0.1]),
+        cut: false,
+      }),
+    ),
     exportWav: vi.fn<UiAudio['exportWav']>(() =>
       Promise.resolve<Blob | null>(new Blob(['RIFF'], { type: 'audio/wav' })),
     ),

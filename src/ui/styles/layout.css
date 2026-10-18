@@ -62,6 +62,20 @@
   grid-auto-columns: minmax(0, 1fr);
   gap: 6px;
 }
+/* Tabs: mit fünf Geräten reicht der Platz nicht für Zusammenfassungen (nur Fragmente); das offene
+   Gerät steht darunter. Für Screenreader bleibt sie im Kopf erhalten. */
+[data-layout='tablet'] .dev-head .dev-sum {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+[data-layout='tablet'] .dev-head .plate {
+  font-size: 15px;
+  letter-spacing: 0.08em;
+}
 [data-layout='tablet'] .dev-head[aria-selected='true'] {
   background: var(--cell);
 }
