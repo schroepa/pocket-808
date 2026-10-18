@@ -5,11 +5,21 @@ import { must } from '../core/util.ts';
 import { holdAt } from './params.ts';
 
 /* SH-101-Stimme wie Legacy synthNote: zwei verstimmte Oszillatoren + Sub, Tiefpass mit Filter-ADSR,
-   Amp-ADSR. Pro Part monophon: eine neue Note schneidet die vorige kurz ab. */
+   Amp-ADSR. Pro Part monophon: eine neue Note schneidet die vorige kurz ab.
+   Etappe 6a: Akkorde paraphon (ein Filter, eine Amp, je Ton zwei Oszillatoren, Sub nur für den
+   Grundton), Akzent (lauter, mehr Env) und Slide (gleitet von der klingenden Vorgängerin). */
+
+/** Akzent: Pegel-Faktor und zusätzliche Env-Menge */
+export const ACCENT_GAIN = 1.35;
+export const ACCENT_ENV = 0.25;
+/** Slide: Gleitzeit in Sekunden */
+export const SLIDE_TIME = 0.06;
 
 export interface SynthVoice {
   amp: GainNode;
   oscs: OscillatorNode[];
+  /** Frequenzen der Töne (Grundton zuerst), Ausgangspunkt für einen Slide */
+  freqs: number[];
   t0: number;
   until: number;
 }
@@ -43,6 +53,14 @@ function schedAmp(
     }
   }
   P.setValueAtTime(lv, end);
+  P.exponentialRampToValueAtTime(0.0001, end + R);
+}
+
+/** Slide: ohne neuen Attack, die Amp steht sofort auf Sustain und klingt danach aus. */
+function schedAmpSlide(P: AudioParam, t: number, S0: number, R: number, end: number): void {
+  const S = Math.max(S0, 0.0001);
+  P.setValueAtTime(S, t);
+  P.setValueAtTime(S, end);
   P.exponentialRampToValueAtTime(0.0001, end + R);
 }
 
@@ -81,6 +99,22 @@ function schedFlt(
   P.exponentialRampToValueAtTime(base, end + R);
 }
 
+/** Slide: der Cutoff steht auf dem Sustain-Wert der Hüllkurve und kehrt im Release zurück. */
+function schedFltSlide(
+  P: AudioParam,
+  t: number,
+  S: number,
+  R: number,
+  end: number,
+  base: number,
+  peak: number,
+): void {
+  const v = base * Math.pow(peak / base, S);
+  P.setValueAtTime(v, t);
+  P.setValueAtTime(v, end);
+  P.exponentialRampToValueAtTime(base, end + R);
+}
+
 /** Monophon: vorige Note kurz abschneiden. */
 function killVoice(v: SynthVoice, t: number): void {
   try {
@@ -103,28 +137,39 @@ export function synthNote(o: {
   ctx: BaseAudioContext;
   dest: AudioNode;
   patch: SynthPatch;
-  midi: number;
+  /** Töne der Note, Grundton zuerst (ein Ton oder ein Akkord) */
+  midis: readonly number[];
   time: number;
   duration: number;
   previous: SynthVoice | undefined;
+  accent?: boolean;
+  slide?: boolean;
 }): SynthVoice {
   const { ctx, patch: p, time: t } = o;
-  const f = 440 * Math.pow(2, (o.midi - 69) / 12);
+  const freqs = o.midis.map((m) => 440 * Math.pow(2, (m - 69) / 12));
   const end = t + Math.max(0.04, o.duration);
   const fR = releaseTime(p.fr);
   const aR = releaseTime(p.ar);
   const base = 70 * Math.pow(2, p.cut * 7.2);
-  const peak = Math.min(base * Math.pow(2, p.env * 4.5), 16000);
-  if (o.previous && o.previous.until > t) killVoice(o.previous, t);
+  const env = p.env + (o.accent ? ACCENT_ENV : 0);
+  const peak = Math.min(base * Math.pow(2, env * 4.5), 16000);
+  const sounding = o.previous && o.previous.until > t ? o.previous : undefined;
+  if (sounding) killVoice(sounding, t);
+  // Slide nur, wenn die Vorgängerin noch klingt; Akkordtöne gleiten vom passenden Ton
+  const from = o.slide && sounding ? sounding.freqs : undefined;
   const gn = (v: number): GainNode => {
     const g = ctx.createGain();
     g.gain.value = v;
     return g;
   };
-  const osc = (type: OscillatorType, fr: number, dur: number): OscillatorNode => {
+  const osc = (type: OscillatorType, fr: number, dur: number, start?: number): OscillatorNode => {
     const n = ctx.createOscillator();
     n.type = type;
-    n.frequency.setValueAtTime(fr, t);
+    if (start === undefined) n.frequency.setValueAtTime(fr, t);
+    else {
+      n.frequency.setValueAtTime(start, t);
+      n.frequency.exponentialRampToValueAtTime(fr, t + SLIDE_TIME);
+    }
     n.start(t);
     n.stop(t + dur);
     return n;
@@ -133,31 +178,43 @@ export function synthNote(o: {
   lp.type = 'lowpass';
   lp.frequency.value = base;
   lp.Q.value = 0.5 + p.res * 14;
-  schedFlt(lp.frequency, t, attackTime(p.fa), decayTime(p.fd), p.fs, fR, end, base, peak);
   const amp = ctx.createGain();
-  schedAmp(amp.gain, t, attackTime(p.aa), decayTime(p.ad), p.as, aR, end);
+  if (from) {
+    schedFltSlide(lp.frequency, t, p.fs, fR, end, base, peak);
+    schedAmpSlide(amp.gain, t, p.as, aR, end);
+  } else {
+    schedFlt(lp.frequency, t, attackTime(p.fa), decayTime(p.fd), p.fs, fR, end, base, peak);
+    schedAmp(amp.gain, t, attackTime(p.aa), decayTime(p.ad), p.as, aR, end);
+  }
   const life = end - t + Math.max(fR, aR) + 0.05;
   const cents = p.det * 28;
-  const mix = gn(0.4);
+  // Akkord: Mischpegel × 1/√n, damit er nicht lauter als ein Einzelton wird
+  const mix = gn(0.4 / Math.sqrt(freqs.length));
   const oscs: OscillatorNode[] = [];
   const wave = must(WAVES[p.wave], `Wellenform ${p.wave}`)[1];
-  for (const sg of [1, -1]) {
-    const n = osc(wave, f, life);
-    n.detune.value = sg * cents;
-    n.connect(mix);
-    oscs.push(n);
-  }
+  const fromOf = (i: number): number | undefined =>
+    from ? from[Math.min(i, from.length - 1)] : undefined;
+  freqs.forEach((f, i) => {
+    for (const sg of [1, -1]) {
+      const n = osc(wave, f, life, fromOf(i));
+      n.detune.value = sg * cents;
+      n.connect(mix);
+      oscs.push(n);
+    }
+  });
   mix.connect(lp);
   lp.connect(amp);
+  const f = must(freqs[0], 'Grundton');
   if (p.sub > 0.01) {
-    const n = osc('sine', f / 2, life);
+    const start = fromOf(0);
+    const n = osc('sine', f / 2, life, start === undefined ? undefined : start / 2);
     const sg = gn(p.sub * 0.8);
     n.connect(sg);
     sg.connect(amp);
     oscs.push(n);
   }
-  const out = gn(0.6);
+  const out = gn(0.6 * (o.accent ? ACCENT_GAIN : 1));
   amp.connect(out);
   out.connect(o.dest);
-  return { amp, oscs, t0: t, until: t + life };
+  return { amp, oscs, freqs, t0: t, until: t + life };
 }
