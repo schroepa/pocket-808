@@ -1,9 +1,10 @@
+import { ARP_LABELS, ARP_MODES, lfoHz, setArp, setLfo } from '../../../core/arp.ts';
 import { WAVES } from '../../../core/constants.ts';
 import { synthDefaults } from '../../../core/defaults.ts';
 import { attackTime, decayTime, releaseTime } from '../../../core/envelope.ts';
 import { setSynthValue, setWave, shiftOctave } from '../../../core/synth.ts';
-import type { SynthKey } from '../../../core/types.ts';
-import { computed } from '../../../store/signals.ts';
+import type { ArpMode, SynthKey } from '../../../core/types.ts';
+import { computed, signal } from '../../../store/signals.ts';
 import type { UiContext } from '../../context.ts';
 import { chip } from '../../controls/chip.ts';
 import { envelopeView } from '../../controls/envelope.ts';
@@ -91,6 +92,41 @@ export function synthModules(c: UiContext): HTMLElement {
     store.update((s) => shiftOctave(s, s.part, d));
     hear();
   };
+  // Arp: Rate und Oktaven lassen sich auch im Aus vorwählen (gelten beim Einschalten)
+  const arpPick = signal<{ r: 1 | 2; o: 1 | 2 }>({ r: 1, o: 1 });
+  const arpNow = computed(() => patch.value.arp ?? { m: 'off' as const, ...arpPick.value });
+  const writeArp = (next: { m: ArpMode | 'off'; r: 1 | 2; o: 1 | 2 }): void => {
+    arpPick.value = { r: next.r, o: next.o };
+    const { m, r, o } = next;
+    store.update((s) => setArp(s, s.part, m === 'off' ? undefined : { m, r, o }));
+  };
+  const arpSeg = <T extends string>(
+    label: string,
+    options: readonly { value: T; label: string }[],
+    read: (a: { m: string; r: number; o: number }) => T,
+    apply: (v: T) => { m: ArpMode | 'off'; r: 1 | 2; o: 1 | 2 },
+  ) =>
+    segment(scope, {
+      label,
+      options,
+      value: computed(() => read(arpNow.value)),
+      write: (v) => {
+        writeArp(apply(v));
+      },
+    });
+  const lfo = computed(() => patch.value.lfo ?? { r: 0.5, d: 0, t: 'cut' as const });
+  const lfoKnob = (k: 'r' | 'd', label: string, format: (v: number) => string, d: number) =>
+    knob(scope, {
+      label,
+      value: computed(() => lfo.value[k]),
+      write: (v) => {
+        store.update((s) => setLfo(s, s.part, { [k]: v }));
+      },
+      def: () => d,
+      format,
+      readout,
+      tag,
+    });
   return h('div', { class: 'sh' }, [
     h('div', { class: 'shm w2' }, [
       h('h4', { text: 'Oszillator' }),
@@ -121,6 +157,56 @@ export function synthModules(c: UiContext): HTMLElement {
     h('div', { class: 'shm w2' }, [
       h('h4', { text: 'Out' }),
       h('div', { class: 'shk' }, [kn('dly', 'Delay'), kn('lvl', 'Level')]),
+    ]),
+    h('div', { class: 'shm w2' }, [
+      h('h4', { text: 'Arp' }),
+      arpSeg(
+        'Arp',
+        [
+          { value: 'off', label: 'Aus' },
+          ...ARP_MODES.map((m) => ({ value: m, label: ARP_LABELS[m] })),
+        ],
+        (a) => a.m as ArpMode | 'off',
+        (m) => ({ ...arpNow.peek(), m }),
+      ),
+      h('div', { class: 'syn-row' }, [
+        arpSeg(
+          'Arp-Rate',
+          [
+            { value: '1', label: '1/16' },
+            { value: '2', label: '1/32' },
+          ],
+          (a) => String(a.r) as '1' | '2',
+          (r) => ({ ...arpNow.peek(), r: r === '2' ? 2 : 1 }),
+        ),
+        arpSeg(
+          'Arp-Oktaven',
+          [
+            { value: '1', label: '1' },
+            { value: '2', label: '2' },
+          ],
+          (a) => String(a.o) as '1' | '2',
+          (o) => ({ ...arpNow.peek(), o: o === '2' ? 2 : 1 }),
+        ),
+      ]),
+    ]),
+    h('div', { class: 'shm w2' }, [
+      h('h4', { text: 'LFO' }),
+      h('div', { class: 'shk' }, [
+        lfoKnob('r', 'Rate', (v) => `${lfoHz(v).toFixed(2)} Hz`, 0.5),
+        lfoKnob('d', 'Depth', (v) => String(Math.round(v * 100)), 0),
+      ]),
+      segment(scope, {
+        label: 'LFO-Ziel',
+        options: [
+          { value: 'cut', label: 'Cutoff' },
+          { value: 'pit', label: 'Pitch' },
+        ],
+        value: computed(() => lfo.value.t),
+        write: (t) => {
+          store.update((s) => setLfo(s, s.part, { t }));
+        },
+      }),
     ]),
   ]);
 }
