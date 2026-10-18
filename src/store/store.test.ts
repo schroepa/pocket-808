@@ -215,6 +215,12 @@ describe('Würfel und Szenen im Store', () => {
     expect(store.state.value.mix.SD.m).toBe(false);
     store.undo();
     expect(store.state.value.mix.SD.m).toBe(true);
+    // Zurück nach dem Abruf betrifft nur den Mixer, spätere Änderungen bleiben
+    store.recallScene(1);
+    store.toggleStep('CB', 7);
+    store.undo();
+    expect(store.state.value.patterns.A.CB[7]).toBe(1);
+    expect(store.state.value.mix.SD.m).toBe(true);
     // leere Szene: nichts passiert, kein Zurück-Schritt
     const now = store.state.value;
     store.recallScene(5);

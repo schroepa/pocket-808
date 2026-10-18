@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { VOICE_IDS } from './constants.ts';
 import { baseState, blankPattern } from './defaults.ts';
 import { initialState } from './initial.ts';
-import { currentPattern } from './pattern.ts';
+import { currentPattern, replacePattern } from './pattern.ts';
 import { mulberry32 } from './random.ts';
-import { stepOptOf } from './stepopts.ts';
+import { setStepOpt, stepOptOf } from './stepopts.ts';
 import type { State } from './types.ts';
 import { vary } from './vary.ts';
 
@@ -80,6 +80,21 @@ describe('Würfel ohne freien Platz', () => {
       expect(q.BD).toBe(full);
       expect(q.SD).toBe(full);
       expect(q.OH).toBe(full);
+    }
+  });
+});
+
+describe('Würfel und vorhandene Steps', () => {
+  it('Steps nur aus Sub-Steps gelten als belegt; Optionen gesetzter Steps bleiben unverändert', () => {
+    const s0 = initialState();
+    const p0 = currentPattern(s0);
+    const sub = { ...p0.sub, CH: { ...p0.sub.CH, 3: Array<0 | 1>(16).fill(1) } };
+    const pat = { ...p0, CH: p0.CH.map<0 | 1>((b, k) => (k === 3 ? 0 : b)), sub };
+    const start = setStepOpt(replacePattern(s0, 'A', pat), 'CH', 3, { v: 0.8, c: '1:2' });
+    for (let seed = 1; seed < 40; seed++) {
+      const p = currentPattern(vary(start, mulberry32(seed)));
+      expect(p.CH[3]).toBe(0);
+      expect(p.opt?.CH?.[3]).toEqual({ v: 0.8, c: '1:2' });
     }
   });
 });

@@ -126,3 +126,19 @@ describe('LCD-Streifen: Größe', () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe('LCD-Streifen: Kosten pro Bild', () => {
+  it('liest Stil nicht in jedem Bild (kein erzwungenes Layout im Animationstakt)', () => {
+    fakeCanvas();
+    const raf = fakeRaf();
+    const { c, audio, scope } = makeContext();
+    lcdScope(c, raf, false);
+    audio.playing.value = true;
+    const style = vi.spyOn(window, 'getComputedStyle');
+    raf.step();
+    raf.step();
+    raf.step();
+    expect(style).not.toHaveBeenCalled();
+    scope.dispose();
+  });
+});

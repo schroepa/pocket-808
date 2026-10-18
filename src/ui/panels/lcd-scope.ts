@@ -30,22 +30,26 @@ export function lcdScope(c: UiContext, raf: Raf, reducedMotion: boolean): HTMLCa
       VOICE_IDS.some((id) => stepIsOn(p, id, st)) ? '1' : '0',
     ).join('');
   });
-  const color = (): string =>
-    getComputedStyle(canvas).getPropertyValue('--acc').trim() || 'currentColor';
+  // Farbe und Breite werden zwischengespeichert: im Animationstakt keine Stil- oder Layout-Abfrage
+  let acc = 'currentColor';
+  let width = 240;
+  const measure = (): void => {
+    acc = getComputedStyle(canvas).getPropertyValue('--acc').trim() || 'currentColor';
+    width = canvas.clientWidth || width;
+  };
 
   const draw = (live: boolean): void => {
     const g = canvas.getContext('2d');
     if (live) audio.scope(buf);
     if (!g) return;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const w = canvas.clientWidth || 240;
+    const w = width;
     if (canvas.width !== Math.round(w * dpr)) {
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(HEIGHT * dpr);
     }
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, w, HEIGHT);
-    const acc = color();
     // Oszilloskop (im Stand eine ruhige Mittellinie)
     g.strokeStyle = acc;
     g.lineWidth = 1.5;
@@ -86,6 +90,7 @@ export function lcdScope(c: UiContext, raf: Raf, reducedMotion: boolean): HTMLCa
     () => audio.playing.value,
     (on) => {
       stop();
+      measure();
       if (on && !reducedMotion) id = raf.request(frame);
       else draw(false);
     },
@@ -102,6 +107,7 @@ export function lcdScope(c: UiContext, raf: Raf, reducedMotion: boolean): HTMLCa
   );
   if (typeof ResizeObserver !== 'undefined') {
     const ro = new ResizeObserver(() => {
+      measure();
       if (id === null) draw(false);
     });
     ro.observe(canvas);

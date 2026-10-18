@@ -1,6 +1,6 @@
 import { currentPattern, replacePattern } from './pattern.ts';
 import type { Rng } from './random.ts';
-import { setStepOpt, withOpt } from './stepopts.ts';
+import { setStepOpt, stepIsOn, withOpt } from './stepopts.ts';
 import type { State, VoiceId } from './types.ts';
 
 /*
@@ -30,7 +30,8 @@ const steps = (fn: (st: number) => boolean): number[] =>
 
 export function vary(state: State, rng: Rng): State {
   let s = state;
-  const on = (voice: VoiceId, st: number): boolean => currentPattern(s)[voice][st] === 1;
+  // belegt ist auch ein Step nur aus Sub-Steps (Bit 0): seine Optionen bleiben unangetastet
+  const on = (voice: VoiceId, st: number): boolean => stepIsOn(currentPattern(s), voice, st);
   // leeres Schlagzeug: erst ein Grundbeat
   if (DRUMS.every((id) => !currentPattern(s)[id].some(Boolean))) {
     for (const st of [0, 4, 8, 12]) s = hit(s, 'BD', st);

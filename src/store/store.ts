@@ -172,7 +172,8 @@ export function createStore(initial: State, opts: { freeze?: boolean } = {}): St
       const next = recallScene(prev, i);
       if (next === prev) return;
       batch(() => {
-        undoSnap.value = { restore: () => prev };
+        // Zurück betrifft nur den Mixer; spätere Änderungen an Steps usw. bleiben
+        undoSnap.value = { restore: (s) => ({ ...s, mix: prev.mix }) };
         update(() => next);
       });
     },
