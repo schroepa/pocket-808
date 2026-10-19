@@ -300,7 +300,8 @@ describe('core Pattern-Bearbeitung = Legacy (Modelltest)', () => {
       fc.property(fc.array(opArb, { minLength: 10, maxLength: 40, size: 'max' }), (ops) => {
         const page = loadLegacy();
         try {
-          const store = createStore(initialState(), { freeze: true });
+          // die alte App kennt nur einen Zurück-Schritt: Tiefe 1 vergleicht Zustand für Zustand
+          const store = createStore(initialState(), { freeze: true, undoDepth: 1 });
           for (const [i, op] of ops.entries()) {
             applyStore(store, op);
             applyLegacy(page, op);
