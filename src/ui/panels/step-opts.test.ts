@@ -131,6 +131,45 @@ describe('Step-Optionen: Anzeige in Spuren und Sampler', () => {
   });
 });
 
+describe('Pitch und Slice im Opt-Feld (Pads)', () => {
+  it('Pitch in Halbtönen mit − / + und Zurücksetzen, Slice-Auswahl, Marke am Step; nicht bei Drums', () => {
+    const { c, store } = makeContext();
+    const drums = stepEditor(c);
+    chipBtn(drums, 'Step-Optionen bearbeiten')?.click();
+    steps(drums)[0]?.click();
+    expect(drums.querySelector<HTMLElement>('.opt-pitch')?.hidden).toBe(true);
+
+    const el = samplerSteps(c);
+    chipBtn(el, 'Step-Optionen bearbeiten')?.click();
+    const btn = el.querySelectorAll<HTMLButtonElement>('.ss')[3];
+    btn?.click();
+    const p = panel(el);
+    if (!p) throw new Error('Panel');
+    expect(p.querySelector<HTMLElement>('.opt-pitch')?.hidden).toBe(false);
+    const opt = () => currentPattern(store.state.value).opt?.P0?.[3];
+    chipBtn(p, 'Pitch höher')?.click();
+    chipBtn(p, 'Pitch höher')?.click();
+    expect(opt()).toEqual({ n: 2 });
+    expect(chipBtn(p, 'Pitch zurücksetzen')?.textContent).toBe('+2 ST');
+    expect(btn?.classList.contains('opt')).toBe(true);
+    chipBtn(p, 'Pitch tiefer')?.click();
+    chipBtn(p, 'Pitch tiefer')?.click();
+    chipBtn(p, 'Pitch tiefer')?.click();
+    expect(chipBtn(p, 'Pitch zurücksetzen')?.textContent).toBe('-1 ST');
+    chipBtn(p, 'Pitch zurücksetzen')?.click();
+    expect(opt()).toBeUndefined();
+    const slice = p.querySelector<HTMLSelectElement>('.opt-pitch select');
+    if (!slice) throw new Error('Slice');
+    slice.value = '3';
+    slice.dispatchEvent(new Event('change'));
+    expect(opt()).toEqual({ k: 2 });
+    expect(btn?.classList.contains('opt')).toBe(true);
+    slice.value = '0';
+    slice.dispatchEvent(new Event('change'));
+    expect(opt()).toBeUndefined();
+  });
+});
+
 describe('Parameter-Locks im Opt-Feld', () => {
   it('Drums: Tune und Decay zeigen den Spurwert, Drehen lockt, „Locks lösen“ mit Zurück', () => {
     const { c, store } = makeContext();

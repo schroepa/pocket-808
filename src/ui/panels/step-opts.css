@@ -9,6 +9,7 @@
   }
   .opt-panel[hidden],
   .opt-ctl[hidden],
+  .opt-pitch[hidden],
   .opt-off[hidden] {
     display: none;
   }

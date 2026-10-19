@@ -1,9 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PAD_DEFAULT } from '../../../core/constants.ts';
+import { currentPattern } from '../../../core/pattern.ts';
 import { padSummary } from '../../../core/sampler.ts';
 import { must } from '../../../core/util.ts';
 import { makeContext, pointer } from '../../test-utils.ts';
 import { samplerDevice } from './device.ts';
+import { samplerChop } from './chop.ts';
+import { samplerKeyboard } from './keyboard.ts';
 import { samplerKnobs } from './knobs.ts';
 import { createMessage } from './message.ts';
 import { samplerPads } from './pads.ts';
@@ -251,6 +254,11 @@ describe('drawWave', () => {
     calls.length = 0;
     drawWave(g, 4, 10, null, 0, 1);
     expect(calls).toEqual(['rgba(211, 146, 90, 0.2):0,5,4,1']);
+    // Chop: Linien an den Slice-Grenzen, zwischen den Griffen
+    calls.length = 0;
+    drawWave(g, 400, 10, Float32Array.from([1, -1]), 0, 1, 4);
+    const lines = calls.filter((x) => x.startsWith('rgba(212, 212, 220, 0.5)'));
+    expect(lines).toEqual([100, 200, 300].map((x) => `rgba(212, 212, 220, 0.5):${x},0,1,10`));
   });
 });
 
@@ -429,6 +437,85 @@ describe('samplerSteps', () => {
   });
 });
 
+describe('samplerChop', () => {
+  const radio = (el: HTMLElement, label: string) =>
+    [...el.querySelectorAll<HTMLButtonElement>('[role=radio]')].find(
+      (b) => b.textContent === label,
+    );
+
+  it('Segment setzt und löscht Chop des gewählten Pads', () => {
+    const { c, store } = makeContext();
+    store.update((s) => ({ ...s, smp: { ...s.smp, sel: 2 } }));
+    const el = samplerChop(c, createMessage(c.scope));
+    expect(radio(el, 'Aus')?.getAttribute('aria-checked')).toBe('true');
+    radio(el, '4')?.click();
+    expect(padOf(c, 2).sl).toBe(4);
+    expect(radio(el, '4')?.getAttribute('aria-checked')).toBe('true');
+    radio(el, 'Aus')?.click();
+    expect('sl' in padOf(c, 2)).toBe(false);
+  });
+
+  it('Verteilen: Meldungen ohne Chop bzw. ohne Steps, sonst Slices auf die Steps (mit Zurück)', () => {
+    const { c, store } = makeContext();
+    const msg = createMessage(c.scope);
+    const el = samplerChop(c, msg);
+    const verteilen = [...el.querySelectorAll('button')].find((b) => b.textContent === 'Verteilen');
+    verteilen?.click();
+    expect(msg.el.textContent).toBe('Erst Chop wählen');
+    [...el.querySelectorAll<HTMLButtonElement>('[role=radio]')]
+      .find((b) => b.textContent === '2')
+      ?.click();
+    store.update((s) => {
+      const p = s.patterns[s.cur];
+      const smp = p.smp.map((r, i) => (i === 0 ? r.map(() => 0 as const) : r));
+      return { ...s, patterns: { ...s.patterns, [s.cur]: { ...p, smp } } };
+    });
+    verteilen?.click();
+    expect(msg.el.textContent).toBe('Erst Steps setzen');
+    store.toggleSampleStep(0, 1);
+    store.toggleSampleStep(0, 5);
+    store.toggleSampleStep(0, 9);
+    verteilen?.click();
+    expect(msg.el.textContent).toBe('Pad 1: Slices verteilt');
+    const opt = () => currentPattern(store.state.value).opt?.P0;
+    expect([1, 5, 9].map((s) => opt()?.[s]?.k)).toEqual([0, 1, 0]);
+    store.undo();
+    expect(currentPattern(store.state.value).opt).toBeUndefined();
+  });
+});
+
+describe('samplerKeyboard', () => {
+  const key = (el: HTMLElement, name: string) =>
+    el.querySelector<HTMLButtonElement>(`[aria-label="Pad spielen, Ton ${name}"]`);
+
+  it('zwölf Tasten, Tipp spielt das Pad verstimmt, Oktave ±1, leeres Pad bleibt still', () => {
+    const { c, audio, store } = makeContext();
+    const el = samplerKeyboard(c);
+    expect(el.querySelectorAll('.key')).toHaveLength(12);
+    expect(el.querySelectorAll('.key.black')).toHaveLength(5);
+    key(el, 'C')?.click();
+    expect(audio.auditionPad).not.toHaveBeenCalled();
+    c.samples.setPad(0, pcm);
+    key(el, 'C')?.click();
+    expect(audio.auditionPad).toHaveBeenLastCalledWith(0, 0);
+    key(el, 'G')?.click();
+    expect(audio.auditionPad).toHaveBeenLastCalledWith(0, 7);
+    const up = el.querySelector<HTMLButtonElement>('[aria-label="Tastatur Oktave höher"]');
+    up?.click();
+    up?.click(); // begrenzt auf +1
+    expect(el.querySelector('.oct')?.textContent).toBe('Okt +1');
+    key(el, 'E')?.click();
+    expect(audio.auditionPad).toHaveBeenLastCalledWith(0, 16);
+    el.querySelector<HTMLButtonElement>('[aria-label="Tastatur Oktave tiefer"]')?.click();
+    el.querySelector<HTMLButtonElement>('[aria-label="Tastatur Oktave tiefer"]')?.click();
+    expect(el.querySelector('.oct')?.textContent).toBe('Okt -1');
+    store.update((s) => ({ ...s, smp: { ...s.smp, sel: 1 } }));
+    c.samples.setPad(1, pcm);
+    key(el, 'A')?.click();
+    expect(audio.auditionPad).toHaveBeenLastCalledWith(1, -3);
+  });
+});
+
 describe('samplerDevice', () => {
   it('Zusammenfassung und Teile', () => {
     const { c, store } = makeContext();
@@ -438,7 +525,15 @@ describe('samplerDevice', () => {
     c.samples.setPad(0, pcm);
     expect(d.summary.value).toBe(padSummary(store.state.value, pcm));
     const body = d.body(c.scope);
-    for (const s of ['.pads', 'canvas', '.smp-tools', '[role=status]', '.ss']) {
+    for (const s of [
+      '.pads',
+      'canvas',
+      '.smp-tools',
+      '.smp-chop',
+      '.smp-keys',
+      '[role=status]',
+      '.ss',
+    ]) {
       expect(body.querySelector(s)).not.toBeNull();
     }
   });

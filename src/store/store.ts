@@ -13,6 +13,7 @@ import {
   toggleSampleStep,
   toggleSubStep,
 } from '../core/pattern.ts';
+import { distributeSlices } from '../core/chop.ts';
 import { cycleChord, toggleNoteFlag } from '../core/notes.ts';
 import { applyPreset } from '../core/presets.ts';
 import {
@@ -49,6 +50,8 @@ export interface Store {
   toggleNoteFlag(flag: 'a' | 's', step: number): void;
   /** Akkord der Note unter `step` weiterschalten */
   cycleChord(step: number): void;
+  /** Slices des Pads der Reihe nach auf seine gesetzten Steps legen (mit Zurück) */
+  distributeSlices(pad: number): void;
   clearNotes(): void;
   clearTrack(): void;
   clearPattern(): void;
@@ -128,6 +131,9 @@ export function createStore(initial: State, opts: { freeze?: boolean } = {}): St
     },
     toggleNoteFlag: (flag, step) => {
       update((s) => toggleNoteFlag(s, flag, step));
+    },
+    distributeSlices: (pad) => {
+      withUndo((s) => distributeSlices(s, pad));
     },
     cycleChord: (step) => {
       update((s) => cycleChord(s, step));
