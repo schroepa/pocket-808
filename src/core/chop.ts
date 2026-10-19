@@ -1,5 +1,5 @@
 import { currentPattern } from './pattern.ts';
-import { setStepOpt } from './stepopts.ts';
+import { setStepOpt, stepIsOn } from './stepopts.ts';
 import type { Pad, State, SubKey } from './types.ts';
 import { must } from './util.ts';
 
@@ -36,14 +36,14 @@ export const padPitch = (tune: number, n: number | undefined): number => tune + 
 export function distributeSlices(s: State, i: number): State {
   const sl = must(s.smp.pads[i], `Pad ${i}`).sl;
   if (!sl) return s;
-  const row = must(currentPattern(s).smp[i], 'Sampler-Reihe');
   const key = `P${i}` as SubKey;
+  const pat = currentPattern(s);
   let next = s;
   let k = 0;
-  row.forEach((on, step) => {
-    if (!on) return;
+  for (let step = 0; step < 16; step++) {
+    if (!stepIsOn(pat, key, step)) continue;
     next = setStepOpt(next, key, step, { k: k % sl });
     k++;
-  });
+  }
   return next;
 }

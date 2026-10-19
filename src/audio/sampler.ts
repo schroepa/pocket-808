@@ -13,6 +13,9 @@ interface Playing {
   src: AudioBufferSourceNode;
   g: GainNode;
   v: number;
+  /** Start und Ende der Stimme: das Abschneiden betrifft nur, was schon begonnen hat */
+  t0: number;
+  end: number;
 }
 
 export function createSampler(
@@ -22,7 +25,7 @@ export function createSampler(
   const pcm = Array.from({ length: PAD_COUNT }, (_, i) => initial[i] ?? null);
   const fwd = new Array<AudioBuffer | null>(PAD_COUNT).fill(null);
   const rev = new Array<AudioBuffer | null>(PAD_COUNT).fill(null);
-  const last = new Array<Playing | null>(PAD_COUNT).fill(null);
+  const last = Array.from({ length: PAD_COUNT }, (): Playing[] => []);
 
   const bufferFor = (i: number, data: Float32Array, reversed: boolean): AudioBuffer => {
     const cache = reversed ? rev : fwd;
@@ -35,17 +38,27 @@ export function createSampler(
     cache[i] = b;
     return b;
   };
+  /**
+   * Stimmen des Pads abschneiden, die bei `t` schon klingen. Schon geplante spätere Treffer
+   * (Vorlauf des Schedulers, Vorhören und Tastatur beim Spielen) bleiben stehen.
+   */
   const steal = (i: number, t: number): void => {
-    const l = last[i];
-    if (!l) return;
-    try {
-      l.g.gain.setValueAtTime(l.v, t);
-      l.g.gain.linearRampToValueAtTime(0, t + 0.006);
-      l.src.stop(t + 0.008);
-    } catch {
-      /* schon gestoppt */
+    const keep: Playing[] = [];
+    for (const l of last[i] ?? []) {
+      if (l.end < t) continue;
+      if (l.t0 >= t) {
+        keep.push(l);
+        continue;
+      }
+      try {
+        l.g.gain.setValueAtTime(l.v, t);
+        l.g.gain.linearRampToValueAtTime(0, t + 0.006);
+        l.src.stop(t + 0.008);
+      } catch {
+        /* schon gestoppt */
+      }
     }
-    last[i] = null;
+    last[i] = keep;
   };
 
   return {
@@ -83,7 +96,7 @@ export function createSampler(
       out.connect(dest);
       src.start(t, s0);
       src.stop(t + play + 0.02);
-      last[i] = { src, g: out, v };
+      last[i]?.push({ src, g: out, v, t0: t, end: t + play + 0.02 });
     },
   };
 }

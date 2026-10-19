@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { setChop } from '../../core/chop.ts';
 import { currentPattern } from '../../core/pattern.ts';
 import { samplerSteps } from './sampler/steps.ts';
 import { makeContext, pointer } from '../test-utils.ts';
@@ -13,6 +14,8 @@ const chipBtn = (el: HTMLElement, label: string) =>
     (b) => b.textContent === label || b.getAttribute('aria-label') === label,
   );
 const steps = (el: HTMLElement) => [...el.querySelectorAll<HTMLButtonElement>('.steps .step')];
+const reset = (el: HTMLElement) =>
+  el.querySelector<HTMLButtonElement>('[aria-label^="Pitch zurücksetzen"]');
 const panel = (el: HTMLElement) => el.querySelector<HTMLElement>('.opt-panel');
 
 describe('Step-Optionen im Step-Editor', () => {
@@ -150,16 +153,21 @@ describe('Pitch und Slice im Opt-Feld (Pads)', () => {
     chipBtn(p, 'Pitch höher')?.click();
     chipBtn(p, 'Pitch höher')?.click();
     expect(opt()).toEqual({ n: 2 });
-    expect(chipBtn(p, 'Pitch zurücksetzen')?.textContent).toBe('+2 ST');
+    expect(reset(p)?.textContent).toBe('+2 ST');
     expect(btn?.classList.contains('opt')).toBe(true);
     chipBtn(p, 'Pitch tiefer')?.click();
     chipBtn(p, 'Pitch tiefer')?.click();
     chipBtn(p, 'Pitch tiefer')?.click();
-    expect(chipBtn(p, 'Pitch zurücksetzen')?.textContent).toBe('-1 ST');
-    chipBtn(p, 'Pitch zurücksetzen')?.click();
+    expect(reset(p)?.textContent).toBe('-1 ST');
+    reset(p)?.click();
     expect(opt()).toBeUndefined();
     const slice = p.querySelector<HTMLSelectElement>('.opt-pitch select');
     if (!slice) throw new Error('Slice');
+    const field = slice.closest<HTMLElement>('.fld');
+    expect(field?.hidden).toBe(true); // ohne Chop keine Slice-Auswahl
+    expect(reset(p)?.getAttribute('aria-label')).toBe('Pitch zurücksetzen (0 Halbtöne)');
+    store.update((s) => setChop(s, 0, 4));
+    expect(field?.hidden).toBe(false);
     slice.value = '3';
     slice.dispatchEvent(new Event('change'));
     expect(opt()).toEqual({ k: 2 });

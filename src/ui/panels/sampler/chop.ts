@@ -1,5 +1,7 @@
 import { CHOP_SIZES, setChop, type ChopSize } from '../../../core/chop.ts';
 import { currentPattern } from '../../../core/pattern.ts';
+import { stepIsOn } from '../../../core/stepopts.ts';
+import type { SubKey } from '../../../core/types.ts';
 import { must } from '../../../core/util.ts';
 import { computed } from '../../../store/signals.ts';
 import type { UiContext } from '../../context.ts';
@@ -35,7 +37,8 @@ export function samplerChop(c: UiContext, msg: Message): HTMLElement {
           msg.show('Erst Chop wählen');
           return;
         }
-        if (!must(currentPattern(store.state.peek()).smp[i], 'Sampler-Reihe').some(Boolean)) {
+        const pat = currentPattern(store.state.peek());
+        if (![...Array(16).keys()].some((st) => stepIsOn(pat, `P${String(i)}` as SubKey, st))) {
           msg.show('Erst Steps setzen');
           return;
         }

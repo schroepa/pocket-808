@@ -128,7 +128,7 @@ test('Chop wählen, Pitch am Step setzen, bleibt nach Neuladen; Tastatur mit gro
   await smp.locator('.ss').nth(2).click();
   await smp.locator('[aria-label="Pitch höher"]').click();
   await smp.locator('[aria-label="Pitch höher"]').click();
-  await expect(smp.locator('[aria-label="Pitch zurücksetzen"]')).toHaveText('+2 ST');
+  await expect(smp.locator('[aria-label^="Pitch zurücksetzen"]')).toHaveText('+2 ST');
   await page.waitForTimeout(400);
   await page.reload();
   await openSampler(page);
@@ -136,7 +136,7 @@ test('Chop wählen, Pitch am Step setzen, bleibt nach Neuladen; Tastatur mit gro
   await expect(again.locator('.smp-chop [role=radio][aria-checked=true]')).toHaveText('4');
   await again.locator('[aria-label="Step-Optionen bearbeiten"]').click();
   await again.locator('.ss').nth(2).click();
-  await expect(again.locator('[aria-label="Pitch zurücksetzen"]')).toHaveText('+2 ST');
+  await expect(again.locator('[aria-label^="Pitch zurücksetzen"]')).toHaveText('+2 ST');
   if (info.project.name !== 'desktop') {
     const small = await page.evaluate(() =>
       [
