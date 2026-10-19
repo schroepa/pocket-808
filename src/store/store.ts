@@ -88,6 +88,8 @@ export interface Store {
  */
 /** so viele Schritte Zurück hält der Store höchstens (älteste fallen heraus) */
 export const UNDO_DEPTH = 20;
+/** höchstens so viele Schritte mit Sample-Sätzen (Projekt öffnen) bleiben im Stapel */
+export const UNDO_SAMPLE_STEPS = 3;
 interface UndoStep {
   restore: (s: State) => State;
   after?: () => void;
@@ -105,7 +107,18 @@ export function createStore(
   const undoStack = signal<readonly UndoStep[]>([]);
   /** neuen Schritt obenauf legen; über UNDO_DEPTH fällt der älteste heraus */
   const pushUndo = (step: UndoStep): void => {
-    undoStack.value = [...undoStack.peek(), step].slice(-(opts.undoDepth ?? UNDO_DEPTH));
+    const depth = Math.max(1, opts.undoDepth ?? UNDO_DEPTH);
+    const next = [...undoStack.peek(), step].slice(-depth);
+    // Schritte mit Samples (Projekt öffnen) halten ganze Sample-Sätze: nur die jüngsten bleiben
+    let withSamples = 0;
+    for (let i = next.length - 1; i >= 0; i--) {
+      if (!next[i]?.after) continue;
+      if (++withSamples > UNDO_SAMPLE_STEPS) {
+        undoStack.value = next.slice(i + 1);
+        return;
+      }
+    }
+    undoStack.value = next;
   };
   const clip = signal<Pattern | null>(null);
   const songEpoch = signal(0);
@@ -117,8 +130,11 @@ export function createStore(
   const withUndo = (fn: (s: State) => State): void => {
     batch(() => {
       const snap = snapshot(state.peek());
-      pushUndo({ restore: (s) => restoreSnapshot(s, snap) });
       update(fn);
+      const after = snapshot(state.peek());
+      pushUndo({
+        restore: (s) => restoreSnapshot(s, snap, opts.undoDepth === 1 ? undefined : after),
+      });
     });
   };
 

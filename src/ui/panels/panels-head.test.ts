@@ -30,7 +30,7 @@ describe('deck', () => {
   it('Tap-Knopf: erster Tipp meldet, zweiter setzt das Tempo (ohne Zurück)', () => {
     const { c, store } = makeContext();
     const el = deck(c);
-    const btn = el.querySelector<HTMLButtonElement>('[aria-label="Tempo antippen"]');
+    const btn = el.querySelector<HTMLButtonElement>('[aria-label="Tap – Tempo antippen"]');
     const now = vi.spyOn(performance, 'now');
     now.mockReturnValue(5_000);
     btn?.click();

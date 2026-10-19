@@ -3,7 +3,7 @@ import { PRESETS, VOICE_IDS } from '../core/constants.ts';
 import { baseState } from '../core/defaults.ts';
 import { initialState } from '../core/initial.ts';
 import { computed, effect } from './signals.ts';
-import { createStore, UNDO_DEPTH } from './store.ts';
+import { createStore, UNDO_DEPTH, UNDO_SAMPLE_STEPS } from './store.ts';
 
 const read = (value: unknown): unknown => value;
 
@@ -93,6 +93,60 @@ describe('Undo und Zwischenablage', () => {
 
   it('undoDepth stellt die Tiefe ein (1 = wie die alte App)', () => {
     const store = createStore(baseState(), { undoDepth: 1 });
+    store.clearPattern();
+    store.loadPreset(PRESETS[0]!);
+    store.undo();
+    expect(store.canUndo.value).toBe(false);
+  });
+
+  it('Zurück stellt nur Tempo und Swing zurück, die du danach nicht selbst verändert hast', () => {
+    const store = createStore(baseState());
+    const tempo0 = store.state.value.tempo;
+    store.clearPattern();
+    store.update((s) => ({ ...s, tempo: 128 })); // Regler oder Tap
+    store.loadPreset(PRESETS[0]!);
+    store.undo(); // Preset zurück
+    expect(store.state.value.tempo).toBe(128);
+    store.undo(); // Leeren zurück: das Tempo bleibt, das du gesetzt hast
+    expect(store.state.value.tempo).toBe(128);
+    expect(tempo0).not.toBe(128);
+  });
+
+  it('Zurück behält auch selbst geändertes Swing und Preset, stellt unveränderte zurück', () => {
+    const store = createStore(baseState());
+    const swing0 = store.state.value.swing;
+    store.clearPattern();
+    store.update((s) => ({ ...s, swing: 0.9, preset: 'Eigenes' }));
+    store.undo();
+    expect(store.state.value.swing).toBe(0.9);
+    expect(store.state.value.preset).toBe('Eigenes');
+    store.loadPreset(PRESETS[0]!);
+    store.undo(); // Preset und Tempo unverändert seit dem Laden: zurück
+    expect(store.state.value.preset).toBe('Eigenes');
+    expect(store.state.value.swing).toBe(0.9);
+    expect(swing0).not.toBe(0.9);
+  });
+
+  it('Schritte mit Sample-Sätzen: nur die jüngsten bleiben im Stapel', () => {
+    const store = createStore(baseState());
+    const reverts: number[] = [];
+    store.clearPattern(); // ältester Schritt ohne Samples
+    for (let i = 0; i < UNDO_SAMPLE_STEPS + 2; i++) {
+      store.replaceState({ ...store.state.value, tempo: 70 + i }, () => {
+        reverts.push(i);
+      });
+    }
+    let n = 0;
+    while (store.canUndo.value) {
+      store.undo();
+      n++;
+    }
+    expect(n).toBe(UNDO_SAMPLE_STEPS);
+    expect(reverts).toEqual([4, 3, 2]);
+  });
+
+  it('undoDepth unter 1 gilt als 1', () => {
+    const store = createStore(baseState(), { undoDepth: 0 });
     store.clearPattern();
     store.loadPreset(PRESETS[0]!);
     store.undo();

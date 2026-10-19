@@ -19,10 +19,18 @@ export const snapshot = (s: State): Snapshot => ({
   preset: s.preset,
 });
 
-export const restoreSnapshot = (s: State, u: Snapshot): State => ({
-  ...replacePattern(s, u.cur, u.pat),
-  cur: u.cur,
-  tempo: u.tempo,
-  swing: u.swing,
-  preset: u.preset,
-});
+/**
+ * Schnappschuss wiederherstellen. Mit `after` (die Werte direkt nach der Aktion) bleiben Tempo, Swing
+ * und Preset, die du danach selbst verändert hast (Regler, Tap), stehen; nur unveränderte werden
+ * zurückgestellt. Ohne `after` immer, wie in der alten App.
+ */
+export const restoreSnapshot = (s: State, u: Snapshot, after?: Snapshot): State => {
+  const changed = (k: 'tempo' | 'swing' | 'preset'): boolean => !!after && s[k] !== after[k];
+  return {
+    ...replacePattern(s, u.cur, u.pat),
+    cur: u.cur,
+    tempo: changed('tempo') ? s.tempo : u.tempo,
+    swing: changed('swing') ? s.swing : u.swing,
+    preset: changed('preset') ? s.preset : u.preset,
+  };
+};

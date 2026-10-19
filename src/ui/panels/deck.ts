@@ -64,7 +64,7 @@ export function deck(c: UiContext, strip?: HTMLElement): HTMLElement {
     }),
     chip(scope, {
       label: 'Tap',
-      ariaLabel: 'Tempo antippen',
+      ariaLabel: 'Tap – Tempo antippen',
       onClick: () => {
         tap(c);
       },
