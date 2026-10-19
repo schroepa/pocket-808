@@ -59,7 +59,7 @@ export function optLook(
     scope,
     () => {
       const o = stepOptOf(currentPattern(store.state.value), key(), step);
-      return o.p < 1 || o.c !== 'all' || hasLock(o);
+      return o.p < 1 || o.c !== 'all' || hasLock(o) || o.n !== undefined || o.k !== undefined;
     },
     (on) => {
       el.classList.toggle('opt', on);
@@ -127,6 +127,70 @@ export function stepOptsPanel(
       lockStart.hidden = !pad;
     },
   );
+  // Slice nur bei Chop des gewählten Pads
+  const sliceField = selectField(scope, {
+    label: 'Slice',
+    options: ['Ganz', '1', '2', '3', '4', '5', '6', '7', '8'],
+    value: computed(() => (opt.value.k === undefined ? 0 : opt.value.k + 1)),
+    write: (i) => {
+      write({ k: i === 0 ? undefined : i - 1 });
+    },
+  });
+  bind(
+    scope,
+    () => {
+      const key = o.key.value;
+      return key.startsWith('P') && !!store.state.value.smp.pads[Number(key.slice(1))]?.sl;
+    },
+    (chop) => {
+      sliceField.hidden = !chop;
+    },
+  );
+  // Pads: Pitch in Halbtönen und Slice (bei Chop), beides nur in den Step-Optionen
+  const pitch = computed(() => opt.value.n ?? 0);
+  const pitchReset = chip(scope, {
+    label: computed(() => `${pitch.value > 0 ? '+' : ''}${String(pitch.value)} ST`),
+    ariaLabel: 'Pitch zurücksetzen',
+    onClick: () => {
+      write({ n: undefined });
+    },
+  });
+  bind(
+    scope,
+    () => pitch.value,
+    (n) => {
+      pitchReset.setAttribute(
+        'aria-label',
+        `Pitch zurücksetzen (${n > 0 ? '+' : ''}${String(n)} Halbtöne)`,
+      );
+    },
+  );
+  const pitchRow = h('div', { class: 'opt-row opt-pitch' }, [
+    h('div', { class: 'cap-label', text: 'Pitch' }),
+    chip(scope, {
+      label: '−',
+      ariaLabel: 'Pitch tiefer',
+      onClick: () => {
+        write({ n: pitch.peek() - 1 });
+      },
+    }),
+    pitchReset,
+    chip(scope, {
+      label: '+',
+      ariaLabel: 'Pitch höher',
+      onClick: () => {
+        write({ n: pitch.peek() + 1 });
+      },
+    }),
+    sliceField,
+  ]);
+  bind(
+    scope,
+    () => padKey.value,
+    (pad) => {
+      pitchRow.hidden = !pad;
+    },
+  );
   const title = h('div', { class: 'cap-label' });
   bind(
     scope,
@@ -190,6 +254,7 @@ export function stepOptsPanel(
         },
       }),
     ]),
+    pitchRow,
     h('div', { class: 'cap-label', text: 'Lock' }),
     h('div', { class: 'opt-row opt-locks' }, [
       lockKnob('t', 'Tune', (v) => (padKey.value ? semis(v) : fmtTune(v))),

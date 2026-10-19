@@ -4,6 +4,8 @@ import type { UiContext } from '../../context.ts';
 import type { Device } from '../../devices.ts';
 import { h } from '../../dom.ts';
 import { padState } from './common.ts';
+import { samplerChop } from './chop.ts';
+import { samplerKeyboard } from './keyboard.ts';
 import { samplerKnobs } from './knobs.ts';
 import { createMessage } from './message.ts';
 import { samplerPads } from './pads.ts';
@@ -28,8 +30,10 @@ export function samplerDevice(c: UiContext): Device {
         samplerPads(cs),
         wave,
         samplerTools(cs, msg),
+        samplerChop(cs, msg),
         samplerKnobs(cs),
         samplerSteps(cs),
+        samplerKeyboard(cs),
       ]);
     },
   };

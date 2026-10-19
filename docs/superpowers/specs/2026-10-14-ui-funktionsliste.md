@@ -214,3 +214,14 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 | LFO Rate, Depth (Doppeltipp: 0,5 bzw. aus) | 0,1–19 Hz, Hub bis ±2 Oktaven (Cutoff) bzw. ±1 Halbton (Pitch) | ✅ | `engine.test.ts`, `next-synth-attrs.test.ts`, `synth.test.ts` |
 | LFO-Ziel Cutoff / Pitch | gilt ab der nächsten Note | ✅ | `engine.test.ts`, `synth.test.ts`, `synth.spec.ts` |
 | Speichern | optionale Felder `arp`, `lfo` im Patch, alte Stände bytegleich, Presets lassen sie stehen | ✅ | `core/arp.test.ts`, `core-persist.test.ts` |
+
+## Sampler: Chop, Pitch und Tastatur (Roadmap-Etappe 7)
+
+| Handlung | Wirkung | Stand | Test |
+|---|---|---|---|
+| Chop Aus / 2 / 4 / 8 | Pad in gleich große Slices zwischen den Griffen, Linien in der Wellenform | ✅ | `core/chop.test.ts`, `sampler.test.ts`, `sampler.spec.ts` |
+| Verteilen | Slices der Reihe nach auf die gesetzten Steps, mit Zurück, Meldungen ohne Chop bzw. Steps | ✅ | `core/chop.test.ts`, `sampler.test.ts` |
+| Pitch pro Step (− / Wert / +) | −12…+12 Halbtöne, Wert tippen setzt zurück | ✅ | `next-locks.test.ts`, `step-opts.test.ts`, `sampler.spec.ts` |
+| Slice pro Step | Auswahl Ganz / 1–8, ein k über der Slice-Zahl spielt das letzte | ✅ | `core/chop.test.ts`, `next-locks.test.ts`, `step-opts.test.ts` |
+| Tastatur | zwölf Tasten spielen das Pad (C = eigene Stimmung), Oktave −1…+1 | ✅ | `sampler.test.ts`, `sampler.spec.ts` |
+| Speichern | optional `sl`, `n`, `k`; alte Stände bleiben bytegleich | ✅ | `core/chop.test.ts`, `core-persist.test.ts` |

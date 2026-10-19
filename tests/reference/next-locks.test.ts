@@ -30,6 +30,22 @@ describe.concurrent('Parameter-Locks und Fill in der Engine', () => {
     expect(pad[0]?.offset).toBeGreaterThan(0);
   });
 
+  it('Chop und Pitch: Slice setzt den Startversatz, Pitch die Rate (±12 Halbtöne = ×2 bzw. ×½)', async ({
+    expect,
+  }) => {
+    // zwei Takte: der erste Durchlauf zählt
+    const h = (await runNext<Hit[]>('chopHits', {})).filter((x) => x.pad).slice(0, 4);
+    expect(h).toHaveLength(4);
+    const [k1, up, down, k3] = h;
+    expect(k1?.offset).toBeGreaterThan(0);
+    expect(k3?.offset).toBeCloseTo((k1?.offset ?? 0) * 3, 5);
+    expect(up?.rate).toBeCloseTo(2, 5);
+    expect(up?.offset).toBe(0); // ohne k das ganze Pad
+    expect(down?.rate).toBeCloseTo(0.5, 5);
+    expect(down?.offset).toBe(0); // Slice 0 beginnt am Anfang
+    expect(k1?.rate).toBeCloseTo(1, 5);
+  });
+
   it('Fill: „Fill“ nur gehalten, „Nicht Fill“ nur losgelassen', async ({ expect }) => {
     const t = await runNext<number[]>('fillHits', {});
     expect(t.map((x) => Math.round((x - 0.08) * 8))).toEqual([8, 16, 40]);

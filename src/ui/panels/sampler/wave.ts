@@ -23,6 +23,7 @@ export function drawWave(
   pcm: Float32Array | null,
   start: number,
   end: number,
+  slices = 0,
 ): void {
   g.clearRect(0, 0, w, hgt);
   g.fillStyle = 'rgba(211, 146, 90, 0.2)';
@@ -42,6 +43,10 @@ export function drawWave(
   g.fillStyle = '#d4d4dc';
   g.fillRect(sx - 1, 0, 2, hgt);
   g.fillRect(ex - 1, 0, 2, hgt);
+  // Chop: feine Linien an den Slice-Grenzen
+  g.fillStyle = 'rgba(212, 212, 220, 0.5)';
+  for (let k = 1; k < slices; k++) g.fillRect(sx + ((ex - sx) * k) / slices, 0, 1, hgt);
+  g.fillStyle = '#d4d4dc';
   g.beginPath();
   g.moveTo(sx, 0);
   g.lineTo(sx + 8, 0);
@@ -73,11 +78,11 @@ export function samplerWave(c: UiContext): HTMLElement {
     cv.width = Math.round(r.width * dpr);
     cv.height = Math.round(r.height * dpr);
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    drawWave(g, r.width, r.height, pcm.peek(), pad.peek().start, pad.peek().end);
+    drawWave(g, r.width, r.height, pcm.peek(), pad.peek().start, pad.peek().end, pad.peek().sl);
   };
   bind(
     scope,
-    () => [pcm.value, pad.value.start, pad.value.end] as const,
+    () => [pcm.value, pad.value.start, pad.value.end, pad.value.sl] as const,
     () => {
       empty.hidden = pcm.peek() !== null;
       redraw();

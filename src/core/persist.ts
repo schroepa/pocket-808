@@ -115,6 +115,8 @@ function readOpt(o: Obj): OptMap | null {
         ...(isNum(e.t) ? { t: e.t } : {}),
         ...(isNum(e.d) ? { d: e.d } : {}),
         ...(isNum(e.s) && PAD_SUB_KEY.test(key) ? { s: e.s } : {}),
+        ...(isNum(e.n) && PAD_SUB_KEY.test(key) ? { n: e.n } : {}),
+        ...(isNum(e.k) && PAD_SUB_KEY.test(key) ? { k: e.k } : {}),
       });
       if (norm) (map[key as SubKey] ??= {})[n] = norm;
     }
@@ -181,6 +183,7 @@ export function loadState(src: unknown, base: State): State {
         }
         if (typeof q.rev === 'boolean') t.rev = q.rev;
         if (typeof q.name === 'string') t.name = q.name.slice(0, 12);
+        if (q.sl === 2 || q.sl === 4 || q.sl === 8) t.sl = q.sl;
       });
     }
   }

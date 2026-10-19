@@ -97,6 +97,40 @@
   .smp-tools {
     margin-bottom: 12px;
   }
+  .smp-chop {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .smp-chop .seg button {
+    min-width: 44px;
+  }
+  .smp-keys {
+    margin-top: 14px;
+  }
+  .smp-keys .keys {
+    display: grid;
+    grid-template-columns: repeat(14, minmax(0, 1fr));
+    grid-template-rows: 44px 44px;
+    gap: 4px;
+  }
+  .smp-keys .key {
+    border: 0;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--ink) 16%, var(--well));
+    color: var(--ink);
+    font: 12px var(--font-lcd);
+  }
+  .smp-keys .key.black {
+    background: var(--well);
+    color: var(--ink-dim);
+  }
+  .smp-keys .key:active {
+    background: var(--acc);
+    color: var(--chassis);
+  }
   .row-split {
     display: flex;
     align-items: center;

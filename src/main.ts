@@ -131,8 +131,8 @@ function boot(hostData: unknown): Store {
     auditionNote: (p, d, l, n) => {
       engine.auditionNote(p, d, l, n);
     },
-    auditionPad: (i) => {
-      engine.auditionPad(i);
+    auditionPad: (i, semis) => {
+      engine.auditionPad(i, semis);
     },
     stutterOn: (f) => {
       engine.stutterOn(f);

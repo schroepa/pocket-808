@@ -117,3 +117,43 @@ test('Geräte bleiben im Fenster, mit Synth und mit Sampler', async ({ page }) =
   await openSampler(page);
   expect(await right()).toBe(0);
 });
+
+test('Chop wählen, Pitch am Step setzen, bleibt nach Neuladen; Tastatur mit großen Zielen', async ({
+  page,
+}, info) => {
+  await openSampler(page);
+  const smp = page.locator('#dev-smp');
+  await smp.locator('.smp-chop [role=radio]', { hasText: '4' }).click();
+  await smp.locator('[aria-label="Step-Optionen bearbeiten"]').click();
+  await smp.locator('.ss').nth(2).click();
+  await smp.locator('[aria-label="Pitch höher"]').click();
+  await smp.locator('[aria-label="Pitch höher"]').click();
+  await expect(smp.locator('[aria-label^="Pitch zurücksetzen"]')).toHaveText('+2 ST');
+  await page.waitForTimeout(400);
+  await page.reload();
+  await openSampler(page);
+  const again = page.locator('#dev-smp');
+  await expect(again.locator('.smp-chop [role=radio][aria-checked=true]')).toHaveText('4');
+  await again.locator('[aria-label="Step-Optionen bearbeiten"]').click();
+  await again.locator('.ss').nth(2).click();
+  await expect(again.locator('[aria-label^="Pitch zurücksetzen"]')).toHaveText('+2 ST');
+  if (info.project.name !== 'desktop') {
+    const small = await page.evaluate(() =>
+      [
+        ...document.querySelectorAll<HTMLElement>(
+          '#dev-smp .smp-keys button, #dev-smp .smp-chop button',
+        ),
+      ]
+        .map((el) => {
+          const r = el.getBoundingClientRect();
+          return {
+            name: el.getAttribute('aria-label') ?? el.textContent,
+            w: Math.round(r.width),
+            h: Math.round(r.height),
+          };
+        })
+        .filter((x) => x.w < 44 || x.h < 44),
+    );
+    expect(small).toEqual([]);
+  }
+});
