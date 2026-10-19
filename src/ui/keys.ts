@@ -4,6 +4,7 @@ import type { ReadonlySignal } from '../store/signals.ts';
 import type { UiContext } from './context.ts';
 import { chip } from './controls/chip.ts';
 import { h, listen } from './dom.ts';
+import { tap } from './tap.ts';
 import type { Layout } from './layout.ts';
 
 const TEXT = 'input, textarea, select, [contenteditable]';
@@ -17,6 +18,7 @@ export const SHORTCUTS: readonly (readonly [string, string])[] = [
   ['⌘/Strg + C', 'Pattern kopieren'],
   ['⌘/Strg + V', 'Pattern einfügen'],
   ['F (halten)', 'Fill'],
+  ['T (im Takt)', 'Tap-Tempo'],
   ['⌘/Strg + S', 'Projekt sichern'],
   ['⌘/Strg + O', 'Projekt öffnen'],
 ];
@@ -46,6 +48,9 @@ export function installKeys(
     if (k === 'f' && !mod && !e.altKey) {
       e.preventDefault();
       if (!e.repeat) audio.setFill(true);
+    } else if (k === 't' && !mod && !e.altKey) {
+      e.preventDefault();
+      if (!e.repeat) tap(c);
     } else if (e.key === ' ' && !mod) {
       e.preventDefault();
       if (e.repeat) return;

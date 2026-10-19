@@ -217,3 +217,28 @@ describe('Taste F hält Fill (Desktop)', () => {
     ctx.scope.dispose();
   });
 });
+
+describe('Taste T tippt das Tempo (Desktop)', () => {
+  it('zwei Tipps im Takt setzen das Tempo; Wiederholung und ⌘ zählen nicht', () => {
+    for (const d of document.querySelectorAll('dialog')) d.remove();
+    const ctx = makeContext();
+    installKeys(ctx.c, signal<Layout>('desktop'), document);
+    const now = vi.spyOn(performance, 'now');
+    const press = (t: number, init: KeyboardEventInit = {}) => {
+      now.mockReturnValue(t);
+      document.body.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 't', bubbles: true, cancelable: true, ...init }),
+      );
+    };
+    press(10_000);
+    expect(ctx.c.readout.text.value).toBe('TAP · weiter tippen');
+    press(10_500, { repeat: true });
+    press(10_500, { metaKey: true });
+    press(10_500);
+    expect(ctx.store.state.value.tempo).toBe(120);
+    expect(ctx.c.readout.text.value).toBe('TAP · 120 BPM');
+    expect(ctx.store.canUndo.value).toBe(false);
+    now.mockRestore();
+    ctx.scope.dispose();
+  });
+});

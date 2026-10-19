@@ -1,6 +1,8 @@
 import type { UiContext } from '../context.ts';
+import { chip } from '../controls/chip.ts';
 import { knob } from '../controls/knob.ts';
 import { bind, h } from '../dom.ts';
+import { tap } from '../tap.ts';
 import './deck.css';
 
 const toTempo = (v: number): number => Math.round(60 + v * 140);
@@ -59,6 +61,13 @@ export function deck(c: UiContext, strip?: HTMLElement): HTMLElement {
       def: () => 0.8,
       format: (v) => String(Math.round(v * 100)),
       readout,
+    }),
+    chip(scope, {
+      label: 'Tap',
+      ariaLabel: 'Tap – Tempo antippen',
+      onClick: () => {
+        tap(c);
+      },
     }),
   ]);
   return h(

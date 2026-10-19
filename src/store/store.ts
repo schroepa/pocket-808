@@ -86,12 +86,40 @@ export interface Store {
  * unveränderte Teile teilt, benachrichtigen feine Auswahl-Signale (select) nur bei echter Änderung.
  * Jeder neue Zustand wird eingefroren (Entscheidung 2026-10-14: auch im Build), außer mit `freeze: false`.
  */
-export function createStore(initial: State, opts: { freeze?: boolean } = {}): Store {
+/** so viele Schritte Zurück hält der Store höchstens (älteste fallen heraus) */
+export const UNDO_DEPTH = 20;
+/** höchstens so viele Schritte mit Sample-Sätzen (Projekt öffnen) bleiben im Stapel */
+export const UNDO_SAMPLE_STEPS = 3;
+interface UndoStep {
+  restore: (s: State) => State;
+  after?: () => void;
+}
+
+/** `undoDepth`: Tiefe des Zurück-Stapels (Standard UNDO_DEPTH; 1 entspricht der alten App) */
+export function createStore(
+  initial: State,
+  opts: { freeze?: boolean; undoDepth?: number } = {},
+): Store {
   const freeze = opts.freeze ?? true;
   const prepare = (s: State): State => (freeze ? deepFreeze(s) : s);
   const state = signal(prepare(initial));
   /** ein Schritt Zurück: wie der Zustand wiederhergestellt wird, danach optional after */
-  const undoSnap = signal<{ restore: (s: State) => State; after?: () => void } | null>(null);
+  const undoStack = signal<readonly UndoStep[]>([]);
+  /** neuen Schritt obenauf legen; über UNDO_DEPTH fällt der älteste heraus */
+  const pushUndo = (step: UndoStep): void => {
+    const depth = Math.max(1, opts.undoDepth ?? UNDO_DEPTH);
+    const next = [...undoStack.peek(), step].slice(-depth);
+    // Schritte mit Samples (Projekt öffnen) halten ganze Sample-Sätze: nur die jüngsten bleiben
+    let withSamples = 0;
+    for (let i = next.length - 1; i >= 0; i--) {
+      if (!next[i]?.after) continue;
+      if (++withSamples > UNDO_SAMPLE_STEPS) {
+        undoStack.value = next.slice(i + 1);
+        return;
+      }
+    }
+    undoStack.value = next;
+  };
   const clip = signal<Pattern | null>(null);
   const songEpoch = signal(0);
 
@@ -102,14 +130,17 @@ export function createStore(initial: State, opts: { freeze?: boolean } = {}): St
   const withUndo = (fn: (s: State) => State): void => {
     batch(() => {
       const snap = snapshot(state.peek());
-      undoSnap.value = { restore: (s) => restoreSnapshot(s, snap) };
       update(fn);
+      const after = snapshot(state.peek());
+      pushUndo({
+        restore: (s) => restoreSnapshot(s, snap, opts.undoDepth === 1 ? undefined : after),
+      });
     });
   };
 
   return {
     state,
-    canUndo: computed(() => undoSnap.value !== null),
+    canUndo: computed(() => undoStack.value.length > 0),
     canPaste: computed(() => clip.value !== null),
     songEpoch,
     select: (fn, equals) => computed(() => fn(state.value), equals),
@@ -161,10 +192,10 @@ export function createStore(initial: State, opts: { freeze?: boolean } = {}): St
       if (c) withUndo((s) => pastePattern(s, c));
     },
     undo: () => {
-      const u = undoSnap.peek();
+      const u = undoStack.peek().at(-1);
       if (!u) return;
       batch(() => {
-        undoSnap.value = null;
+        undoStack.value = undoStack.peek().slice(0, -1);
         update(u.restore);
       });
       u.after?.();
@@ -190,14 +221,14 @@ export function createStore(initial: State, opts: { freeze?: boolean } = {}): St
       if (next === prev) return;
       batch(() => {
         // Zurück betrifft nur den Mixer; spätere Änderungen an Steps usw. bleiben
-        undoSnap.value = { restore: (s) => ({ ...s, mix: prev.mix }) };
+        pushUndo({ restore: (s) => ({ ...s, mix: prev.mix }) });
         update(() => next);
       });
     },
     replaceState: (next, revert) => {
       const prev = state.peek();
       batch(() => {
-        undoSnap.value = { restore: () => prev, ...(revert ? { after: revert } : {}) };
+        pushUndo({ restore: () => prev, ...(revert ? { after: revert } : {}) });
         update(() => next);
       });
     },

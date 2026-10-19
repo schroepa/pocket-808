@@ -225,3 +225,10 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 | Slice pro Step | Auswahl Ganz / 1–8, ein k über der Slice-Zahl spielt das letzte | ✅ | `core/chop.test.ts`, `next-locks.test.ts`, `step-opts.test.ts` |
 | Tastatur | zwölf Tasten spielen das Pad (C = eigene Stimmung), Oktave −1…+1 | ✅ | `sampler.test.ts`, `sampler.spec.ts` |
 | Speichern | optional `sl`, `n`, `k`; alte Stände bleiben bytegleich | ✅ | `core/chop.test.ts`, `core-persist.test.ts` |
+
+## Undo-Stapel und Tap-Tempo (Roadmap-Etappe 8a)
+
+| Handlung | Wirkung | Stand | Test |
+|---|---|---|---|
+| Zurück (Knopf, ⌘/Strg+Z) | bis zu 20 Schritte nacheinander, älteste fallen heraus | ✅ | `store.test.ts`, `core-pattern.test.ts`, `app.spec.ts` |
+| Tap (Deck), Taste T | Tempo aus dem Mittel der letzten Tipps (60–200 BPM), neue Folge nach 2 s Pause, ohne Zurück | ✅ | `core/tap.test.ts`, `panels-head.test.ts`, `keys.test.ts`, `app.spec.ts` |
