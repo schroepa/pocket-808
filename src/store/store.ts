@@ -51,10 +51,12 @@ export interface Store {
   toggleNoteFlag(flag: 'a' | 's', step: number): void;
   /** Akkord der Note unter `step` weiterschalten */
   cycleChord(step: number): void;
-  /** Live-Aufnahme: Zurück-Schritt für einen neuen Take (alle Schläge bis zum Stopp gehören dazu) */
-  beginTake(): void;
-  /** Live-Aufnahme: einen eingespielten Schlag ins Pattern setzen (ohne eigenen Zurück-Schritt) */
-  recordHit(hit: RecHit): void;
+  /**
+   * Live-Aufnahme: einen eingespielten Schlag ins Pattern setzen. Alle Schläge eines Takes (`take`)
+   * teilen sich einen Zurück-Schritt, der jedes berührte Pattern wiederherstellt; ohne Änderung kein
+   * Schritt, und ist der Schritt schon zurückgenommen, beginnt ein neuer.
+   */
+  recordHit(hit: RecHit, take: number): void;
   /** Slices des Pads der Reihe nach auf seine gesetzten Steps legen (mit Zurück) */
   distributeSlices(pad: number): void;
   clearNotes(): void;
@@ -125,6 +127,8 @@ export function createStore(
     }
     undoStack.value = next;
   };
+  /** offener Take der Live-Aufnahme: sein Zurück-Schritt und die vor dem Take gesicherten Patterns */
+  let openTake: { id: number; step: UndoStep; touched: Map<Slot, Pattern> } | null = null;
   const clip = signal<Pattern | null>(null);
   const songEpoch = signal(0);
 
@@ -168,11 +172,28 @@ export function createStore(
     toggleNoteFlag: (flag, step) => {
       update((s) => toggleNoteFlag(s, flag, step));
     },
-    beginTake: () => {
-      withUndo((s) => s);
-    },
-    recordHit: (hit) => {
-      update((s) => recordHit(s, hit));
+    recordHit: (hit, take) => {
+      const prev = state.peek();
+      const next = recordHit(prev, hit);
+      if (next === prev) return;
+      const open = openTake?.id === take && undoStack.peek().at(-1) === openTake.step;
+      let t = open ? openTake : null;
+      if (!t) {
+        const touched = new Map<Slot, Pattern>();
+        const preset = prev.preset;
+        const step: UndoStep = {
+          restore: (s) => ({
+            ...s,
+            patterns: { ...s.patterns, ...Object.fromEntries(touched) },
+            preset,
+          }),
+        };
+        t = { id: take, step, touched };
+        openTake = t;
+        pushUndo(step);
+      }
+      if (!t.touched.has(hit.slot)) t.touched.set(hit.slot, prev.patterns[hit.slot]);
+      update(() => next);
     },
     distributeSlices: (pad) => {
       withUndo((s) => distributeSlices(s, pad));

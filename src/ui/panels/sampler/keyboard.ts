@@ -3,7 +3,7 @@ import { signal } from '../../../store/signals.ts';
 import type { UiContext } from '../../context.ts';
 import { chip } from '../../controls/chip.ts';
 import { bind, h } from '../../dom.ts';
-import { recordInput } from '../../record.ts';
+import { recordTap } from '../../record.ts';
 import { padState } from './common.ts';
 
 /** Tasten einer Oktave: Halbton über C, Name, schwarz? */
@@ -42,7 +42,7 @@ export function samplerKeyboard(c: UiContext): HTMLElement {
   const keys = KEYS.map(([semi, name, black]) => {
     // 14 Spalten: weiße Tasten (7) belegen je zwei in Reihe 2, schwarze sitzen dazwischen in Reihe 1
     const col = black ? 2 * white : 2 * white++ + 1;
-    return h('button', {
+    const key = h('button', {
       class: black ? 'key black' : 'key',
       text: name,
       attrs: {
@@ -56,14 +56,19 @@ export function samplerKeyboard(c: UiContext): HTMLElement {
           if (!samples.pads.peek()[i]) return;
           const semis = semi + oct.peek() * 12;
           audio.auditionPad(i, semis);
-          recordInput(
-            c,
-            (pos) => ({ kind: 'pad', pad: i, semis, ...pos }),
-            `Pad ${String(i + 1)} ${name}`,
-          );
         },
       },
     });
+    recordTap(c, key, () => {
+      const i = sel.peek();
+      if (!samples.pads.peek()[i]) return null;
+      const semis = semi + oct.peek() * 12;
+      return {
+        make: (pos) => ({ kind: 'pad', pad: i, semis, ...pos }),
+        label: `Pad ${String(i + 1)} ${name}`,
+      };
+    });
+    return key;
   });
   const shift = (d: number) => () => {
     oct.value = clamp(oct.peek() + d, -1, 1);

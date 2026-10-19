@@ -45,14 +45,15 @@ describe('recordHit', () => {
     expect(stepOptOf(currentPattern(again), 'SD', 2).v).toBe(0.4);
   });
 
-  it('Pad: setzt den Step; Halbtöne landen als Pitch, 0 entfernt ihn', () => {
+  it('Pad: setzt den Step mit Halbtönen als Pitch; ein schon gesetzter Step bleibt unverändert', () => {
     const s = empty();
     const a = recordHit(s, { kind: 'pad', pad: 2, step: 7, slot: 'A', semis: 5 });
     expect(currentPattern(a).smp[2]?.[7]).toBe(1);
     expect(stepOptOf(currentPattern(a), 'P2', 7).n).toBe(5);
-    const b = recordHit(a, { kind: 'pad', pad: 2, step: 7, slot: 'A', semis: 0 });
-    expect(stepOptOf(currentPattern(b), 'P2', 7).n).toBeUndefined();
-    expect(currentPattern(b).smp[2]?.[7]).toBe(1);
+    expect(recordHit(a, { kind: 'pad', pad: 2, step: 7, slot: 'A', semis: 0 })).toBe(a);
+    expect(recordHit(a, { kind: 'pad', pad: 2, step: 7, slot: 'A', semis: 9 })).toBe(a);
+    const plain = recordHit(s, { kind: 'pad', pad: 0, step: 1, slot: 'A', semis: 0 });
+    expect(stepOptOf(currentPattern(plain), 'P0', 1).n).toBeUndefined();
   });
 
   it('Note: Stufe und Länge am Step des Slots, gleiche Stufe an derselben Stelle bleibt', () => {
@@ -87,6 +88,16 @@ describe('recordHit', () => {
       slot: 'B',
       length: 1,
     });
-    expect(other.patterns.B.notes.LD[6]).toEqual({ d: 1, l: 1 });
+    // eine andere Stufe auf einem Step, an dem schon eine Note beginnt, ändert nichts (Overdub)
+    expect(other).toBe(a);
+    const free = recordHit(a, {
+      kind: 'note',
+      part: 'LD',
+      degree: 1,
+      step: 10,
+      slot: 'B',
+      length: 1,
+    });
+    expect(free.patterns.B.notes.LD[10]).toEqual({ d: 1, l: 1 });
   });
 });

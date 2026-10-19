@@ -55,7 +55,7 @@ export function transport(c: UiContext): HTMLElement {
     text: 'Rec',
     attrs: {
       type: 'button',
-      'aria-label': 'Live-Aufnahme scharf schalten',
+      'aria-label': 'Rec – Live-Aufnahme scharf schalten',
       'aria-pressed': 'false',
     },
     on: {

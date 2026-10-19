@@ -36,15 +36,16 @@ export function recordHit(s: State, hit: RecHit): State {
     case 'pad': {
       const key = `P${String(hit.pad)}` as SubKey;
       const p = s.patterns[hit.slot];
-      const on = p.smp[hit.pad]?.[hit.step] === 1 || !!subStepsOf(p, key, hit.step);
+      if (p.smp[hit.pad]?.[hit.step] === 1 || subStepsOf(p, key, hit.step)) return s;
       return inSlot(s, hit.slot, (t) => {
-        const set = on ? t : toggleSampleStep(t, hit.pad, hit.step);
-        return setStepOpt(set, key, hit.step, { n: hit.semis === 0 ? undefined : hit.semis });
+        const set = toggleSampleStep(t, hit.pad, hit.step);
+        return hit.semis === 0 ? set : setStepOpt(set, key, hit.step, { n: hit.semis });
       });
     }
     case 'note': {
       const row = s.patterns[hit.slot].notes[hit.part];
-      if (noteAt(row, hit.step)?.d === hit.degree) return s;
+      // Overdub: wo schon eine Note beginnt oder dieselbe Stufe klingt, bleibt alles wie es ist
+      if (row[hit.step] || noteAt(row, hit.step)?.d === hit.degree) return s;
       return inSlot(s, hit.slot, (t) =>
         placeNote({ ...t, part: hit.part, noteLen: hit.length }, hit.degree, hit.step),
       );

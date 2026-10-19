@@ -58,6 +58,23 @@ describe('Aufnehmen über die Tippflächen', () => {
     expect(store.canUndo.value).toBe(true);
   });
 
+  it('zählt beim Antippen (pointerdown), nicht erst beim Loslassen; click mit Zeiger zählt nicht doppelt', () => {
+    const ctx = makeContext();
+    const { c, store } = ctx;
+    clear(ctx);
+    const el = tracks(c);
+    const sd = [...el.querySelectorAll<HTMLButtonElement>('.lab')].find(
+      (b) => b.textContent === 'SD',
+    );
+    arm(ctx, 3);
+    sd?.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect(currentPattern(store.state.value).SD[3]).toBe(1);
+    expect(ctx.audio.nearestStep).toHaveBeenCalledTimes(1);
+    sd?.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 })); // Loslassen
+    expect(ctx.audio.nearestStep).toHaveBeenCalledTimes(1);
+    expect(ctx.audio.audition).toHaveBeenCalledWith('SD'); // der Klick hört weiter vor
+  });
+
   it('ohne scharfe Aufnahme, ohne Wiedergabe oder außerhalb eines Steps wird nichts aufgenommen', () => {
     const ctx = makeContext();
     const { c, store } = ctx;
