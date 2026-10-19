@@ -116,6 +116,12 @@ function boot(hostData: unknown): Store {
     available,
     playing: engine.playing,
     playhead: engine.playhead,
+    recording: engine.recording,
+    setRecording: (on) => {
+      engine.setRecording(on);
+    },
+    takeId: engine.takeId,
+    nearestStep: () => engine.nearestStep(),
     start: () => {
       engine.start();
     },

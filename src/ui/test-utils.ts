@@ -43,12 +43,22 @@ export function manualTimer(): ManualTimer {
 export function fakeAudio(available = true) {
   const playing = signal(false);
   const playhead = signal({ step: -1, songIndex: -1 });
+  const recording = signal(false);
+  const takeId = signal(0);
   const audio = {
     available,
     playing,
     playhead,
+    recording,
+    takeId,
+    setRecording: vi.fn((on: boolean) => {
+      recording.value = on;
+      if (on) takeId.value++;
+    }),
+    nearestStep: vi.fn<UiAudio['nearestStep']>(() => null),
     start: vi.fn(() => {
       playing.value = true;
+      takeId.value++;
     }),
     stop: vi.fn(() => {
       playing.value = false;

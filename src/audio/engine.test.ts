@@ -366,6 +366,112 @@ describe('createEngine', () => {
     engine.dispose();
   });
 
+  describe('Live-Aufnahme', () => {
+    const rig = () => {
+      const store = createStore(baseState());
+      const ctx = fakeContext();
+      const timer = manualTimer();
+      let now = 0;
+      const engine = createEngine({
+        store,
+        createContext: () => ctx as never,
+        timer,
+        prerender: false,
+        clock: () => now,
+      });
+      engine.prepare();
+      const oscStarts = () =>
+        ctx.createOscillator.mock.results
+          .map((r) => (r.value as { start: Mock }).start.mock.calls[0]?.[0] as number | undefined)
+          .filter((t): t is number => t !== undefined);
+      const oscStops = () =>
+        ctx.createOscillator.mock.results.map((r) =>
+          (r.value as { stop: Mock }).stop.mock.calls.map((c) => c[0] as number),
+        );
+      return {
+        store,
+        engine,
+        timer,
+        oscStarts,
+        oscStops,
+        at: (t: number) => {
+          now = t;
+        },
+      };
+    };
+
+    it('nearestStep: nächster geplanter Step, außerhalb eines Steps nichts, ohne Wiedergabe nichts', () => {
+      const { engine, timer, at } = rig();
+      expect(engine.nearestStep()).toBeNull();
+      engine.start();
+      timer.fire(); // Step 0 bei 0,08
+      at(0.1);
+      timer.fire(); // Step 1 bei 0,2467
+      expect(engine.nearestStep()).toEqual({ step: 0, slot: 'A' });
+      at(0.2);
+      expect(engine.nearestStep()).toEqual({ step: 1, slot: 'A' });
+      engine.tick(0.1); // Step 0 ist gespielt, bleibt aber noch kurz erreichbar
+      at(0.09);
+      expect(engine.nearestStep()?.step).toBe(0);
+      at(9);
+      expect(engine.nearestStep()).toBeNull();
+      engine.stop();
+      expect(engine.nearestStep()).toBeNull();
+      engine.dispose();
+    });
+
+    it('Rec scharf: Start zählt einen Takt aus vier Klicks vor und verschiebt das Pattern', () => {
+      const { engine, timer, at, oscStarts, store } = rig();
+      const base = oscStarts().length;
+      engine.start(); // nicht scharf: kein Vorzähler
+      timer.fire();
+      expect(oscStarts().length).toBe(base);
+      engine.stop();
+      engine.setRecording(true);
+      expect(engine.recording.value).toBe(true);
+      at(0);
+      engine.start();
+      const beat = 60 / store.state.value.tempo;
+      const clicks = oscStarts().slice(base);
+      expect(clicks).toHaveLength(4);
+      clicks.forEach((t, k) => {
+        expect(t).toBeCloseTo(0.08 + k * beat, 6);
+      });
+      timer.fire();
+      expect(engine.nearestStep()).toBeNull(); // noch kein Step geplant
+      at(0.08 + 4 * beat - 0.05);
+      timer.fire();
+      expect(engine.nearestStep()).toEqual({ step: 0, slot: 'A' }); // früher Schlag rastet auf Step 1
+      engine.dispose();
+    });
+
+    it('Stopp im Vorzähler nimmt die ausstehenden Klicks zurück', () => {
+      const { engine, at, oscStarts, oscStops } = rig();
+      const base = oscStarts().length;
+      engine.setRecording(true);
+      engine.start();
+      expect(oscStarts().length - base).toBe(4);
+      at(0.5);
+      engine.stop();
+      const clicks = oscStops().slice(-4);
+      for (const calls of clicks) expect(calls).toContain(0.5); // bei 0,5 s angehalten
+      engine.dispose();
+    });
+
+    it('takeId zählt bei Start und beim Scharfschalten hoch', () => {
+      const { engine } = rig();
+      const id0 = engine.takeId.value;
+      engine.setRecording(true);
+      expect(engine.takeId.value).toBe(id0 + 1);
+      engine.setRecording(false);
+      expect(engine.takeId.value).toBe(id0 + 1);
+      engine.start();
+      expect(engine.takeId.value).toBe(id0 + 2);
+      engine.stop();
+      engine.dispose();
+    });
+  });
+
   it('resume weckt nur einen nicht laufenden Kontext und legt keinen an', () => {
     const store = createStore(baseState());
     const ctx = fakeContext();
