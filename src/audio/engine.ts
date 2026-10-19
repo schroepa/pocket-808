@@ -91,6 +91,13 @@ export interface Engine {
   readonly playhead: ReadonlySignal<{ step: number; songIndex: number }>;
   start(): void;
   stop(): void;
+  /** Live-Aufnahme scharf (Etappe 8b): ein Start zählt dann einen Takt vor */
+  readonly recording: ReadonlySignal<boolean>;
+  setRecording(on: boolean): void;
+  /** zählt hoch, wenn ein neuer Take beginnt (Start, Aufnahme scharf) */
+  readonly takeId: ReadonlySignal<number>;
+  /** Step (und Slot), auf den ein Schlag jetzt rastet; null ohne Wiedergabe oder außerhalb eines Steps */
+  nearestStep(): { step: number; slot: Slot } | null;
   /** pro Bildschirm-Frame aufrufen: Abspielposition, im Song-Modus folgt die Ansicht */
   tick(now?: number): void;
   audition(voice: VoiceId): void;
@@ -201,6 +208,12 @@ export function createEngine(o: EngineOptions): Engine {
     replacing = kind;
   };
   const queue: ScheduledStep[] = [];
+  /** die zuletzt gespielten Steps: ein Schlag knapp nach dem Step rastet noch auf ihn */
+  const history: ScheduledStep[] = [];
+  /** noch ausstehende Klicks des Vorzählers: ein Stopp nimmt sie zurück */
+  let clicks: OscillatorNode[] = [];
+  const recording = signal(false);
+  const takeId = signal(0);
   let irTimer: unknown = null;
   let disposed = false;
 
@@ -556,6 +569,28 @@ export function createEngine(o: EngineOptions): Engine {
     for (const id of PARTS) flushArp(id, horizon);
   };
 
+  /** Vorzähler: vier Klicks (der erste höher) ab t0, Rückgabe: Beginn des Patterns danach */
+  const countIn = (t0: number): number => {
+    const beat = 60 / state().tempo;
+    if (graph && ctx) {
+      for (let k = 0; k < 4; k++) {
+        const t = t0 + k * beat;
+        const osc = ctx.createOscillator();
+        osc.frequency.value = k === 0 ? 1500 : 1000;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.linearRampToValueAtTime(0.35, t + 0.002);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+        osc.connect(g);
+        g.connect(graph.bus);
+        osc.start(t);
+        osc.stop(t + 0.06);
+        clicks.push(osc);
+      }
+    }
+    return t0 + 4 * beat;
+  };
+
   const stop = (): void => {
     // gehaltene Effekte nie hängen lassen
     const t = now();
@@ -564,7 +599,16 @@ export function createEngine(o: EngineOptions): Engine {
     if (!playing.peek()) return;
     timer.clearInterval(interval);
     interval = null;
+    for (const c of clicks) {
+      try {
+        c.stop(t);
+      } catch {
+        /* schon beendet */
+      }
+    }
+    clicks = [];
     queue.length = 0;
+    history.length = 0;
     arpQueue.BA = [];
     arpQueue.LD = [];
     batch(() => {
@@ -590,16 +634,43 @@ export function createEngine(o: EngineOptions): Engine {
       cursor = songStart();
       loops = {};
       queue.length = 0;
+      history.length = 0;
       nextTime = now() + START_DELAY;
+      takeId.value++;
+      if (recording.peek()) nextTime = countIn(nextTime);
       interval = timer.setInterval(pump, LOOKAHEAD_MS);
       pump();
     },
     stop,
+    recording,
+    takeId,
+    setRecording(on) {
+      batch(() => {
+        recording.value = on;
+        if (on) takeId.value++;
+      });
+    },
+    nearestStep() {
+      if (!playing.peek()) return null;
+      const t = now() - (ctx?.outputLatency ?? 0);
+      let best: ScheduledStep | undefined;
+      for (const e of [...history, ...queue]) {
+        if (!best || Math.abs(e.time - t) < Math.abs(best.time - t)) best = e;
+      }
+      if (!best || Math.abs(best.time - t) > stepDuration(state().tempo)) return null;
+      return { step: best.step, slot: best.slot };
+    },
     tick(at) {
       if (!playing.peek()) return;
       const t = at ?? now() - (ctx?.outputLatency ?? 0);
       let hit: ScheduledStep | undefined;
-      while (queue[0] && queue[0].time <= t) hit = queue.shift();
+      while (queue[0] && queue[0].time <= t) {
+        const next = queue.shift();
+        if (!next) break;
+        hit = next;
+        history.push(next);
+        if (history.length > 2) history.shift();
+      }
       if (!hit) return;
       const h = hit;
       batch(() => {

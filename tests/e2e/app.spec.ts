@@ -112,3 +112,30 @@ test('Tap-Tempo setzt das Tempo, mehrstufiges Zurück nimmt zwei Änderungen nac
   await back.click();
   await expect(back).toBeDisabled();
 });
+
+test('Live-Aufnahme: Rec scharf, Start, Spurname tippen setzt einen Step; Zurück nimmt den Take zurück', async ({
+  page,
+}, info) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    localStorage.clear();
+  });
+  await page.reload();
+  const rec = page.getByRole('button', { name: 'Live-Aufnahme scharf schalten' });
+  const box = await rec.boundingBox();
+  if (info.project.name !== 'desktop')
+    expect(Math.min(box?.width ?? 0, box?.height ?? 0)).toBeGreaterThanOrEqual(44);
+  await page.getByRole('button', { name: 'Pattern leeren' }).click();
+  await rec.click();
+  await expect(rec).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('.play').click(); // zählt einen Takt vor (bei 90 BPM ≈ 2,7 s)
+  await page.waitForTimeout(3300);
+  const lab = page.getByRole('button', { name: 'Snare Drum wählen und anhören' });
+  await lab.click();
+  await lab.click();
+  await page.locator('.play').click(); // Stopp
+  const sd = page.locator('.tracks .row').nth(1).locator('.cell.on');
+  await expect(sd.first()).toBeVisible();
+  await page.getByRole('button', { name: 'Zurück', exact: true }).click();
+  await expect(sd).toHaveCount(0);
+});

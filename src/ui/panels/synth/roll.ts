@@ -10,6 +10,7 @@ import type { UiContext } from '../../context.ts';
 import { chip } from '../../controls/chip.ts';
 import { markColumn } from '../../controls/marker.ts';
 import { bind, h } from '../../dom.ts';
+import { recordTap } from '../../record.ts';
 import './roll.css';
 
 const LENGTHS = [
@@ -99,9 +100,17 @@ export function pianoRoll(c: UiContext): HTMLElement {
       attrs: { type: 'button' },
       on: {
         click: () => {
-          audio.auditionNote(store.state.peek().part, d, 1);
+          const s = store.state.peek();
+          audio.auditionNote(s.part, d, 1);
         },
       },
+    });
+    recordTap(c, lab, () => {
+      const s = store.state.peek();
+      return {
+        make: (pos) => ({ kind: 'note', part: s.part, degree: d, length: s.noteLen, ...pos }),
+        label: degreeName(d, s),
+      };
     });
     bind(
       scope,

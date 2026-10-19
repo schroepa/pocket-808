@@ -1,4 +1,4 @@
-import type { Note, Part, State, VoiceId } from '../core/types.ts';
+import type { Note, Part, Slot, State, VoiceId } from '../core/types.ts';
 import type { SampleBank } from '../store/samples.ts';
 import type { ReadonlySignal } from '../store/signals.ts';
 import type { Store } from '../store/store.ts';
@@ -16,6 +16,11 @@ export interface UiAudio {
   readonly playhead: ReadonlySignal<{ step: number; songIndex: number }>;
   start(): void;
   stop(): void;
+  /** Live-Aufnahme (Etappe 8b): scharf, Take-Zähler und der Step, auf den ein Schlag jetzt rastet */
+  readonly recording: ReadonlySignal<boolean>;
+  setRecording(on: boolean): void;
+  readonly takeId: ReadonlySignal<number>;
+  nearestStep(): { step: number; slot: Slot } | null;
   tick(): void;
   audition(voice: VoiceId): void;
   /** Stufe des Parts vorhören (Länge in Steps) */

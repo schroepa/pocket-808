@@ -232,3 +232,11 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 |---|---|---|---|
 | Zurück (Knopf, ⌘/Strg+Z) | bis zu 20 Schritte nacheinander, älteste fallen heraus | ✅ | `store.test.ts`, `core-pattern.test.ts`, `app.spec.ts` |
 | Tap (Deck), Taste T | Tempo aus dem Mittel der letzten Tipps (60–200 BPM), neue Folge nach 2 s Pause, ohne Zurück | ✅ | `core/tap.test.ts`, `panels-head.test.ts`, `keys.test.ts`, `app.spec.ts` |
+
+## Live-Aufnahme (Roadmap-Etappe 8b)
+
+| Handlung | Wirkung | Stand | Test |
+|---|---|---|---|
+| Rec (Transport) | Aufnahme scharf; ein Start zählt einen Takt vor | ✅ | `transport` in `record.test.ts`, `engine.test.ts`, `app.spec.ts` |
+| Spurname, Pad, Tastatur, Tonname der Roll | Schlag rastet auf den nächsten Step und wird gesetzt (Overdub, Song: laufendes Pattern) | ✅ | `core/record.test.ts`, `record.test.ts`, `engine.test.ts` |
+| Take | alle Schläge bis Stopp = ein Zurück-Schritt | ✅ | `store.test.ts`, `record.test.ts`, `app.spec.ts` |

@@ -186,6 +186,52 @@ describe('Undo und Zwischenablage', () => {
     expect(store.state.value.patterns.A).toBe(before.patterns.A);
   });
 
+  it('Take: ein Zurück-Schritt für alle aufgenommenen Schläge, auch über mehrere Slots', () => {
+    const store = createStore(baseState());
+    const before = store.state.value;
+    store.recordHit({ kind: 'drum', voice: 'CP', step: 1, slot: 'A' }, 1);
+    store.recordHit({ kind: 'drum', voice: 'CP', step: 9, slot: 'A' }, 1);
+    store.recordHit({ kind: 'note', part: 'BA', degree: 2, step: 3, slot: 'A', length: 1 }, 1);
+    store.recordHit({ kind: 'drum', voice: 'CP', step: 2, slot: 'B' }, 1);
+    expect(store.state.value.patterns.A.CP[9]).toBe(1);
+    expect(store.state.value.patterns.B.CP[2]).toBe(1);
+    store.undo();
+    expect(store.state.value.patterns.A).toBe(before.patterns.A);
+    expect(store.state.value.patterns.B).toBe(before.patterns.B);
+    expect(store.canUndo.value).toBe(false);
+  });
+
+  it('Take: ein Schlag ohne Änderung legt keinen Zurück-Schritt an', () => {
+    const store = createStore(baseState());
+    store.toggleStep('BD', 3); // ohne Zurück-Schritt
+    store.recordHit({ kind: 'drum', voice: 'BD', step: 3, slot: 'A' }, 1);
+    expect(store.canUndo.value).toBe(false);
+  });
+
+  it('Take: nach einem Zurück beginnt der nächste Schlag einen neuen Zurück-Schritt', () => {
+    const store = createStore(baseState());
+    store.clearPattern(); // fremde frühere Aktion
+    const afterClear = store.state.value;
+    store.recordHit({ kind: 'drum', voice: 'CP', step: 1, slot: 'A' }, 5);
+    store.undo(); // nimmt nur den Take zurück
+    expect(store.state.value.patterns.A).toBe(afterClear.patterns.A);
+    store.recordHit({ kind: 'drum', voice: 'CP', step: 4, slot: 'A' }, 5); // gleicher Take, Schritt weg
+    store.undo(); // wieder nur die Schläge, nicht „Pattern leeren“
+    expect(store.state.value.patterns.A).toBe(afterClear.patterns.A);
+    expect(store.canUndo.value).toBe(true);
+  });
+
+  it('neuer Take (andere takeId) bekommt einen eigenen Zurück-Schritt', () => {
+    const store = createStore(baseState());
+    store.recordHit({ kind: 'drum', voice: 'CP', step: 1, slot: 'A' }, 1);
+    store.recordHit({ kind: 'drum', voice: 'CP', step: 5, slot: 'A' }, 2);
+    store.undo();
+    expect(store.state.value.patterns.A.CP[1]).toBe(1);
+    expect(store.state.value.patterns.A.CP[5]).toBe(0);
+    store.undo();
+    expect(store.state.value.patterns.A.CP[1]).toBe(0);
+  });
+
   it('Preset legt Schnappschuss an, einfache Steps nicht', () => {
     const store = createStore(baseState());
     store.toggleStep('BD', 0);

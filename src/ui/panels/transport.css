@@ -21,6 +21,20 @@
     text-transform: uppercase;
     box-shadow: var(--glow-cream);
   }
+  /* schmales Telefon: Start/Stopp nur als Symbol (Beschriftung bleibt für Screenreader), damit Rec Platz hat */
+  @media (max-width: 420px) {
+    .play span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    .play {
+      gap: 0;
+    }
+  }
   .play.on {
     z-index: 1;
     background: var(--acc);
@@ -28,6 +42,25 @@
   }
 }
 @layer components {
+  .rec-btn {
+    flex: 0 0 auto;
+    min-width: var(--touch);
+    min-height: 52px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--cell);
+    color: var(--ink);
+    font: 700 15px var(--font-display);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .rec-btn.on {
+    z-index: 1;
+    background: var(--acc);
+    color: var(--chassis);
+    box-shadow: var(--glow-acc);
+  }
   .fill-btn {
     flex: 0 0 auto;
     min-width: var(--touch);
@@ -47,5 +80,32 @@
     background: var(--acc);
     color: var(--chassis);
     box-shadow: var(--glow-acc);
+  }
+}
+
+/* Desktop: Kopfleiste schmal, Knöpfe kompakt, Start/Stopp nur als Symbol; bricht notfalls um */
+@layer components {
+  [data-layout='desktop'] .transport {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  [data-layout='desktop'] :is(.fill-btn, .rec-btn) {
+    padding: 0 8px;
+    min-width: 44px;
+  }
+  [data-layout='desktop'] .transport .seg button {
+    padding: 0 9px;
+  }
+  [data-layout='desktop'] .play {
+    flex: 1 1 56px;
+    gap: 0;
+  }
+  [data-layout='desktop'] .play span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }
