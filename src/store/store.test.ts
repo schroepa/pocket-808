@@ -186,6 +186,20 @@ describe('Undo und Zwischenablage', () => {
     expect(store.state.value.patterns.A).toBe(before.patterns.A);
   });
 
+  it('Take: ein Zurück-Schritt für alle aufgenommenen Schläge', () => {
+    const store = createStore(baseState());
+    const before = store.state.value;
+    store.beginTake();
+    store.recordHit({ kind: 'drum', voice: 'CP', step: 1, slot: 'A' });
+    store.recordHit({ kind: 'drum', voice: 'CP', step: 9, slot: 'A' });
+    store.recordHit({ kind: 'note', part: 'BA', degree: 2, step: 3, slot: 'A', length: 1 });
+    expect(store.state.value.patterns.A.CP[1]).toBe(1);
+    expect(store.state.value.patterns.A.CP[9]).toBe(1);
+    store.undo();
+    expect(store.state.value.patterns.A).toBe(before.patterns.A);
+    expect(store.canUndo.value).toBe(false);
+  });
+
   it('Preset legt Schnappschuss an, einfache Steps nicht', () => {
     const store = createStore(baseState());
     store.toggleStep('BD', 0);

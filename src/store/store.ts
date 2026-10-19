@@ -15,6 +15,7 @@ import {
 } from '../core/pattern.ts';
 import { distributeSlices } from '../core/chop.ts';
 import { cycleChord, toggleNoteFlag } from '../core/notes.ts';
+import { recordHit, type RecHit } from '../core/record.ts';
 import { applyPreset } from '../core/presets.ts';
 import {
   appendToSong,
@@ -50,6 +51,10 @@ export interface Store {
   toggleNoteFlag(flag: 'a' | 's', step: number): void;
   /** Akkord der Note unter `step` weiterschalten */
   cycleChord(step: number): void;
+  /** Live-Aufnahme: Zurück-Schritt für einen neuen Take (alle Schläge bis zum Stopp gehören dazu) */
+  beginTake(): void;
+  /** Live-Aufnahme: einen eingespielten Schlag ins Pattern setzen (ohne eigenen Zurück-Schritt) */
+  recordHit(hit: RecHit): void;
   /** Slices des Pads der Reihe nach auf seine gesetzten Steps legen (mit Zurück) */
   distributeSlices(pad: number): void;
   clearNotes(): void;
@@ -162,6 +167,12 @@ export function createStore(
     },
     toggleNoteFlag: (flag, step) => {
       update((s) => toggleNoteFlag(s, flag, step));
+    },
+    beginTake: () => {
+      withUndo((s) => s);
+    },
+    recordHit: (hit) => {
+      update((s) => recordHit(s, hit));
     },
     distributeSlices: (pad) => {
       withUndo((s) => distributeSlices(s, pad));
