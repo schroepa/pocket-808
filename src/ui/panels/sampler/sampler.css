@@ -104,6 +104,9 @@
     gap: 8px;
     margin-bottom: 12px;
   }
+  .smp-chop .seg button {
+    min-width: 44px;
+  }
   .smp-keys {
     margin-top: 14px;
   }
