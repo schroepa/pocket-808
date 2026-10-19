@@ -3,6 +3,7 @@ import { signal } from '../../../store/signals.ts';
 import type { UiContext } from '../../context.ts';
 import { chip } from '../../controls/chip.ts';
 import { bind, h } from '../../dom.ts';
+import { recordInput } from '../../record.ts';
 import { padState } from './common.ts';
 
 /** Tasten einer Oktave: Halbton über C, Name, schwarz? */
@@ -52,7 +53,14 @@ export function samplerKeyboard(c: UiContext): HTMLElement {
       on: {
         click: () => {
           const i = sel.peek();
-          if (samples.pads.peek()[i]) audio.auditionPad(i, semi + oct.peek() * 12);
+          if (!samples.pads.peek()[i]) return;
+          const semis = semi + oct.peek() * 12;
+          audio.auditionPad(i, semis);
+          recordInput(
+            c,
+            (pos) => ({ kind: 'pad', pad: i, semis, ...pos }),
+            `Pad ${String(i + 1)} ${name}`,
+          );
         },
       },
     });

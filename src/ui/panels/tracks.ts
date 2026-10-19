@@ -5,6 +5,7 @@ import { markColumn } from '../controls/marker.ts';
 import { stepButton } from '../controls/step-button.ts';
 import { bind, h } from '../dom.ts';
 import { must } from '../../core/util.ts';
+import { recordInput } from '../record.ts';
 import { optLook } from './step-opts.ts';
 import { drumOn, toggleWithAudition } from './voice.ts';
 import './tracks.css';
@@ -43,6 +44,7 @@ export function tracks(c: UiContext): HTMLElement {
         click: () => {
           select(i);
           audio.audition(v.id);
+          recordInput(c, (pos) => ({ kind: 'drum', voice: v.id, ...pos }), v.id);
         },
       },
     });

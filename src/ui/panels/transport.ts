@@ -49,6 +49,29 @@ export function transport(c: UiContext): HTMLElement {
       label.textContent = on ? 'Stopp' : 'Start';
     },
   );
+  // Rec: Aufnahme scharf; ein Start zählt dann einen Takt vor (Etappe 8b)
+  const rec = h('button', {
+    class: 'rec-btn',
+    text: 'Rec',
+    attrs: {
+      type: 'button',
+      'aria-label': 'Live-Aufnahme scharf schalten',
+      'aria-pressed': 'false',
+    },
+    on: {
+      click: () => {
+        audio.setRecording(!audio.recording.peek());
+      },
+    },
+  });
+  bind(
+    scope,
+    () => audio.recording.value,
+    (on) => {
+      rec.classList.toggle('on', on);
+      rec.setAttribute('aria-pressed', String(on));
+    },
+  );
   return h('div', { class: 'transport', attrs: { 'data-area': 'transport' } }, [
     segment(scope, {
       label: 'Wiedergabe',
@@ -72,6 +95,7 @@ export function transport(c: UiContext): HTMLElement {
         audio.setFill(false);
       },
     }),
+    rec,
     play,
   ]);
 }

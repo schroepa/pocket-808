@@ -4,6 +4,7 @@ import { selectPad } from '../../../core/sampler.ts';
 import { must } from '../../../core/util.ts';
 import type { UiContext } from '../../context.ts';
 import { bind, h } from '../../dom.ts';
+import { recordInput } from '../../record.ts';
 import { hearPad } from './common.ts';
 
 /** Acht Pads: wählen und vorhören, Name bzw. „leer“, Inhaltspunkt (Legacy buildSmp/renderSmp) */
@@ -20,6 +21,12 @@ export function samplerPads(c: UiContext): HTMLElement {
           click: () => {
             store.update((s) => selectPad(s, i));
             hearPad(c, i);
+            if (samples.pads.peek()[i])
+              recordInput(
+                c,
+                (pos) => ({ kind: 'pad', pad: i, semis: 0, ...pos }),
+                `Pad ${String(i + 1)}`,
+              );
           },
         },
       },
