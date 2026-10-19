@@ -81,3 +81,34 @@ test('Pattern wählen und Spur wählen', async ({ page }) => {
   await page.getByRole('button', { name: 'Snare Drum wählen und anhören' }).click();
   await expect(page.locator('[data-area=editor] h2')).toContainText('SD');
 });
+
+test('Tap-Tempo setzt das Tempo, mehrstufiges Zurück nimmt zwei Änderungen nacheinander zurück', async ({
+  page,
+}, info) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    localStorage.clear();
+  });
+  await page.reload();
+  const tap = page.getByRole('button', { name: 'Tempo antippen' });
+  const box = await tap.boundingBox();
+  if (info.project.name !== 'desktop')
+    expect(Math.min(box?.width ?? 0, box?.height ?? 0)).toBeGreaterThanOrEqual(44);
+  await tap.click();
+  await page.waitForTimeout(500);
+  await tap.click();
+  const bpm = Number(await page.locator('.lcd-digits').textContent());
+  expect(bpm).toBeGreaterThanOrEqual(60);
+  expect(bpm).toBeLessThanOrEqual(200);
+  expect(bpm).not.toBe(90);
+
+  // zwei Änderungen mit Zurück, dann zweimal zurück bis der Knopf leer ist
+  await page.getByRole('button', { name: 'Pattern leeren' }).click();
+  await page.getByRole('button', { name: 'House' }).click();
+  const back = page.getByRole('button', { name: 'Zurück', exact: true });
+  await expect(back).toBeEnabled();
+  await back.click();
+  await expect(back).toBeEnabled();
+  await back.click();
+  await expect(back).toBeDisabled();
+});

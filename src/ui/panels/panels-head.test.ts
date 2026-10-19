@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { makeContext, pointer } from '../test-utils.ts';
 import { brand } from './brand.ts';
 import { deck } from './deck.ts';
@@ -25,6 +25,22 @@ describe('deck', () => {
     store.update((s) => ({ ...s, tempo: 95 }));
     expect(digits()).toBe('095');
     expect(el.querySelector('.lcd-sub')?.textContent).toBe('BD · Bass Drum');
+  });
+
+  it('Tap-Knopf: erster Tipp meldet, zweiter setzt das Tempo (ohne Zurück)', () => {
+    const { c, store } = makeContext();
+    const el = deck(c);
+    const btn = el.querySelector<HTMLButtonElement>('[aria-label="Tempo antippen"]');
+    const now = vi.spyOn(performance, 'now');
+    now.mockReturnValue(5_000);
+    btn?.click();
+    expect(c.readout.text.value).toBe('TAP · weiter tippen');
+    now.mockReturnValue(5_400);
+    btn?.click();
+    expect(store.state.value.tempo).toBe(150);
+    expect(el.querySelector('.lcd-digits')?.textContent).toBe('150');
+    expect(store.canUndo.value).toBe(false);
+    now.mockRestore();
   });
 
   it('Tempo-, Swing- und Master-Regler schreiben in den Store', () => {
