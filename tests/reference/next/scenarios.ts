@@ -754,6 +754,31 @@ export async function lockHits(): Promise<Hit[]> {
   return log;
 }
 
+/** Chop und Pitch: Pad 0 in 4 Slices; Steps 0/4/8/12 mit Slice 1, Pitch +12, Pitch −12 und Slice 3. */
+export async function chopHits(): Promise<Hit[]> {
+  const log: Hit[] = [];
+  let on = false;
+  await play({
+    seconds: 4.5,
+    playFor: 4,
+    seed: 1,
+    setup: (s) => {
+      isolate(s);
+      const row = must(s.patterns.A.smp[0], 'Pad 0');
+      for (const st of [0, 4, 8, 12]) row[st] = 1;
+      s.smp.pads[0] = { ...must(s.smp.pads[0], 'Pad 0'), start: 0, end: 1, sl: 4 };
+      s.patterns.A.opt = {
+        P0: { 0: { k: 1 }, 4: { n: 12 }, 8: { n: -12, k: 0 }, 12: { k: 3 } },
+      };
+    },
+    instrument: recordHits(log, 4, () => on),
+    afterPrerender: () => {
+      on = true;
+    },
+  });
+  return log;
+}
+
 /** Fill: BD Step 0 „Fill“, Step 8 „Nicht Fill“; Fill gehalten von 1,5 s bis 3,5 s. */
 export async function fillHits(): Promise<number[]> {
   const log: Hit[] = [];
@@ -952,6 +977,7 @@ export async function synthAttrs(args: {
 }
 
 export const SCENARIOS: Record<string, (args: never) => Promise<unknown>> = {
+  chopHits,
   synthAttrs,
   punchProbe,
   echoTail,

@@ -2,6 +2,7 @@ import { CHANNELS, PARTS, VOICE_IDS } from '../core/constants.ts';
 import { audibleChannels } from '../core/mix.ts';
 import { degreeToMidi, effectiveLength } from '../core/music.ts';
 import { arpSequence } from '../core/arp.ts';
+import { padPitch, sliceRange } from '../core/chop.ts';
 import { noteMidis } from '../core/notes.ts';
 import { subStepsOf } from '../core/pattern.ts';
 import type { Rng } from '../core/random.ts';
@@ -95,7 +96,8 @@ export interface Engine {
   audition(voice: VoiceId): void;
   /** Stufe vorhören; mit `note` samt Akkord und Akzent (Slide braucht eine Vorgängerin, entfällt) */
   auditionNote(part: Part, degree: number, length?: number, note?: Note): void;
-  auditionPad(pad: number): void;
+  /** Pad vorhören, optional um `semis` Halbtöne verstimmt (Tastatur, Etappe 7) */
+  auditionPad(pad: number, semis?: number): void;
   stutterOn(fraction: number): void;
   stutterOff(): void;
   /** Fill-Taste gehalten (Bedingungen „Fill“/„Nicht Fill“) */
@@ -444,6 +446,9 @@ export function createEngine(o: EngineOptions): Engine {
         start: lock.s === undefined ? p.start : Math.min(lock.s, p.end - 0.02),
       };
     }
+    // Chop (Slice des Steps ersetzt Start und Ende) und Pitch in Halbtönen, ohne neue Knoten
+    if (lock?.k !== undefined) p = { ...p, ...sliceRange(p, lock.k) };
+    if (lock?.n !== undefined) p = { ...p, tune: padPitch(p.tune, lock.n) };
     sampler.play(pad, t, p, graph.chan.SM.in);
   };
   /** Bedingung (Durchlauf n, Fill) und Wahrscheinlichkeit eines Steps; liefert die Optionen oder null */
@@ -619,9 +624,9 @@ export function createEngine(o: EngineOptions): Engine {
         { accent: note?.a === true },
       );
     },
-    auditionPad(pad) {
+    auditionPad(pad, semis) {
       if (!gesture()) return;
-      if (sampler?.has(pad)) schedulePad(pad, now() + 0.005);
+      if (sampler?.has(pad)) schedulePad(pad, now() + 0.005, 1, semis ? { n: semis } : undefined);
     },
     stutterOn(fraction) {
       if (!gesture()) return;
