@@ -1,6 +1,6 @@
 # Etappe 10a: Chorus und Drive pro Part – Entwurf (kurz)
 
-Stand: 2026-11-25. Erster von drei Schritten, um den Synth reicher zu machen. Noch nicht freigegeben.
+Stand: 2026-11-25. Erster von drei Schritten, um den Synth reicher zu machen. Freigegeben am 2026-11-25, mit der Änderung, dass die Presets die Effekte gleich nutzen.
 
 ## Absicht
 
@@ -26,14 +26,17 @@ Gewählt am 2026-11-25: **A, nacheinander**; C später daraufsetzen. Folgeschrit
 ## Nicht-Ziele
 
 - Keine Effekte für Drums oder Sampler.
-- Presets und Vorlagen werden nicht neu abgestimmt. Das folgt erst nach dem Hören.
+- Die Vorlagen werden nicht einzeln neu abgestimmt; sie erben die Effekte ihrer Presets.
 - Kein Unisono, keine neuen Wellenformen (10b).
 
 ## Bedienung
 
 - Neues Synth-Modul **„Effekt“** mit den Knobs Drive und Chorus. Doppeltipp setzt auf 0. Das LCD zeigt Prozent.
 - Touch-Ziele ≥ 44 px, Design-Regeln aus CLAUDE.md.
-- Synth-Presets ändern Drive und Chorus nicht (wie bei Arp und LFO). Eine geladene Vorlage („Alles“ oder „Sound“) setzt den ganzen Patch und damit beide auf 0.
+- **Synth-Presets setzen Drive und Chorus** passend zu ihrem Charakter (auch zurück auf 0): Bässe vor allem Drive, Flächen und Leads vor allem Chorus. Arp und LFO bleiben wie bisher unberührt.
+- Geladene Vorlagen („Alles“ oder „Sound“) übernehmen die Werte ihrer Presets.
+- Wer an Drive oder Chorus dreht, hebt die Preset-Markierung auf (wie bei den anderen Klang-Reglern).
+- Der Startzustand und gespeicherte Stände bleiben unverändert: Die neuen Werte wirken erst, wenn ein Preset oder eine Vorlage geladen wird.
 
 ## Speicherformat
 
