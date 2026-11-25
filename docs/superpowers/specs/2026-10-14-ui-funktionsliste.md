@@ -215,7 +215,7 @@ Sound zeigt die Plattenkiste: auf dem Telefon mit Reitern (Start bei „Vorlagen
 | Opt | Opt-Modus, schließt Sub aus; Tipp wählt, schaltet ausgeschaltete Steps ein | Spur (Drum, Sampler) › Trig | ✅ | `step-opts.test.ts` „Opt-Modus: Panel erscheint, Tipp auf einen ausgeschalteten Step schaltet ihn ein und wählt ihn“, „Opt und Sub schließen sich aus; ausgeschalteter gewählter Step blendet die Regler aus“; `stepopts.spec.ts` „Opt-Modus: Step einschalten, Leise, Bedingung 1:2; bleibt nach Neuladen“ |
 | Velocity, Leise/Mittel/Voll | Pegel v², Helligkeit des Steps | Spur › Trig › Opt | ✅ | `core/stepopts.test.ts`; `next-stepopts.test.ts`; `step-opts.test.ts` „Velocity per Knob und Schnellwahl, Chance, Bedingung, Zurücksetzen (mit Zurück)“ |
 | Chance | Wahrscheinlichkeit pro Step, einmal gewürfelt | Spur › Trig › Opt | ✅ | `next-stepopts.test.ts`; `step-opts.test.ts` „Velocity per Knob und Schnellwahl, Chance, Bedingung, Zurücksetzen (mit Zurück)“ |
-| Bedingung | 1:2 … 4:4, Erster, Nicht erster; Zählung je Slot ab Start | Spur › Trig › Opt | ✅ | `core/stepopts.test.ts`; `next-stepopts.test.ts` |
+| Bedingung | 1:2 … 4:4, Erster, Nicht erster; Zählung je Slot ab Start | Spur › Trig › Opt | ✅ | `core/stepopts.test.ts` „Bedingungen mit Beschriftungen, Velocity als Pegel v²“; `next-stepopts.test.ts` „Bedingungen zählen die Durchläufe ab Start“ |
 | Zurücksetzen | Standard (mit Zurück) | Spur › Trig › Opt | ✅ | `step-opts.test.ts` „Velocity per Knob und Schnellwahl, Chance, Bedingung, Zurücksetzen (mit Zurück)“ |
 | Marke am Step | Chance, Bedingung, Lock, Pitch oder Slice markieren den Step (Steps und Alle Spuren) | Step-Bereich | ✅ | `step-opts.test.ts` „Spurzellen zeigen Velocity und Marke“; `step-area.test.ts` „Velocity und Marke am Step; Lauflicht markiert genau den laufenden“ |
 | Speichern | optionales `opt` im Pattern, alte Stände bytegleich | — | ✅ | `core/stepopts.test.ts`; `core-persist.test.ts`; `stepopts.spec.ts` „Opt-Modus: Step einschalten, Leise, Bedingung 1:2; bleibt nach Neuladen“ |
@@ -235,7 +235,7 @@ Sound zeigt die Plattenkiste: auf dem Telefon mit Reitern (Start bei „Vorlagen
 |---|---|---|---|---|
 | Punch-Pads halten | acht Haltetasten, mehrere zugleich; Moduswechsel löst alle | Punch | ✅ | `punch/punch.test.ts` „8 Haltetasten; mehrere zugleich halten, einzeln loslassen; Abbau löst alle“, „acht Haltetasten ohne Gerät; Ausblenden löst“; `shell.test.ts` „Punch gehalten, Moduswechsel → punchOff“; `punch.spec.ts` „Punch: acht Haltetasten im Fenster, halten und loslassen“; `a11y.spec.ts` „keine schweren Verstöße mit offenem Punch (axe)“ |
 | Loop 1/8, Loop 1/16, Tape, Crush | ersetzen das trockene Signal, schließen sich gegenseitig aus | Punch | ✅ | `engine.test.ts` „Punch: ersetzende Effekte lösen sich ab, andere kombinieren; Stopp löst alles“; `next-punch.test.ts` |
-| Half, Tief, Hoch, Echo | Takt bzw. Filter bzw. Zusatz, frei kombinierbar | Punch | ✅ | `next-punch.test.ts` |
+| Half, Tief, Hoch, Echo | Takt bzw. Filter bzw. Zusatz, frei kombinierbar | Punch | ✅ | `next-punch.test.ts` „Half-Time verdoppelt den Step-Abstand nur solange gehalten“, „Tiefpass und Hochpass verschieben den Schwerpunkt, danach zurück“, „Echo klingt nach dem Loslassen aus“ |
 | Bounce | Pattern auf das Pad, volles Pad nach Rückfrage, höchstens 3 s | Spur (Sampler) › Klang | ✅ | `bounce.test.ts` „leeres Pad: rendert das Pattern im Pattern-Modus und legt es als „Bounce“ ab“, „volles Pad: erst fragen; Abbrechen tut nichts, Ersetzen bounct“; `punch.spec.ts` „Bounce ins leere Pad 5: Name „Bounce“, bleibt nach Neuladen“ |
 
 ## Spielspaß
@@ -255,7 +255,7 @@ Würfeln steht unter „Pattern-Fläche“.
 | Akzent | Note lauter (× 1,35) und mit mehr Filter-Env, hellere Füllung | Spur (Synth) › Noten | ✅ | `core/notes.test.ts`; `next-synth-attrs.test.ts`; `synth/synth.test.ts` „Werkzeug Akzent und Slide schalten die Note unter dem Tipp um, leere Zellen bleiben leer“ |
 | Slide | gleitet in 60 ms von der klingenden Vorgängerin, ohne neuen Attack; Marke links | Spur (Synth) › Noten | ✅ | `next-synth-attrs.test.ts`; `synth/synth.test.ts` „Werkzeug Akzent und Slide schalten die Note unter dem Tipp um, leere Zellen bleiben leer“ |
 | Akkord | kein → Dreiklang → Vierklang → Quinte → Oktave, in der Tonart gestapelt, paraphon; Kürzel 3/4/5/8 und Meldung | Spur (Synth) › Noten | ✅ | `core/notes.test.ts`; `next-synth-attrs.test.ts`; `synth/synth.test.ts` „Werkzeug Akkord schaltet weiter, zeigt das Kürzel und meldet im LCD“; `synth.spec.ts` „Werkzeug: Akkord und Akzent setzen, bleibt nach Neuladen“ |
-| Speichern | optionale Felder `a`, `s`, `ch` in der Note, alte Stände bytegleich, kaputte Werte fallen weg | — | ✅ | `core/notes.test.ts`; `core-persist.test.ts` |
+| Speichern | optionale Felder `a`, `s`, `ch` in der Note, alte Stände bytegleich, kaputte Werte fallen weg | — | ✅ | `core/notes.test.ts` „Speicherformat: Rundreise, kaputte Werte fallen weg, alte Noten bleiben schlank“; `core-persist.test.ts` |
 
 ## Arpeggiator und LFO
 
@@ -265,7 +265,7 @@ Würfeln steht unter „Pattern-Fläche“.
 | Arp-Rate 1/16 / 1/32, Oktaven 1 / 2 | Abstand und Tonvorrat, im Aus vorwählbar | Spur (Synth) › Bewegung | ✅ | `core/arp.test.ts`; `synth/synth.test.ts` „Arp: Modus schaltet ein und aus, Rate und Oktaven gelten (auch vorgewählt im Aus)“, „Arp-Rate bleibt vorgewählt, nachdem die Seite ausgeblendet war“ |
 | LFO Rate, Depth (Doppeltipp: 0,5 bzw. aus) | 0,1–19 Hz, Hub bis ±2 Oktaven (Cutoff) bzw. ±1 Halbton (Pitch); ohne Vorhören | Spur (Synth) › Bewegung | ✅ | `engine.test.ts` „LFO je Part: erst bei Depth > 0 angelegt, bei 0 gestoppt und verworfen, live geändert“; `next-synth-attrs.test.ts`; `synth/synth.test.ts` „LFO: Depth und Rate als Knobs mit LCD in Hz, Ziel als Segment, Part-Wechsel zeigt den anderen“, „Doppeltipp: Depth auf 0 (aus), Rate auf 0,5“ |
 | LFO-Ziel Cutoff / Pitch | gilt ab der nächsten Note | Spur (Synth) › Bewegung | ✅ | `engine.test.ts` „LFO-Zielwechsel ändert den Hub schon verbundener Noten nicht; Depth 0 blendet vor dem Stopp aus“; `synth.spec.ts` „Arp und LFO setzen, bleibt nach Neuladen“ |
-| Speichern | optionale Felder `arp`, `lfo` im Patch, alte Stände bytegleich, Presets lassen sie stehen | — | ✅ | `core/arp.test.ts`; `core-persist.test.ts` |
+| Speichern | optionale Felder `arp`, `lfo` im Patch, alte Stände bytegleich, Presets lassen sie stehen | — | ✅ | `core/arp.test.ts` „Rundreise; ohne Arp/LFO keine Felder; kaputte Werte fallen weg“, „Preset laden lässt Arp und LFO stehen“; `core-persist.test.ts` |
 
 ## Sampler: Chop, Pitch und Tastatur
 
@@ -276,7 +276,7 @@ Würfeln steht unter „Pattern-Fläche“.
 | Pitch pro Step (− / Wert / +) | −12…+12 Halbtöne, Wert tippen setzt zurück | Spur (Sampler) › Trig › Opt | ✅ | `next-locks.test.ts`; `step-opts.test.ts` „Pitch in Halbtönen mit − / + und Zurücksetzen, Slice-Auswahl, Marke am Step; nicht bei Drums“; `sampler.spec.ts` „Chop wählen, Pitch am Step setzen, bleibt nach Neuladen; Tastatur mit großen Zielen“ |
 | Slice pro Step | Auswahl Ganz / 1–8, ein k über der Slice-Zahl spielt das letzte | Spur (Sampler) › Trig › Opt | ✅ | `core/chop.test.ts`; `next-locks.test.ts`; `step-opts.test.ts` „Pitch in Halbtönen mit − / + und Zurücksetzen, Slice-Auswahl, Marke am Step; nicht bei Drums“ |
 | Tastatur | zwölf Tasten spielen das Pad (C = eigene Stimmung), Oktave −1…+1 | Spur (Sampler) › Tasten | ✅ | `sampler/sampler.test.ts` „zwölf Tasten, Tipp spielt das Pad verstimmt, Oktave ±1, leeres Pad bleibt still“; `sampler.spec.ts` „Chop wählen, Pitch am Step setzen, bleibt nach Neuladen; Tastatur mit großen Zielen“ |
-| Speichern | optional `sl`, `n`, `k`; alte Stände bleiben bytegleich | — | ✅ | `core/chop.test.ts`; `core-persist.test.ts` |
+| Speichern | optional `sl`, `n`, `k`; alte Stände bleiben bytegleich | — | ✅ | `core/chop.test.ts` „Speicher: Rundreise, nur bei Pads, Chop am Pad, kaputte Werte fallen weg, alte Stände schlank“; `core-persist.test.ts` |
 
 ## Undo-Stapel und Tap-Tempo
 
