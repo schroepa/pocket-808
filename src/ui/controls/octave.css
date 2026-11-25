@@ -1,0 +1,14 @@
+/* Oktav-Wahl: zwei Knöpfe um die Anzeige (Synth-Oszillator, Sampler-Tastatur) */
+@layer components {
+  .oct-grp {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .oct {
+    min-width: 60px;
+    text-align: center;
+    font: 14px var(--font-lcd);
+    color: var(--ink);
+  }
+}

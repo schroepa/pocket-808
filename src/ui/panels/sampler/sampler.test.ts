@@ -3,6 +3,10 @@ import { PAD_DEFAULT } from '../../../core/constants.ts';
 import { currentPattern } from '../../../core/pattern.ts';
 import { padSummary } from '../../../core/sampler.ts';
 import { must } from '../../../core/util.ts';
+import { signal } from '../../../store/signals.ts';
+import { show } from '../../controls/visible.ts';
+import type { Layout } from '../../layout.ts';
+import { createNav } from '../../nav.ts';
 import { makeContext, pointer } from '../../test-utils.ts';
 import { samplerDevice } from './device.ts';
 import { samplerChop } from './chop.ts';
@@ -10,6 +14,7 @@ import { samplerKeyboard } from './keyboard.ts';
 import { samplerKnobs } from './knobs.ts';
 import { createMessage } from './message.ts';
 import { samplerPads } from './pads.ts';
+import { samplerPages } from './pages.ts';
 import { samplerSteps } from './steps.ts';
 import { samplerTools } from './tools.ts';
 import { drawWave, samplerWave } from './wave.ts';
@@ -536,5 +541,79 @@ describe('samplerDevice', () => {
     ]) {
       expect(body.querySelector(s)).not.toBeNull();
     }
+  });
+});
+
+describe('samplerPages', () => {
+  function setup() {
+    const ctx = makeContext();
+    const nav = createNav(ctx.c.scope, ctx.c.store, signal<Layout>('mobile'));
+    const pages = samplerPages(ctx.c, nav);
+    const button = (root: Element, name: string) =>
+      must(
+        [...root.querySelectorAll<HTMLButtonElement>('button')].find(
+          (b) => b.getAttribute('aria-label') === name || b.textContent === name,
+        ),
+        name,
+      );
+    return { ...ctx, nav, pages, button };
+  }
+  const labels = (el: Element, selector: string) =>
+    [...el.querySelectorAll(selector)].map((e) => e.getAttribute('aria-label'));
+
+  it('jede Seite hat genau ihre Teile', () => {
+    const { pages } = setup();
+    const { head, trig, klang, chop, tasten } = pages;
+    expect(head.querySelectorAll('.pad')).toHaveLength(8);
+    expect(head.querySelector('[role=status]')).not.toBeNull();
+    expect(klang.querySelector('canvas')).not.toBeNull();
+    expect([...klang.querySelectorAll('.smp-tools > button')].map((b) => b.textContent)).toEqual([
+      'Laden',
+      'Rec',
+      'Rev',
+      'Leeren',
+      'Bounce',
+    ]);
+    expect(labels(klang, '[role=slider]')).toEqual(['Tune', 'Attack', 'Decay', 'Level']);
+    expect(klang.querySelector('.pad, [role=status], [role=radiogroup], .key')).toBeNull();
+    expect(labels(chop, '[role=radiogroup]')).toEqual(['Chop']);
+    expect(chop.querySelector('[aria-label="Slices auf die Steps verteilen"]')).not.toBeNull();
+    expect(tasten.querySelectorAll('.key')).toHaveLength(12);
+    expect(labels(trig, ':scope > .chips > button')).toEqual([
+      'Sub-Steps bearbeiten',
+      'Step-Optionen bearbeiten',
+      'Spur leeren',
+    ]);
+  });
+
+  it('Trig nutzt die Modi der Navigation', () => {
+    const { pages, nav, button } = setup();
+    button(pages.trig, 'Sub-Steps bearbeiten').click();
+    expect(nav.padSub.value.on).toBe(true);
+    button(pages.trig, 'Step-Optionen bearbeiten').click();
+    expect(nav.padOpt.value.on).toBe(true);
+    expect(nav.padSub.value.on).toBe(false);
+  });
+
+  it('Chop-Meldung steht in head, nicht in der ausgeblendeten Wellenform-Seite', () => {
+    const { pages, button } = setup();
+    show(pages.klang, false);
+    button(pages.chop, 'Slices auf die Steps verteilen').click();
+    const status = must(
+      pages.head.querySelector<HTMLElement>('[role=status]') ?? undefined,
+      'Meldung',
+    );
+    expect(status.textContent).toBe('Erst Chop wählen');
+    expect(status.closest('[hidden]')).toBeNull();
+    for (const page of [pages.klang, pages.chop]) {
+      expect(page.querySelector('[role=status]')).toBeNull();
+    }
+  });
+
+  it('Meldungen der Werkzeuge landen ebenfalls in head', async () => {
+    const { pages, button } = setup();
+    button(pages.klang, 'Laden').click();
+    await flush();
+    expect(pages.head.querySelector('[role=status]')?.textContent).toBe('Pad 1 geladen');
   });
 });

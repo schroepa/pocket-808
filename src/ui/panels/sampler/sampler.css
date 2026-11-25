@@ -94,6 +94,14 @@
     text-transform: uppercase;
     color: var(--acc);
   }
+  /* Meldung unter den Pads: liegt darüber, ohne etwas zu verschieben oder Tipps abzufangen */
+  .smp-head {
+    position: relative;
+  }
+  .smp-head .smp-msg {
+    z-index: 2;
+    pointer-events: none;
+  }
   .smp-tools {
     margin-bottom: 12px;
   }

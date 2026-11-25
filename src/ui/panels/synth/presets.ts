@@ -4,8 +4,8 @@ import type { UiContext } from '../../context.ts';
 import { chip } from '../../controls/chip.ts';
 import { bind, createScope, h } from '../../dom.ts';
 
-/** Presets des gewählten Parts und „Stimme leeren“ (Legacy synPresets, synTools). */
-export function synthPresets(c: UiContext): HTMLElement {
+/** Preset-Chips des gewählten Parts (Legacy synPresets) */
+export function synthSoundList(c: UiContext): HTMLElement {
   const { store, scope, audio } = c;
   const list = h('div', {
     class: 'chips syn-presets',
@@ -36,15 +36,23 @@ export function synthPresets(c: UiContext): HTMLElement {
       );
     },
   );
+  return list;
+}
+
+/** „Stimme leeren“: Noten des gewählten Parts löschen, mit Zurück (Legacy synTools) */
+export function clearVoiceChip(c: UiContext): HTMLElement {
+  return chip(c.scope, {
+    label: 'Stimme leeren',
+    onClick: () => {
+      c.store.clearNotes();
+    },
+  });
+}
+
+/** Presets des gewählten Parts und „Stimme leeren“ */
+export function synthPresets(c: UiContext): HTMLElement {
   return h('div', { class: 'syn-foot' }, [
-    list,
-    h('div', { class: 'chips syn-tools' }, [
-      chip(scope, {
-        label: 'Stimme leeren',
-        onClick: () => {
-          store.clearNotes();
-        },
-      }),
-    ]),
+    synthSoundList(c),
+    h('div', { class: 'chips syn-tools' }, [clearVoiceChip(c)]),
   ]);
 }

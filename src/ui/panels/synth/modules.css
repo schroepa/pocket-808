@@ -33,6 +33,21 @@
       grid-column: span 2;
     }
   }
+  /* Seiten des Geräts: je höchstens eine Hüllkurve, unter 640 px über die volle Breite */
+  .synth-page {
+    container: synth / inline-size;
+  }
+  .synth-page .sh {
+    margin-bottom: 0;
+  }
+  @container synth (max-width: 639px) {
+    .synth-page .shm.env {
+      grid-column: 1 / -1;
+    }
+  }
+  .synth-page .shm:only-child {
+    grid-column: 1 / -1;
+  }
   .shm h4 {
     margin: 0 0 10px 4px;
     font: 600 11px var(--font-display);
@@ -66,17 +81,6 @@
   }
   .syn-row.mid {
     align-items: center;
-  }
-  .oct-grp {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .oct {
-    min-width: 60px;
-    text-align: center;
-    font: 14px var(--font-lcd);
-    color: var(--ink);
   }
   .env-svg {
     display: block;
