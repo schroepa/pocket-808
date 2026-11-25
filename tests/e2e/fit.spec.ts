@@ -1,7 +1,8 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { expect, test } from './fixtures.ts';
 import {
   closeSheet,
+  openAllTracks,
   eachView,
   layoutOf,
   openMode,
@@ -21,16 +22,25 @@ import {
  * Seite, Trig mit offenem Sub- und Opt-Feld und die Flächen.
  */
 
-/** Bereiche, die laut Entwurf in sich scrollen dürfen: Listen der Plattenkiste und die Song-Kette */
-const SCROLLERS = ['.library-pages > section', '.song .chain'];
+/**
+ * Bereiche, die in sich scrollen dürfen: Listen der Plattenkiste, die Song-Kette und das Raster
+ * „Alle Spuren“ (Tablet, Desktop; seine Reiter nicht). Das Raster muss dabei mindestens vier Zeilen
+ * ganz zeigen.
+ */
+const SCROLLERS = ['.library-pages > section', '.song .chain', '.all-tracks'];
 /**
  * Ausnahme (Ruling Task 13): Am Telefon hochkant mit 390 × 660 passen die Step-Optionen eines
- * Sampler-Pads (Velocity, Chance, Bedingung, Pitch, drei Locks, Zurücksetzen) nicht ganz; nur dieses
- * Feld scrollt dann in sich, Reiter und Pad-Reihe sind dabei schon ausgeblendet.
+ * Sampler-Pads (Velocity, Chance, Bedingung, Slice, Pitch, drei Locks, Zurücksetzen) nicht ganz; nur
+ * dieses Feld scrollt dann in sich, höchstens um die gemessenen Pixel. Reiter und Pad-Reihe sind dabei
+ * schon ausgeblendet.
  */
 const FIELD = '.opt-panel, .sub-ed';
-const fieldMayScroll = (project: string, where: string): boolean =>
-  project === 'mobile' && where === 'Sampler Trig mit Opt';
+const FIELD_LIMIT: Readonly<Record<string, number>> = {
+  'Sampler Trig mit Opt': 24,
+  'Sampler Trig mit Opt und Chop': 24,
+};
+const fieldLimit = (project: string, where: string): number =>
+  project === 'mobile' ? (FIELD_LIMIT[where] ?? 0) : 0;
 /** dichte Raster: Steps, Sub-Steps, Noten-Steps, Notenrolle, Alle Spuren (samt Zeilen-Beschriftung) */
 const DENSE = '.step, .ss, .ns, .cell, .sb, .pc, .rl, .at-cell, .at-lab';
 const CONTROLS =
@@ -47,30 +57,58 @@ test.beforeEach(async ({ page }, info) => {
 
 type Check = (page: Page, where: string) => Promise<string[]>;
 
-/** Trig mit eingeschaltetem Sub- bzw. Opt-Feld; danach wieder aus */
+/** die Step-Tasten der gewählten Spur, auch wenn unten „Alle Spuren“ steht */
+async function stepsOf(page: Page): Promise<Locator> {
+  const all = page.locator('[data-area=steps] .all-tracks');
+  return (await all.isVisible()) ? all.locator('.at-row.sel .at-cell') : trackSteps(page);
+}
+
+/** Opt einschalten und einen Step wählen (sonst zeigt Opt keine Regler) */
+async function optOn(page: Page): Promise<Locator> {
+  const chip = work(page).getByRole('button', { name: 'Step-Optionen bearbeiten', exact: true });
+  await chip.click();
+  await expect(chip).toHaveAttribute('aria-pressed', 'true');
+  await (await stepsOf(page)).first().click();
+  await expect(page.locator('.opt-ctl:visible')).toHaveCount(1);
+  return chip;
+}
+
+async function off(chip: Locator): Promise<void> {
+  await chip.click();
+  await expect(chip).toHaveAttribute('aria-pressed', 'false');
+}
+
+/** Trig mit eingeschaltetem Sub- bzw. Opt-Feld, beim Sampler auch Opt mit Chop; danach wieder aus */
 async function withTrigField(
   page: Page,
   track: string,
   visit: (where: string) => Promise<void>,
+  prefix = '',
 ): Promise<void> {
   await pickTrack(page, track);
   await openPage(page, 'Trig');
-  for (const [name, label] of [
-    ['Sub', 'Sub-Steps bearbeiten'],
-    ['Opt', 'Step-Optionen bearbeiten'],
-  ] as const) {
-    const chip = work(page).getByRole('button', { name: label, exact: true });
-    await chip.click();
-    await expect(chip).toHaveAttribute('aria-pressed', 'true');
-    // Opt zeigt seine Regler erst für einen gewählten Step; Sub wählt beim Einschalten Step 1
-    if (name === 'Opt') {
-      await (await trackSteps(page)).first().click();
-      await expect(page.locator('.opt-ctl:visible')).toHaveCount(1);
-    }
-    await visit(`${track} Trig mit ${name}`);
-    await chip.click();
-    await expect(chip).toHaveAttribute('aria-pressed', 'false');
-  }
+  // Sub wählt beim Einschalten Step 1
+  const sub = work(page).getByRole('button', { name: 'Sub-Steps bearbeiten', exact: true });
+  await sub.click();
+  await expect(sub).toHaveAttribute('aria-pressed', 'true');
+  await visit(`${prefix}${track} Trig mit Sub`);
+  await off(sub);
+  const opt = await optOn(page);
+  await visit(`${prefix}${track} Trig mit Opt`);
+  await off(opt);
+  if (track !== 'Sampler') return;
+  const chop = async (n: string): Promise<void> => {
+    await openPage(page, 'Chop');
+    const radio = work(page).locator('.smp-chop [role=radio]', { hasText: n });
+    await radio.click();
+    await expect(radio).toHaveAttribute('aria-checked', 'true');
+    await openPage(page, 'Trig');
+  };
+  await chop('4');
+  const again = await optOn(page);
+  await visit(`${prefix}${track} Trig mit Opt und Chop`);
+  await off(again);
+  await chop('Aus');
 }
 
 /** alle Zustände des Geräts nacheinander; `check` liefert Fundstellen, gesammelt je Zustand */
@@ -80,20 +118,7 @@ async function walk(page: Page, check: Check): Promise<string[]> {
     for (const f of await check(page, where)) found.push(`${where}: ${f}`);
   };
   await visit('Start');
-  for (const track of ['Bass Drum', 'Bass', 'Sampler']) {
-    await pickTrack(page, track);
-    await eachView(page, (v) => visit(`${track} ${v}`));
-  }
-  await pickTrack(page, 'Bass');
-  await openRoll(page);
-  await visit('Bass Rolle');
-  await withTrigField(page, 'Bass Drum', visit);
-  await withTrigField(page, 'Sampler', visit);
-  for (const mode of ['Sound', 'Mixer', 'Song', 'Punch'] as const satisfies ModeName[]) {
-    await openMode(page, mode);
-    await eachView(page, (v) => visit(`${mode} ${v}`));
-  }
-  await openMode(page, 'Spur');
+  await tour(page, visit, '');
   for (const [name, open] of [
     ['Pattern', openPattern],
     ['Tempo', openTempo],
@@ -102,14 +127,50 @@ async function walk(page: Page, check: Check): Promise<string[]> {
     await visit(`Fläche ${name}`);
     await closeSheet(sheet);
   }
-  if ((await layoutOf(page)) === 'mobile') {
+  const layout = await layoutOf(page);
+  if (layout === 'mobile') {
     await page.getByRole('button', { name: 'Spur wählen', exact: true }).click();
     const sheet = page.getByRole('dialog', { name: 'Pad-Feld' });
     await expect(sheet).toBeVisible();
     await visit('Fläche Pad-Feld');
     await closeSheet(sheet);
   }
+  // Tablet: alles noch einmal mit „Alle Spuren“ unten (Desktop zeigt es immer)
+  if (layout === 'tablet') {
+    await openAllTracks(page);
+    await tour(page, visit, 'Alle Spuren: ');
+  }
   return found;
+}
+
+/** Spuren mit allen Ansichten, Rolle, Sub/Opt, die übrigen Modi (Song auch voll); endet in Spur */
+async function tour(
+  page: Page,
+  visit: (where: string) => Promise<void>,
+  prefix: string,
+): Promise<void> {
+  for (const track of ['Bass Drum', 'Bass', 'Sampler']) {
+    await pickTrack(page, track);
+    await eachView(page, (v) => visit(`${prefix}${track} ${v}`));
+  }
+  await pickTrack(page, 'Bass');
+  await openRoll(page);
+  await visit(`${prefix}Bass Rolle`);
+  await withTrigField(page, 'Bass Drum', visit, prefix);
+  await withTrigField(page, 'Sampler', visit, prefix);
+  for (const mode of ['Sound', 'Mixer', 'Song', 'Punch'] as const satisfies ModeName[]) {
+    await openMode(page, mode);
+    await eachView(page, (v) => visit(`${prefix}${mode} ${v}`));
+    if (mode !== 'Song') continue;
+    // volle Song-Kette (32 Positionen): nur die Kette scrollt, Kopf und Werkzeuge bleiben
+    const add = work(page).getByRole('button', { name: 'Aktuelles Pattern an den Song anhängen' });
+    while (await add.isEnabled()) await add.click();
+    await expect(work(page).locator('.blk')).toHaveCount(32);
+    await visit(`${prefix}Song mit 32 Positionen`);
+    await work(page).getByRole('button', { name: 'Leeren', exact: true }).click();
+    await expect(work(page).locator('.blk')).toHaveCount(0);
+  }
+  await openMode(page, 'Spur');
 }
 
 const documentScroll: Check = (page) =>
@@ -123,23 +184,37 @@ const documentScroll: Check = (page) =>
     return out;
   });
 
-/** Arbeitsfläche, Step-Bereich und das Sub-/Opt-Feld scrollen nicht (Feld: außer in der Ausnahme) */
+/**
+ * Arbeitsfläche, Step-Bereich und das Sub-/Opt-Feld scrollen nicht (Feld: höchstens um die Ausnahme);
+ * „Alle Spuren“ zeigt mindestens vier ganze Zeilen
+ */
 const middleScroll =
   (project: string): Check =>
   (page, where) =>
     page.evaluate(
-      ({ field, allowed }) => {
+      ({ field, limit }) => {
         const out: string[] = [];
-        const areas = `[data-area=work], [data-area=steps]${allowed ? '' : `, ${field}`}`;
-        for (const el of document.querySelectorAll<HTMLElement>(areas)) {
-          if (el.getClientRects().length === 0) continue;
-          const over = el.scrollHeight - el.clientHeight;
-          const name = el.dataset.area ?? el.className;
-          if (over > 1) out.push(`${name} scrollt ${over} px`);
+        const check = (selector: string, allowed: number): void => {
+          for (const el of document.querySelectorAll<HTMLElement>(selector)) {
+            if (el.getClientRects().length === 0) continue;
+            const over = el.scrollHeight - el.clientHeight;
+            const name = el.dataset.area ?? el.className;
+            if (over > allowed + 1) out.push(`${name} scrollt ${over} px`);
+          }
+        };
+        check('[data-area=work], [data-area=steps]', 0);
+        check(field, limit);
+        for (const grid of document.querySelectorAll<HTMLElement>('.all-tracks')) {
+          if (grid.getClientRects().length === 0) continue;
+          const box = grid.getBoundingClientRect();
+          const rows = [...grid.querySelectorAll('.at-row')].map((r) => r.getBoundingClientRect());
+          const whole = rows.filter((r) => r.top >= box.top - 1 && r.bottom <= box.bottom + 1);
+          if (whole.length < Math.min(4, rows.length))
+            out.push(`Alle Spuren zeigt nur ${whole.length} ganze Zeilen`);
         }
         return out;
       },
-      { field: FIELD, allowed: fieldMayScroll(project, where) },
+      { field: FIELD, limit: fieldLimit(project, where) },
     );
 
 const inView =
@@ -193,7 +268,7 @@ const inView =
       },
       {
         controls: CONTROLS,
-        scrollers: fieldMayScroll(project, where) ? [...scrollers, FIELD] : scrollers,
+        scrollers: fieldLimit(project, where) > 0 ? [...scrollers, FIELD] : scrollers,
       },
     );
 

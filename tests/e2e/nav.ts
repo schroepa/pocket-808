@@ -24,13 +24,21 @@ export async function openMode(page: Page, name: ModeName): Promise<void> {
 }
 
 /**
- * Die Taste, die eine Spur wählt und anspielt: Tablet und Desktop haben je Spur eine, das Telefon
- * öffnet dafür das Pad-Feld. Beim Sampler ist das dort das gewählte Pad.
+ * Die Taste, die eine Spur wählt und anspielt: Tablet und Desktop haben je Spur eine (Tablet mit
+ * „Alle Spuren“: die Zeilen-Beschriftung), das Telefon öffnet dafür das Pad-Feld. Beim Sampler ist das
+ * dort das gewählte Pad, im Raster die erste Pad-Zeile.
  */
 export async function trackButton(page: Page, name: string): Promise<Locator> {
   const label = `${name} wählen und anhören`;
-  if ((await layoutOf(page)) !== 'mobile')
-    return page.locator('[data-area=tracks]').getByRole('button', { name: label, exact: true });
+  if ((await layoutOf(page)) !== 'mobile') {
+    const keys = page.locator('[data-area=tracks]');
+    if (await keys.isVisible()) return keys.getByRole('button', { name: label, exact: true });
+    // Tablet mit „Alle Spuren“: Die Zeilen-Beschriftungen ersetzen die Spurtasten
+    const grid = page.locator('[data-area=steps] .all-tracks');
+    return name === 'Sampler'
+      ? grid.locator('.at-lab[aria-label^="Zeile Pad"]').first()
+      : grid.getByRole('button', { name: `Zeile ${name}`, exact: true });
+  }
   const sheet = page.getByRole('dialog', { name: 'Pad-Feld' });
   if (!(await sheet.isVisible()))
     await page.getByRole('button', { name: 'Spur wählen', exact: true }).click();

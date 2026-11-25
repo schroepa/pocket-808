@@ -103,4 +103,28 @@ describe('songPanel', () => {
     }));
     expect(btn('Aktuelles Pattern an den Song anhängen').disabled).toBe(true);
   });
+
+  it('die gespielte Position bleibt in der scrollenden Kette sichtbar', () => {
+    const { el, blocks, store, audio } = songSetup();
+    store.update((s) => ({
+      ...s,
+      song: Array.from({ length: 32 }, () => ({ p: 'A' as const, n: 1 })),
+    }));
+    const chain = el.querySelector<HTMLElement>('.chain');
+    if (!chain) throw new Error('Kette');
+    // jsdom rechnet kein Layout: Reihen zu 64 px, sichtbar 128 px
+    Object.defineProperty(chain, 'clientHeight', { value: 128 });
+    blocks().forEach((b, i) => {
+      Object.defineProperty(b, 'offsetTop', { value: Math.floor(i / 6) * 64 });
+      Object.defineProperty(b, 'offsetHeight', { value: 58 });
+    });
+    audio.playhead.value = { step: 0, songIndex: 3 };
+    expect(chain.scrollTop).toBe(0);
+    audio.playhead.value = { step: 0, songIndex: 20 };
+    expect(chain.scrollTop).toBe(3 * 64 + 58 - 128);
+    audio.playhead.value = { step: 0, songIndex: 31 };
+    expect(chain.scrollTop).toBe(5 * 64 + 58 - 128);
+    audio.playhead.value = { step: 0, songIndex: 0 };
+    expect(chain.scrollTop).toBe(0);
+  });
 });

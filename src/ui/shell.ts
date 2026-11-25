@@ -257,19 +257,28 @@ export function mountShell(
     },
   );
 
-  root.replaceChildren(
-    h('main', { class: 'shell' }, [
-      head,
-      modes,
-      trackArea(c, nav, layout),
-      work,
-      stepsArea(c, nav, layout, notes),
-      transport(c),
-      flat('tracks', 'Pad-Feld', trackPadsContent(c, nav)),
-      flat('pattern', 'Pattern', patternSheetContent(c, nav)),
-      flat('tempo', 'Tempo', tempoControls(c)),
-    ]),
+  const main = h('main', { class: 'shell' }, [
+    head,
+    modes,
+    trackArea(c, nav, layout),
+    work,
+    stepsArea(c, nav, layout, notes),
+    transport(c),
+    flat('tracks', 'Pad-Feld', trackPadsContent(c, nav)),
+    flat('pattern', 'Pattern', patternSheetContent(c, nav)),
+    flat('tempo', 'Tempo', tempoControls(c)),
+  ]);
+  // welche Ansicht der Step-Bereich zeigt: Bei „Alle Spuren“ teilt layout.css die Höhe anders auf
+  bind(
+    scope,
+    () =>
+      stepAreaVisible(nav.mode.value, nav.view.value, layout.value) ? nav.lower.value : undefined,
+    (lower) => {
+      if (lower) main.dataset.lower = lower;
+      else delete main.dataset.lower;
+    },
   );
+  root.replaceChildren(main);
   installKeys(c, layout, document, nav, {
     save: () => void file.save(),
     open: () => void file.open(),

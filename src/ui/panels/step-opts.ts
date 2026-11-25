@@ -131,6 +131,7 @@ export function stepOptsPanel(
   // Slice nur bei Chop des gewählten Pads
   const sliceField = selectField(scope, {
     label: 'Slice',
+    className: 'opt-slice',
     options: ['Ganz', '1', '2', '3', '4', '5', '6', '7', '8'],
     value: computed(() => (opt.value.k === undefined ? 0 : opt.value.k + 1)),
     write: (i) => {
@@ -183,7 +184,6 @@ export function stepOptsPanel(
         write({ n: pitch.peek() + 1 });
       },
     }),
-    sliceField,
   ]);
   bind(
     scope,
@@ -207,7 +207,7 @@ export function stepOptsPanel(
     class: 'opt-off',
     text: 'Step ist aus – im Opt-Modus antippen schaltet ihn ein.',
   });
-  // drei Zeilen: Velocity, Schnellwahl, Chance · Bedingung, Pitch, Zurücksetzen · Locks
+  // drei Gruppen: Velocity, Schnellwahl, Chance · Bedingung, Slice, Pitch, Zurücksetzen · Locks
   const controls = h('div', { class: 'opt-ctl' }, [
     h('div', { class: 'opt-row' }, [
       knob(scope, {
@@ -254,7 +254,9 @@ export function stepOptsPanel(
         write: (i) => {
           write({ c: STEP_CONDS[i]?.value ?? 'all' });
         },
+        className: 'opt-cond',
       }),
+      sliceField,
       pitchRow,
       chip(scope, {
         label: 'Zurücksetzen',

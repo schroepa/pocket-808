@@ -247,6 +247,20 @@ describe('mountShell: Spurwahl und Step-Bereich', () => {
     expect(shown(steps.querySelector('.drum-steps'))).toBe(false);
   });
 
+  it('data-lower an der Hülle: welche Ansicht der Step-Bereich zeigt, ohne Step-Bereich keine', () => {
+    const { root, area, modeTab } = mount(TABLET);
+    const main = root.querySelector<HTMLElement>('.shell');
+    expect(main?.dataset.lower).toBe('steps');
+    area('steps').querySelectorAll<HTMLButtonElement>('[role=tab]')[1]?.click();
+    expect(main?.dataset.lower).toBe('all');
+    // Bass auf Noten: Der Step-Bereich weicht der Rolle
+    root.querySelector<HTMLButtonElement>('[aria-label="Bass wählen und anhören"]')?.click();
+    expect(shown(area('steps'))).toBe(false);
+    expect(main?.dataset.lower).toBeUndefined();
+    modeTab('Mixer')?.click();
+    expect(main?.dataset.lower).toBe('all');
+  });
+
   it('desktop: „Alle Spuren“, bei Bass und Lead dazu „Noten“', () => {
     const { area, root } = mount(DESKTOP);
     const steps = area('steps');

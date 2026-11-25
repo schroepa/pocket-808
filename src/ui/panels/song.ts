@@ -6,6 +6,13 @@ import { chip } from '../controls/chip.ts';
 import { bind, createScope, h } from '../dom.ts';
 import './song.css';
 
+/** Block in der scrollenden Kette sichtbar halten (die Kette ist offsetParent, song.css) */
+function keepInView(box: HTMLElement, el: HTMLElement): void {
+  if (el.offsetTop < box.scrollTop) box.scrollTop = el.offsetTop;
+  else if (el.offsetTop + el.offsetHeight > box.scrollTop + box.clientHeight)
+    box.scrollTop = el.offsetTop + el.offsetHeight - box.clientHeight;
+}
+
 /** Song-Kette mit Werkzeugen (Legacy buildSong, renderChain, bump, moveBlk, delBlk) */
 export function songPanel(c: UiContext): HTMLElement {
   const { store, scope, audio } = c;
@@ -67,6 +74,7 @@ export function songPanel(c: UiContext): HTMLElement {
             () => audio.playhead.value.songIndex === i,
             (on) => {
               b.classList.toggle('play', on);
+              if (on) keepInView(chain, b);
             },
           );
           return b;

@@ -177,9 +177,12 @@ describe('Pitch und Slice im Opt-Feld (Pads)', () => {
     expect(reset(p)?.textContent).toBe('-1 ST');
     reset(p)?.click();
     expect(opt()).toBeUndefined();
-    const slice = p.querySelector<HTMLSelectElement>('.opt-pitch select');
+    // Slice steht neben der Bedingung (eine Zeile mit Chop), nicht in der Pitch-Gruppe
+    const slice = p.querySelector<HTMLSelectElement>('.opt-slice select');
     if (!slice) throw new Error('Slice');
     const field = slice.closest<HTMLElement>('.fld');
+    expect(field?.previousElementSibling?.classList.contains('opt-cond')).toBe(true);
+    expect(p.querySelector('.opt-pitch select')).toBeNull();
     expect(field?.hidden).toBe(true); // ohne Chop keine Slice-Auswahl
     expect(reset(p)?.getAttribute('aria-label')).toBe('Pitch zurücksetzen (0 Halbtöne)');
     store.update((s) => setChop(s, 0, 4));

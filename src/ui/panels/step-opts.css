@@ -28,6 +28,12 @@
   .opt-row .fld {
     flex: 1 1 110px;
   }
+  /* Slice (nur bei Chop) mit Beschriftung links: keine zusätzliche Zeile */
+  .opt-slice {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+  }
   .opt-quick {
     flex: 1 1 auto;
     flex-wrap: nowrap;

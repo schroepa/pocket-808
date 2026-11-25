@@ -1,5 +1,6 @@
 @layer components {
   .ed-head {
+    flex: none;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -17,12 +18,29 @@
     letter-spacing: 0.16em;
     color: var(--ink-dim);
   }
-  .chain {
+  /* füllt die Arbeitsfläche: Kopf und Werkzeuge bleiben stehen, nur eine lange Kette scrollt */
+  .song {
     display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+  /* position: Bezug für das Mitscrollen (song.ts); der Innenabstand lässt dem Glow Platz */
+  .chain {
+    position: relative;
+    display: flex;
+    flex: 0 1 auto;
     flex-wrap: wrap;
+    align-content: flex-start;
     gap: 6px;
-    min-height: 58px;
+    min-height: 70px;
     margin-bottom: 12px;
+    padding: 6px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .song > .song-tools {
+    flex: none;
   }
   .chain-empty {
     align-self: center;

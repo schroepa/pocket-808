@@ -156,9 +156,61 @@
   flex-basis: 100%;
   order: 1;
 }
-/* „Alle Spuren“ hat bis zu 20 Zeilen: höchstens gut die halbe Höhe, darin scrollen */
-:is([data-layout='tablet'], [data-layout='desktop']) [data-area='steps'] {
-  max-height: 58dvh;
+/* „Alle Spuren“ (data-lower, shell.ts) hat bis zu 20 Zeilen: Die Arbeitsfläche hat Vorrang und ist so
+   hoch wie ihr Inhalt, das Raster nimmt den Rest (mindestens gut vier Zeilen) und scrollt in sich; die
+   Reiter darüber bleiben stehen. Bei Platz steht das Raster unten über dem Transport */
+[data-layout='tablet'] .shell[data-lower='all'] {
+  grid-template-rows: auto auto auto auto minmax(180px, 1fr) auto;
+}
+/* Tablet mit „Alle Spuren“: Die Zeilen-Beschriftungen des Rasters wählen und spielen die Spuren wie
+   die Spurtasten (wie am Desktop), die Tastenreihe tritt zurück und gibt ihre Höhe dem Raster */
+[data-layout='tablet'] .shell[data-lower='all'] > [data-area='tracks'] {
+  display: none;
+}
+/* … und die Seiten werden so dicht wie am Telefon (Ziele bleiben ≥ 44 px), damit sie im Querformat
+   neben mindestens vier Zeilen des Rasters ganz zu sehen sind */
+[data-layout='tablet'] .shell[data-lower='all'] {
+  row-gap: 6px;
+}
+[data-layout='tablet'] .shell[data-lower='all'] [data-area='steps'] > .tabs {
+  padding: 0;
+}
+[data-layout='tablet'] .shell[data-lower='all'] .knob {
+  width: 44px;
+  height: 44px;
+  margin: 4px;
+}
+[data-layout='tablet'] .shell[data-lower='all'] .knob-wrap {
+  gap: 0;
+}
+[data-layout='tablet'] .shell[data-lower='all'] .sl-t {
+  height: 72px;
+}
+[data-layout='tablet'] .shell[data-lower='all'] .env-svg {
+  height: 26px;
+  margin-bottom: 4px;
+}
+[data-layout='desktop'] .shell[data-lower='all'] {
+  grid-template-rows: auto auto auto minmax(140px, 1fr);
+}
+:is([data-layout='tablet'], [data-layout='desktop']) .shell[data-lower='all'] [data-area='steps'] {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+:is([data-layout='tablet'], [data-layout='desktop'])
+  .shell[data-lower='all']
+  [data-area='steps']
+  > * {
+  flex: none;
+}
+:is([data-layout='tablet'], [data-layout='desktop']) .shell[data-lower='all'] .all-tracks {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px;
 }
 [data-layout='tablet'] :is(.at-lab, .at-cell) {
   height: 28px;
@@ -375,7 +427,7 @@ section[data-mode='spur']:has(section[data-page='noten']:not([hidden]) .roll) .t
   line-height: 12px;
 }
 /* Step-Optionen: Die Auswahl zeigt die Bedingung, ihre Überschrift bleibt nur für Screenreader */
-[data-layout='mobile'] .opt-ctl .fld span {
+[data-layout='mobile'] .opt-cond span {
   position: absolute;
   width: 1px;
   height: 1px;

@@ -10,6 +10,8 @@ export function selectField(
     options: readonly string[];
     value: ReadonlySignal<number>;
     write(i: number): void;
+    /** zusätzliche Klasse am Feld */
+    className?: string;
   },
 ): HTMLElement {
   const sel = h(
@@ -27,5 +29,8 @@ export function selectField(
   listen(scope, sel, 'change', () => {
     o.write(Number(sel.value));
   });
-  return h('label', { class: 'fld' }, [h('span', { text: o.label }), sel]);
+  return h('label', { class: o.className ? `fld ${o.className}` : 'fld' }, [
+    h('span', { text: o.label }),
+    sel,
+  ]);
 }
