@@ -1,6 +1,6 @@
 # Funktionsliste der Oberfläche (Legacy → neue UI)
 
-Stand: 2026-10-15, vollständig. Abgeleitet aus `legacy/index.html`: `build*`-Funktionen, Listener in `init` und Markup. Jede Bedienhandlung steht in einer Zeile. Pro Teilschritt (5a–5d) wird abgehakt, und jede Zeile verweist auf ihren Test. Gehört zu `2026-10-14-ui-layouts-design.md`.
+Stand: 2026-11-25 (App 0.28.0), vollständig. Ursprünglich aus der alten App abgeleitet (`build*`-Funktionen, Listener in `init`, Markup), seither nachgeführt und gegen `src/ui/panels/` abgeglichen. Maßstab für den Umbau „Ein Gerät“ (`2026-11-25-ui-ein-geraet-design.md`): Nichts davon darf verloren gehen. Jede Bedienhandlung steht in einer Zeile. Pro Teilschritt (5a–5d) wird abgehakt, und jede Zeile verweist auf ihren Test. Gehört zu `2026-10-14-ui-layouts-design.md`.
 
 Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 
@@ -64,7 +64,8 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 | ↑ / ↓ | Spur wählen (nicht auf Reglern) | ✅ | `keys.test.ts` |
 | ⌘/Strg+Z | Zurück | ✅ | `keys.test.ts` |
 | ⌘/Strg+C / V | Pattern kopieren / einfügen | ✅ | `keys.test.ts` |
-| „?“ | Dialog mit den Kürzeln | ✅ | `keys.test.ts` |
+| „?“ (Kopfzeile) | Dialog mit den Kürzeln, „Schließen“ | ✅ | `keys.test.ts` |
+| Eingabefeld oder offener Dialog | Kürzel ruhen; gehaltene Leertaste und Ziffern wiederholen nicht | ✅ | `keys.test.ts` |
 
 ## Plattform (5a)
 
@@ -76,6 +77,7 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 | Wiedergabe | Bildschirm bleibt an (Wake Lock) | ✅ | `wake.test.ts` |
 | Artifact | Zustand über `window.claude.hot` hin und zurück | ✅ | `host.test.ts`, `host.spec.ts` |
 | Alter Speicherstand | lädt unverändert | ✅ | `core-*`, `compat.spec.ts` |
+| Jede Änderung | Zustand wird entprellt (250 ms) selbst gespeichert, ein voller Speicher stört nicht | ✅ | `store/persist.test.ts`, `compat.spec.ts` |
 
 ## Synth (5b)
 
@@ -94,19 +96,20 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 | Oktave − / + | Oktave | ✅ | `synth.test.ts` |
 | Detune, Sub, Cutoff, Reso, Env, Delay, Level | Regler | ✅ | `synth.test.ts` |
 | Filter-Env und Amp-Env (Attack, Decay, Sustain, Release) | Schieberegler mit Hüllkurvenanzeige | ✅ | `synth.test.ts` |
-| Presets | Patch laden, Markierung | ✅ | `synth.test.ts`, `synth.spec.ts` |
+| Presets | Liste je Part; Patch laden, Markierung, vorhören | ✅ | `synth.test.ts`, `synth.spec.ts` |
 | „Stimme leeren“ | Noten der Stimme löschen (mit Zurück) | ✅ | `synth.test.ts` |
+| Wellenform, Oktave, Sound-Regler | nach der Wahl bzw. dem Loslassen vorhören; Doppeltipp = Werkseinstellung des Parts | ✅ | `synth.test.ts` |
 
 ## Sampler (5c)
 
 | Handlung | Wirkung | Stand | Test |
 |---|---|---|---|
-| Pad tippen | wählen und vorhören; Inhaltspunkt | ✅ | `sampler.test.ts`, `sampler.spec.ts` |
-| Wellenform | Start- und Endmarke ziehen, Lauflicht | ✅ | `sampler.test.ts` |
+| Pad tippen | wählen und vorhören; Name bzw. „leer“, Inhaltspunkt | ✅ | `sampler.test.ts`, `sampler.spec.ts` |
+| Wellenform | Start- und Endmarke ziehen (nach dem Loslassen vorhören), Lauflicht; Hinweis bei leerem Pad | ✅ | `sampler.test.ts` |
 | Laden | Datei dekodieren (`engine.decode`), Meldung bei Fehler | ✅ | `sampler.test.ts`, `sampler.spec.ts` |
-| Rec | mit dem Mikrofon aufnehmen (Rückfall Dateiauswahl mit capture) | ✅ | `sampler.test.ts` |
+| Rec / Stopp | mit dem Mikrofon aufnehmen (höchstens 3 s, zweiter Tipp stoppt; Rückfall Dateiauswahl mit capture) | ✅ | `sampler.test.ts` |
 | Leeren | Pad leeren | ✅ | `sampler.test.ts`, `sampler.spec.ts` |
-| Rev | rückwärts abspielen | ✅ | `sampler.test.ts`, `sampler.spec.ts` |
+| Rev | rückwärts abspielen, dabei vorhören | ✅ | `sampler.test.ts`, `sampler.spec.ts` |
 | Tune, Attack, Decay, Level | Regler je Pad | ✅ | `sampler.test.ts` |
 | Sampler-Steps, Sub-Steps | wie Drums, je Pad | ✅ | `sampler.test.ts`, `sampler.spec.ts` |
 | Meldungen | `role=status` | ✅ | `sampler.test.ts` |
@@ -137,15 +140,17 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 | ← / → | Position verschieben, Auswahl folgt | ✅ | `song-patterns.test.ts`, `mix-song.spec.ts` |
 | Entfernen, Leeren | Position bzw. Song löschen | ✅ | `song-patterns.test.ts`, `mix-song.spec.ts` |
 | Wiedergabe-Markierung | gespielte Position | ✅ | `song-patterns.test.ts` |
+| Block antippen | Position wählen und ihr Pattern zeigen (nicht bei laufendem Song) | ✅ | `song-patterns.test.ts`, `mix-song.spec.ts` |
+| Leerer Song | Hinweis zum Anhängen; Knöpfe ohne Auswahl gesperrt | ✅ | `song-patterns.test.ts` |
 
 ## Vorlagen und Pattern-Werkzeuge (5d)
 
 | Handlung | Wirkung | Stand | Test |
 |---|---|---|---|
-| House, Electro, Hip-Hop, Trap | Vorlage laden (mit Zurück), Markierung | ✅ | `song-patterns.test.ts`, `mix-song.spec.ts` |
+| Basis-Muster House, Electro, Hip-Hop, Trap | ersetzt die Drum-Spuren des aktuellen Patterns, dazu Tempo und Swing (mit Zurück), Markierung | ✅ | `song-patterns.test.ts`, `mix-song.spec.ts` |
 | Kopieren, Einfügen | Pattern-Zwischenablage, Meldung | ✅ | `song-patterns.test.ts`, `mix-song.spec.ts`, `keys.test.ts` |
 | Pattern leeren | mit Zurück | ✅ | `song-patterns.test.ts` |
-| Zurück | einstufig | ✅ | `song-patterns.test.ts`, `mix-song.spec.ts`, `keys.test.ts` |
+| Zurück | letzten Schritt zurücknehmen (bis zu 20, siehe Etappe 8a); ohne Verlauf gesperrt | ✅ | `song-patterns.test.ts`, `mix-song.spec.ts`, `keys.test.ts` |
 
 ## Projekt und Export (Roadmap-Etappe 2)
 
@@ -155,7 +160,8 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 | Projekt sichern, ⌘/Strg+S | `.pocket808.json` mit Zustand und Samples; Teilen-Menü bzw. Download | ✅ | `core/project.test.ts`, `share.test.ts`, `project.spec.ts` |
 | Projekt öffnen, ⌘/Strg+O | prüfen, fragen, ersetzen; Zurück stellt Zustand und Samples wieder her | ✅ | `project.test.ts`, `store.test.ts`, `project.spec.ts` |
 | Fremde oder kaputte Datei | Meldung „Keine Pocket-808-Datei“, nichts ändert sich | ✅ | `core/project.test.ts`, `project.spec.ts` |
-| WAV erzeugen | Pattern 1/2/4/8× oder Song, Länge, Fortschritt, Abbrechen, max. 5 min | ✅ | `export.test.ts`, `project.test.ts`, `next-mix.test.ts` |
+| Umfang Pattern / Song, 1× / 2× / 4× / 8× | wählt den Export; Song ist leer gesperrt, ohne Wiederholungen; eine Änderung verwirft das fertige WAV | ✅ | `core/export.test.ts`, `project.test.ts` |
+| WAV erzeugen | Länge, Fortschritt, Abbrechen, Fehlermeldung; höchstens 5 min | ✅ | `core/export.test.ts`, `project.test.ts`, `next-mix.test.ts` |
 | WAV sichern | 44,1 kHz, 16 Bit, Stereo | ✅ | `wav.test.ts`, `project.spec.ts` |
 
 ## Step-Optionen (Roadmap-Etappe 3)
@@ -167,6 +173,7 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 | Chance | Wahrscheinlichkeit pro Step, einmal gewürfelt | ✅ | `next-stepopts.test.ts`, `step-opts.test.ts` |
 | Bedingung | 1:2 … 4:4, Erster, Nicht erster; Zählung je Slot ab Start | ✅ | `core/stepopts.test.ts`, `next-stepopts.test.ts` |
 | Zurücksetzen | Standard (mit Zurück) | ✅ | `step-opts.test.ts` |
+| Marke am Step | Chance, Bedingung, Lock, Pitch oder Slice markieren den Step (Editor, Spuren, Sampler) | ✅ | `step-opts.test.ts` |
 | Speichern | optionales `opt` im Pattern, alte Stände bytegleich | ✅ | `core/stepopts.test.ts`, `core-persist.test.ts`, `stepopts.spec.ts` |
 
 ## Fill und Parameter-Locks (Roadmap-Etappe 4a)
@@ -248,3 +255,52 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 | Drive je Part (Doppeltipp: aus) | Sättigung, Lautheit etwa gleich | ✅ | `partfx.test.ts`, `next-partfx.test.ts`, `synth.test.ts` |
 | Chorus je Part (Doppeltipp: aus) | Stereo-Breite, unter 250 Hz mittig | ✅ | `partfx.test.ts`, `next-partfx.test.ts`, `synth.test.ts`, `synth.spec.ts` |
 | Presets und Vorlagen | setzen Drive und Chorus passend zum Sound | ✅ | `templates.test.ts`, `synth.test.ts` |
+
+## Vorlagen-Browser (Etappe 9)
+
+| Handlung | Wirkung | Stand | Test |
+|---|---|---|---|
+| Stil wählen (Basis, Lo-Fi, Hip-Hop, Trap, House, Techno) | zeigt dessen Vorlagen; Start bei „Basis“ bzw. beim Stil der geladenen Vorlage | ✅ | `song-patterns.test.ts`, `mix-song.spec.ts` |
+| Vorlage tippen (21 in fünf Stilen) | laden (mit Zurück) | ✅ | `song-patterns.test.ts`, `templates.test.ts`, `next-templates.test.ts`, `mix-song.spec.ts` |
+| Laden: Alles | Tempo, Swing, Tonart, Patterns A bis höchstens D, Kit, Sounds, Mixer, FX, Warm, Tape, Song; übrige Plätze und Sampler bleiben | ✅ | `templates.test.ts`, `song-patterns.test.ts` |
+| Laden: Drums | nur Drum-Spuren dieser Patterns, Kit, Tempo, Swing | ✅ | `templates.test.ts`, `song-patterns.test.ts` |
+| Laden: Sound | nur Kit, Sounds, Mixer, FX, Warm, Tape | ✅ | `templates.test.ts`, `song-patterns.test.ts` |
+| Hinweiszeile | Basis: was ersetzt wird; geladene Vorlage: Beschreibung und BPM; sonst Anzahl und Wirkung (bei „Basis“ ohne Lade-Auswahl) | ✅ | `song-patterns.test.ts`, `mix-song.spec.ts` |
+| Markierung | geladene Vorlage markiert, auch nach dem Neuladen | ✅ | `song-patterns.test.ts`, `mix-song.spec.ts` |
+| Meldung | LCD „NAME · … BPM“ | ✅ | `song-patterns.test.ts` |
+
+## Kits (Etappe 9)
+
+| Handlung | Wirkung | Stand | Test |
+|---|---|---|---|
+| Kit tippen (Classic, Boom, Tight, Lo-Fi, Hard, Trap) | Level, Tune, Decay aller Drum-Stimmen laden (mit Zurück) | ✅ | `song-patterns.test.ts`, `templates.test.ts` |
+| Markierung | nur solange alle Werte genau zum Kit passen | ✅ | `song-patterns.test.ts` |
+| Meldung | LCD „KIT NAME“ | ✅ | `song-patterns.test.ts` |
+
+## Klang: Warm und Tape (Etappe 9)
+
+| Handlung | Wirkung | Stand | Test |
+|---|---|---|---|
+| Warm (FX) | warmer, analoger Klang an / aus, Meldung „WARM AN“ / „WARM AUS“; Drums werden neu gerendert | ✅ | `mixer.test.ts`, `core/tone.test.ts`, `audio/tone.test.ts` |
+| Tape (FX, Doppeltipp: aus) | Bandmaschine 0–100 % | ✅ | `mixer.test.ts`, `core/tone.test.ts`, `audio/tone.test.ts` |
+| Speichern | optionale Felder `warm`, `tape`; fehlen, solange aus | ✅ | `core/tone.test.ts`, `mix-song.spec.ts` |
+
+## Geräte (Synth, Sampler, Mixer, FX, Punch)
+
+| Handlung | Wirkung | Stand | Test |
+|---|---|---|---|
+| Gerätekopf tippen | Mobile: auf- bzw. zuklappen (gespeichert); Tablet: Tab wählen; Desktop: alle offen, ohne Köpfe | ✅ | `devices.test.ts`, `shell.test.ts` |
+| ← / → auf einem Tab (Tablet) | Gerät wechseln | ✅ | `devices.test.ts` |
+| Zusammenfassung im Gerätekopf | Stand des Geräts ohne Aufklappen | ✅ | `synth.test.ts`, `sampler.test.ts`, `mixer.test.ts`, `punch.test.ts` |
+| Layout-Wechsel (Drehen) | das Gerät mit dem Fokus bleibt sichtbar | ✅ | `devices.test.ts` |
+
+## Regler und Umschalter (überall)
+
+| Handlung | Wirkung | Stand | Test |
+|---|---|---|---|
+| Drehregler ziehen | Wert ändern, Meldung im LCD | ✅ | `knob.test.ts` |
+| Schieberegler ziehen oder antippen | Wert an der Zeigerhöhe, Meldung im LCD | ✅ | `controls-synth.test.ts` |
+| Doppeltipp auf einen Regler | Standardwert | ✅ | `knob.test.ts`, `controls-synth.test.ts` |
+| Pfeile, Pos1, Ende auf einem Regler | 2 % (mit Umschalt 10 %), Minimum, Maximum | ✅ | `knob.test.ts`, `controls-synth.test.ts` |
+| Pfeile auf einem Umschalter | Option wählen (ein Tab-Stopp) | ✅ | `controls.test.ts` |
+
