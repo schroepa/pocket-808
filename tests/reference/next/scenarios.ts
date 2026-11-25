@@ -9,6 +9,7 @@ import { synthNote } from '../../../src/audio/synth.ts';
 import { renderVoice, type OfflineFactory } from '../../../src/audio/voices.ts';
 import { CHANNELS, DRUM_DEFAULTS, SYN_PRESETS, VOICE_IDS } from '../../../src/core/constants.ts';
 import { initialState } from '../../../src/core/initial.ts';
+import { applyTemplate, TEMPLATES } from '../../../src/core/templates/index.ts';
 import { audibleChannels } from '../../../src/core/mix.ts';
 import { seededRandom } from '../../../src/core/random.ts';
 import type {
@@ -976,7 +977,57 @@ export async function synthAttrs(args: {
   return { peak, oscs, rms, paramLinks };
 }
 
+export interface TemplateLevels {
+  peak: number;
+  nonFinite: number;
+  rmsDb: number;
+  /** Anteil der 10-ms-Fenster, die hörbar sind (lauter als −50 dBFS) */
+  active: number;
+}
+
+/**
+ * Eine Vorlage (optional mit anderem Klangcharakter) über den Export-Weg rendern und Pegel messen:
+ * Song-Modus, damit alle Patterns der Kette vorkommen.
+ */
+export async function templateLevels(args: {
+  id: string;
+  bars?: number;
+  seed?: number;
+}): Promise<TemplateLevels> {
+  const random = seededRandom(args.seed ?? 1);
+  const tpl = must(
+    TEMPLATES.find((t) => t.id === args.id),
+    `Vorlage ${args.id}`,
+  );
+  const state: State = {
+    ...applyTemplate(structuredClone(initialState()), tpl, 'all'),
+    mode: 'song',
+  };
+  const playFor = ((args.bars ?? 6) * 16 * 60) / state.tempo / 4;
+  const buf = await renderOffline({
+    state,
+    pads: factorySamples(random('factory')),
+    drums: {},
+    playFor,
+    seconds: playFor,
+    createContext: createOffline,
+    createOffline,
+    random,
+  });
+  if (!buf) throw new Error('Export abgebrochen');
+  const L = fingerprint(buf.getChannelData(0), buf.sampleRate);
+  const R = fingerprint(buf.getChannelData(1), buf.sampleRate);
+  const power = [...L.rmsDb, ...R.rmsDb].map((db) => Math.pow(10, db / 10));
+  return {
+    peak: Math.max(L.peak, R.peak),
+    nonFinite: L.nonFinite + R.nonFinite,
+    rmsDb: 10 * Math.log10(power.reduce((x, y) => x + y, 0) / power.length),
+    active: L.rmsDb.filter((db) => db > -50).length / L.rmsDb.length,
+  };
+}
+
 export const SCENARIOS: Record<string, (args: never) => Promise<unknown>> = {
+  templateLevels,
   chopHits,
   synthAttrs,
   punchProbe,
