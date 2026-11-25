@@ -29,4 +29,6 @@ test('Leertaste, Ziffern, Pfeile, Zurück und Kürzel-Dialog', async ({ page }) 
   await expect(on).toHaveCount(before);
   await page.getByRole('button', { name: 'Tastaturkürzel' }).click();
   await expect(page.locator('dialog.keys-help')).toBeVisible();
+  await page.locator('dialog.keys-help').getByRole('button', { name: 'Schließen' }).click();
+  await expect(page.locator('dialog.keys-help')).toBeHidden();
 });
