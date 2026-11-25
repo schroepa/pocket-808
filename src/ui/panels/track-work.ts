@@ -93,8 +93,8 @@ export function trackWork(c: UiContext, nav: Nav, layout: ReadonlySignal<Layout>
     },
   });
   return h('div', { class: 'track-work' }, [
-    bar,
     smp.head,
+    bar,
     h('div', { class: 'track-pages' }, sections),
   ]);
 }

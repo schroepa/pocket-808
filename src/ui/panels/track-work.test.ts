@@ -101,7 +101,8 @@ describe('trackWork', () => {
     expect(head?.hidden).toBe(true);
     nav.selectTrack('SM');
     expect(head?.hidden).toBe(false);
-    expect(head?.closest('section')).toBeNull();
+    // Reihenfolge: Pads, darunter die Reiter, darunter die Seiten
+    expect([...el.children]).toEqual([head, tabList(el), el.querySelector('.track-pages')]);
     nav.selectPage('chop');
     expect(head?.hidden).toBe(false);
     nav.selectTrack('BD');

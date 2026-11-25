@@ -291,8 +291,8 @@ describe('Kanäle', () => {
     key(q('Pan'), 'Home');
     key(q('Reverb'), 'End');
     expect(store.state.value.mix.SD).toMatchObject({ p: 0, r: 1 });
-    store.undo();
-    store.update((s) => ({ ...s, mix: { ...s.mix, SD: { ...s.mix.SD, m: false, s: false } } }));
+    q('Snare Drum stumm')?.click();
+    q('Snare Drum solo')?.click();
     expect(strip?.classList.contains('muted')).toBe(false);
     expect(strip?.classList.contains('solo')).toBe(false);
   });
