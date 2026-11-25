@@ -4,7 +4,7 @@ import { setChannelValue } from '../../../core/mixer.ts';
 import { SCENE_COUNT } from '../../../core/scenes.ts';
 import type { ChannelId } from '../../../core/types.ts';
 import { must } from '../../../core/util.ts';
-import { computed, signal, type ReadonlySignal } from '../../../store/signals.ts';
+import { computed, signal, type ReadonlySignal, type Signal } from '../../../store/signals.ts';
 import type { UiContext } from '../../context.ts';
 import { chip } from '../../controls/chip.ts';
 import { slider } from '../../controls/slider.ts';
@@ -81,7 +81,7 @@ export function channelStrips(c: UiContext): HTMLElement {
   ]);
 }
 
-type MixPage = 'kanaele' | 'szenen' | 'fx';
+export type MixPage = 'kanaele' | 'szenen' | 'fx';
 const PAGE_NAMES: Readonly<Record<MixPage, string>> = {
   kanaele: 'Kanäle',
   szenen: 'Szenen',
@@ -94,10 +94,13 @@ const VIEWS: Readonly<Record<Layout, readonly (readonly MixPage[])[]>> = {
   desktop: [['kanaele', 'szenen', 'fx']],
 };
 
-/** Modus Mixer: Seiten Kanäle, Szenen und FX */
-export function mixerWork(c: UiContext, layout: ReadonlySignal<Layout>): HTMLElement {
+/** Modus Mixer: Seiten Kanäle, Szenen und FX; `page` ist die gewählte Seite */
+export function mixerWork(
+  c: UiContext,
+  layout: ReadonlySignal<Layout>,
+  page: Signal<MixPage> = signal<MixPage>('kanaele'),
+): HTMLElement {
   const { scope } = c;
-  const page = signal<MixPage>('kanaele');
   const views = computed(() => VIEWS[layout.value]);
   const view = computed(() =>
     must(

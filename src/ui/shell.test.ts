@@ -287,6 +287,73 @@ describe('mountShell: Layoutwechsel', () => {
     expect(notes()?.querySelector('[data-slot=roll] .roll')).not.toBeNull();
   });
 
+  it('Fokus auf einer Seite: tablet→mobile behält SM Klang sichtbar und fokussiert', () => {
+    const { root, media } = mount(TABLET);
+    root
+      .querySelector<HTMLButtonElement>('.track-keys [aria-label="Sampler wählen und anhören"]')
+      ?.click();
+    const klang = root.querySelector<HTMLElement>('section[data-page="klang"][data-kind="smp"]');
+    const knob = klang?.querySelector<HTMLElement>('[role=slider]');
+    knob?.focus();
+    expect(shown(klang ?? null)).toBe(true);
+    media.set({});
+    expect(shown(klang ?? null)).toBe(true);
+    expect(shown(root.querySelector('section[data-page="trig"][data-kind="smp"]'))).toBe(false);
+    expect(document.activeElement).toBe(knob);
+  });
+
+  it('Fokus auf einer Seite: desktop→tablet behält BA Amp sichtbar', () => {
+    const { root, media } = mount(DESKTOP);
+    root
+      .querySelector<HTMLButtonElement>('.track-keys [aria-label="Bass wählen und anhören"]')
+      ?.click();
+    const amp = root.querySelector<HTMLElement>('section[data-page="amp"][data-kind="synth"]');
+    const slider = amp?.querySelector<HTMLElement>('[role=slider]');
+    slider?.focus();
+    media.set(TABLET);
+    expect(shown(amp ?? null)).toBe(true);
+    expect(document.activeElement).toBe(slider);
+  });
+
+  it('Fokus im Mixer: desktop→mobile behält FX sichtbar; ohne Fokus bleibt die Seite', () => {
+    const { root, media, modeTab } = mount(DESKTOP);
+    modeTab('Mixer')?.click();
+    const fx = root.querySelector<HTMLElement>('.mixer-work > section[data-page="fx"]');
+    const knob = fx?.querySelector<HTMLElement>('[role=slider]');
+    knob?.focus();
+    media.set({});
+    expect(shown(fx ?? null)).toBe(true);
+    expect(shown(root.querySelector('.mixer-work > section[data-page="kanaele"]'))).toBe(false);
+    expect(document.activeElement).toBe(knob);
+    knob?.blur();
+    media.set(DESKTOP);
+    media.set({});
+    expect(shown(fx ?? null)).toBe(true);
+  });
+
+  it('Fokus in der Plattenkiste ändert die Seite der Spur nicht', () => {
+    const { root, media, modeTab } = mount(TABLET);
+    root
+      .querySelector<HTMLButtonElement>('.track-keys [aria-label="Bass wählen und anhören"]')
+      ?.click();
+    const amp = root.querySelector<HTMLElement>('section[data-page="amp"][data-kind="synth"]');
+    [...root.querySelectorAll<HTMLButtonElement>('[aria-label="Seite"] [role=tab]')]
+      .find((b) => b.textContent.startsWith('Amp'))
+      ?.click();
+    amp?.querySelector<HTMLElement>('[role=slider]')?.focus();
+    media.set({});
+    expect(shown(amp ?? null)).toBe(true);
+    modeTab('Sound')?.click();
+    const pick = root.querySelector<HTMLElement>(
+      '.library section[data-page]:not([hidden]) button',
+    );
+    pick?.focus();
+    expect(document.activeElement).toBe(pick);
+    media.set(TABLET);
+    modeTab('Spur')?.click();
+    expect(shown(amp ?? null)).toBe(true);
+  });
+
   it('Layoutwechsel löst gehaltenen Stutter, wenn seine Seite verschwindet', () => {
     const { modeTab, media, root, audio } = mount(DESKTOP);
     modeTab('Mixer')?.click();

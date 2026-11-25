@@ -1,6 +1,6 @@
 import type { Timer } from '../store/persist.ts';
 import type { SampleBank } from '../store/samples.ts';
-import { computed, type ReadonlySignal } from '../store/signals.ts';
+import { batch, computed, signal, type ReadonlySignal, type Signal } from '../store/signals.ts';
 import type { Store } from '../store/store.ts';
 import type { UiAudio, UiContext, UiFiles, UiRecorder } from './context.ts';
 import { sheet } from './controls/sheet.ts';
@@ -18,13 +18,14 @@ import {
   type Lower,
   type Mode,
   type Nav,
+  type PageId,
   type SheetId,
 } from './nav.ts';
 import { allTracks } from './panels/all-tracks.ts';
 import { display, displayLine } from './panels/display.ts';
 import { lcdScope } from './panels/lcd-scope.ts';
 import { library } from './panels/library.ts';
-import { mixerWork } from './panels/mixer/mixer.ts';
+import { mixerWork, type MixPage } from './panels/mixer/mixer.ts';
 import { modeBar } from './panels/mode-bar.ts';
 import { patternSheetContent } from './panels/pattern-sheet.ts';
 import { projectDialog } from './panels/project/dialog.ts';
@@ -81,11 +82,16 @@ function trackArea(c: UiContext, nav: Nav, layout: ReadonlySignal<Layout>): HTML
 }
 
 /** Arbeitsfläche: je Modus ein Bereich, sichtbar ist genau der des Modus */
-function workArea(c: UiContext, nav: Nav, layout: ReadonlySignal<Layout>): HTMLElement {
+function workArea(
+  c: UiContext,
+  nav: Nav,
+  layout: ReadonlySignal<Layout>,
+  mixPage: Signal<MixPage>,
+): HTMLElement {
   const bodies: Readonly<Record<Mode, HTMLElement>> = {
     spur: trackWork(c, nav, layout),
     sound: library(c, layout),
-    mixer: mixerWork(c, layout),
+    mixer: mixerWork(c, layout, mixPage),
     song: songPanel(c),
     punch: punchGrid(c),
   };
@@ -174,8 +180,11 @@ export function mountShell(
   deps: ShellDeps,
 ): { layout: ReadonlySignal<Layout>; dispose(): void } {
   const scope = createScope();
-  const layout = watchLayout(scope, deps.win, document.documentElement);
+  const measured = watchLayout(scope, deps.win, document.documentElement);
+  // Das Layout der Oberfläche folgt dem gemessenen erst, nachdem die Seite mit dem Fokus gewählt ist
+  const layout = signal<Layout>(measured.peek());
   const nav = createNav(scope, deps.store, layout);
+  const mixPage = signal<MixPage>('kanaele');
   const readout = createReadout(scope, displayLine(deps, nav), deps.timer);
   const c: UiContext = {
     store: deps.store,
@@ -202,7 +211,22 @@ export function mountShell(
   // Die Notenrolle gibt es einmal: Desktop unten im Step-Bereich, sonst im Platz der Seite Noten
   const roll = rollGrid(c, nav.roll);
   const notes = h('div', { class: 'lower-notes' });
-  const work = workArea(c, nav, layout);
+  const work = workArea(c, nav, layout, mixPage);
+  // Layoutwechsel (Drehen): die Seite mit dem Fokus wird gewählt und bleibt so sichtbar
+  bind(
+    scope,
+    () => measured.value,
+    (next) => {
+      batch(() => {
+        const page = document.activeElement?.closest<HTMLElement>('section[data-page]');
+        const box = page && work.contains(page) ? page.parentElement?.classList : undefined;
+        const id = page?.dataset.page ?? '';
+        if (box?.contains('mixer-work')) mixPage.value = id as MixPage;
+        else if (box?.contains('track-pages')) nav.selectPage(id as PageId);
+        layout.value = next;
+      });
+    },
+  );
   const slot = work.querySelector('[data-slot=roll]');
   bind(
     scope,
