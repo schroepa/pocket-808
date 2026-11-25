@@ -14,7 +14,7 @@ import {
 } from '../../core/templates/index.ts';
 import type { State } from '../../core/types.ts';
 import { must } from '../../core/util.ts';
-import { batch, computed, signal, type ReadonlySignal } from '../../store/signals.ts';
+import { computed, signal, type ReadonlySignal } from '../../store/signals.ts';
 import type { UiContext } from '../context.ts';
 import { chip } from '../controls/chip.ts';
 import { segment } from '../controls/segment.ts';
@@ -98,12 +98,12 @@ function templateSection(c: UiContext): Node[] {
 
   const load = (t: Template): void => {
     const what = range.peek();
-    batch(() => {
-      picked.value = t.name;
-      store.replaceState(applyTemplate(store.state.peek(), t, what));
-      // sonst bliebe nach „Drums“ ein Pattern offen, an dem sich nichts geändert hat
-      if (what === 'drums' && !t.pat[store.state.peek().cur]) store.selectSlot('A');
-    });
+    const next = applyTemplate(store.state.peek(), t, what);
+    // sonst bliebe nach „Drums“ ein Pattern offen, an dem sich nichts geändert hat; nicht über
+    // selectSlot, das würde die Markierung der geladenen Vorlage (preset) löschen
+    const stray = what === 'drums' && !t.pat[next.cur];
+    picked.value = t.name;
+    store.replaceState(stray ? { ...next, cur: 'A' } : next);
     const name = t.name.toUpperCase();
     if (what === 'sound') readout.flash('NUR SOUND GELADEN');
     else if (what === 'drums') readout.flash(`${name} · DRUMS GELADEN`);

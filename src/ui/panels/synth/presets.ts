@@ -1,5 +1,4 @@
 import { SYNTH_SOUNDS } from '../../../core/templates/index.ts';
-import { applySynthPreset } from '../../../core/synth.ts';
 import type { Part } from '../../../core/types.ts';
 import type { UiContext } from '../../context.ts';
 import { chip } from '../../controls/chip.ts';
@@ -32,7 +31,7 @@ export function synthSoundList(
             label: p.name,
             active: store.select((s) => s.synth[part].preset === p.name),
             onClick: () => {
-              store.update((s) => applySynthPreset(s, part, p));
+              store.loadSynthPreset(part, p);
               audio.auditionNote(part, 0, 2);
               onPick?.(part, p.name);
             },

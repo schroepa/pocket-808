@@ -116,16 +116,17 @@ describe('library: Vorlagen', () => {
   });
 
   it('Stilwechsel tauscht die Liste und räumt die alte auf', () => {
-    const { chips, pick, store } = setup();
+    const { chips, pick } = setup();
     const old = must(chips('Vorlagen des Stils')[0], 'Chip');
+    old.click();
+    expect(old.getAttribute('aria-pressed')).toBe('true');
     pick('Stil', 'House').click();
     expect(chips('Vorlagen des Stils').map((b) => b.textContent)).toEqual(
       templatesOf('house').map((t) => t.name),
     );
-    // abgehängte Chips folgen dem Zustand nicht mehr
-    store.update((s) => ({ ...s, tempo: s.tempo + 1 }));
+    // der abgehängte Chip folgt der Markierung nicht mehr
     pick('Vorlagen des Stils', 'Classic House').click();
-    expect(old.getAttribute('aria-pressed')).toBe('false');
+    expect(old.getAttribute('aria-pressed')).toBe('true');
   });
 
   it('lädt eine Vorlage komplett, markiert sie, meldet sie; Zurück stellt alles wieder her', () => {
@@ -167,13 +168,18 @@ describe('library: Vorlagen', () => {
   });
 
   it('Drums auf Pattern F geladen: Auswahl springt auf A, Zurück stellt F und den alten Stand her', () => {
-    const { store, pick, load } = setup();
+    const { store, pick, load, hint, pressed } = setup();
     store.selectSlot('F');
     const before = store.state.value;
-    expect(templatesOf('lofi')[0]?.pat.F).toBeUndefined();
+    const tpl = must(templatesOf('lofi')[0], 'Vorlage');
+    expect(tpl.pat.F).toBeUndefined();
     load('Drums').click();
-    pick('Vorlagen des Stils', must(templatesOf('lofi')[0], 'Vorlage').name).click();
+    pick('Vorlagen des Stils', tpl.name).click();
     expect(store.state.value.cur).toBe('A');
+    // die geladene Vorlage bleibt im Zustand: Hinweiszeile und Markierung nach dem Neuladen
+    expect(store.state.value.preset).toBe(tpl.name);
+    expect(hint()).toBe(`${tpl.name}: ${tpl.hint} (${String(tpl.tempo)} BPM)`);
+    expect(pressed('Vorlagen des Stils')).toEqual([tpl.name]);
     store.undo();
     expect(store.state.value).toEqual(before);
     expect(store.canUndo.value).toBe(false);
@@ -298,10 +304,15 @@ describe('library: Synth-Sound', () => {
     expect(c.readout.text.value).toBe(`BASS · ${preset.name.toUpperCase()}`);
   });
 
-  it('Synth-Sound laden legt wie bisher keinen Zurück-Schritt an', () => {
-    const { store, pick } = setup();
-    pick('Presets', must(SYNTH_SOUNDS.BA[0], 'Preset').name).click();
-    expect(store.state.value.synth.BA.preset).toBe(SYNTH_SOUNDS.BA[0]?.name);
+  it('Laden hat Zurück; dasselbe Preset noch einmal legt keinen Schritt an', () => {
+    const { store, pick, audio } = setup();
+    const before = store.state.value;
+    const preset = must(SYNTH_SOUNDS.BA[1], 'Preset');
+    pick('Presets', preset.name).click();
+    pick('Presets', preset.name).click();
+    expect(audio.auditionNote).toHaveBeenCalledTimes(2);
+    store.undo();
+    expect(store.state.value.synth.BA).toBe(before.synth.BA);
     expect(store.canUndo.value).toBe(false);
   });
 });

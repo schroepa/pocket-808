@@ -47,6 +47,21 @@ describe('Synth-Patch', () => {
     expect(s.synth.BA.preset).toBe(p.name);
     expect(s.synth.BA.oct).toBe(1);
   });
+  it('applySynthPreset: ändert sich nichts, bleibt es derselbe Zustand', () => {
+    const p = must(
+      SYNTH_SOUNDS.BA.find((x) => x.name === 'Reese'),
+      'Reese',
+    );
+    const s = applySynthPreset(baseState(), 'BA', p);
+    expect(applySynthPreset(s, 'BA', p)).toBe(s);
+    // jede Abweichung zählt, auch ein zusätzliches Feld
+    const turned = setSynthValue(s, 'BA', 'cut', 0.99);
+    expect(applySynthPreset(turned, 'BA', p)).not.toBe(turned);
+    const plain = { name: p.name, v: p.v };
+    expect(applySynthPreset(s, 'BA', plain)).not.toBe(s);
+    const dry = applySynthPreset(s, 'BA', plain);
+    expect(applySynthPreset(dry, 'BA', p)).not.toBe(dry);
+  });
   it('toggleMute schaltet den Mixer-Kanal um', () => {
     const s = toggleMute(baseState(), 'LD');
     expect(s.mix.LD.m).toBe(true);

@@ -44,17 +44,26 @@ const withFx = (patch: SynthPatch, fx: Readonly<PartFx>): SynthPatch => {
 export const setPartFx = (s: State, part: Part, key: PartFxKey, v: number): State =>
   withPatch(s, part, (p) => ({ ...withFx(p, { ...p, [key]: v }), preset: null }));
 
-/** Preset laden: Klangwerte, Drive und Chorus (fehlende gehen auf 0); Arp, LFO und Oktave bleiben */
-export const applySynthPreset = (
-  s: State,
-  part: Part,
-  preset: { name: string; v: Readonly<SynthValues>; fx?: Readonly<PartFx> },
-): State =>
-  withPatch(s, part, (p) => ({
-    ...withFx(p, preset.fx ?? {}),
-    ...preset.v,
-    preset: preset.name,
-  }));
+const samePatch = (a: SynthPatch, b: SynthPatch): boolean => {
+  const keys = Object.keys(a) as (keyof SynthPatch)[];
+  return keys.length === Object.keys(b).length && keys.every((k) => a[k] === b[k]);
+};
+
+export interface SynthPreset {
+  name: string;
+  v: Readonly<SynthValues>;
+  fx?: Readonly<PartFx>;
+}
+
+/**
+ * Preset laden: Klangwerte, Drive und Chorus (fehlende gehen auf 0); Arp, LFO und Oktave bleiben.
+ * Ändert sich nichts, kommt derselbe Zustand zurück.
+ */
+export function applySynthPreset(s: State, part: Part, preset: SynthPreset): State {
+  const old = s.synth[part];
+  const next = { ...withFx(old, preset.fx ?? {}), ...preset.v, preset: preset.name };
+  return samePatch(old, next) ? s : withPatch(s, part, () => next);
+}
 
 export const toggleMute = (s: State, id: ChannelId): State => ({
   ...s,
