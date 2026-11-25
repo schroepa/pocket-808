@@ -1036,6 +1036,9 @@ export interface PartFxProbe {
   lowSide: number;
   /** RMS der ersten Differenz / RMS: steigt mit den Obertönen */
   brightness: number;
+  /** RMS je Seite */
+  l: number;
+  r: number;
 }
 
 const rmsOf = (x: Float32Array): number => Math.sqrt(x.reduce((s, v) => s + v * v, 0) / x.length);
@@ -1057,6 +1060,9 @@ export async function partFx(args: {
   midi: number;
   drive: number;
   chorus: number;
+  /** Delay- und Reverb-Send (Standard 0) und Panorama des Kanals (0..1) */
+  send?: number;
+  pan?: number;
 }): Promise<PartFxProbe> {
   let s = structuredClone(initialState());
   const sound = must(
@@ -1067,8 +1073,10 @@ export async function partFx(args: {
   s = setPartFx(setPartFx(s, args.part, 'drive', args.drive), args.part, 'chorus', args.chorus);
   s = {
     ...s,
-    synth: { ...s.synth, [args.part]: { ...s.synth[args.part], dly: 0 } },
-    mix: Object.fromEntries(CHANNELS.map((id) => [id, { ...s.mix[id], r: 0 }])) as State['mix'],
+    synth: { ...s.synth, [args.part]: { ...s.synth[args.part], dly: args.send ?? 0 } },
+    mix: Object.fromEntries(
+      CHANNELS.map((id) => [id, { ...s.mix[id], r: args.send ?? 0, p: args.pan ?? 0.5 }]),
+    ) as State['mix'],
   };
   const { ctx, graph } = graphFor(s, 2, 1);
   synthNote({
@@ -1098,6 +1106,8 @@ export async function partFx(args: {
     side: rmsOf(side) / rmsOf(mid),
     lowSide: rmsOf(lowpass150(side)) / rmsOf(lowpass150(mid)),
     brightness: rmsOf(diff) / rmsOf(L),
+    l: rmsOf(L),
+    r: rmsOf(R),
   };
 }
 

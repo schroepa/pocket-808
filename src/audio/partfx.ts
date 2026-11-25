@@ -6,8 +6,9 @@ import { rampFrom } from './params.ts';
  * Effekte eines Synth-Parts (Etappe 10a), zwischen Eingang und Pegel:
  * Eingang → (trocken | Vorverstärkung → Sättigung → Ausgleich) → Mitte → Summe → Ausgang
  * Mitte → Hochpass → zwei modulierte Verzögerungen (links, rechts) → Chorus-Anteil → Summe
- * Die Summe ist immer stereo und um √½ leiser: Der Panner dahinter reicht Stereo unverändert durch,
- * verteilt Mono aber mit je √½. So bleibt der trockene Klang gleich laut, mit und ohne Kette.
+ * Die Summe ist immer stereo (links = rechts beim trockenen Signal) mit Pegel 1, damit Delay und
+ * Reverb unverändert bleiben. Nur der Panner verteilt Stereo anders als Mono; das gleicht der
+ * Graph direkt davor aus (`stereoTrim`).
  * Alles entsteht erst bei Bedarf; die LFOs laufen nur, solange Chorus > 0 ist.
  */
 
@@ -19,6 +20,13 @@ export interface PartFxChain {
   /** abbauen und den direkten Weg wiederherstellen */
   dispose(): void;
 }
+
+/**
+ * Pegel vor dem Panner, solange die Kette stereo speist: Für gleiche Seiten ergibt er bei jedem
+ * Panorama p (−1..1) exakt dieselben Ausgänge wie der Mono-Weg.
+ */
+export const stereoTrim = (p: number): number =>
+  1 / (2 * Math.cos(((1 - Math.abs(p)) * Math.PI) / 4));
 
 const FADE = 0.03;
 /** Verstärkung in die Sättigung: 1 (kaum hörbar) bis 1 + DRIVE_RANGE */
@@ -70,7 +78,7 @@ export function createPartFx(
     return [g, level(g, v)];
   };
   const [mid] = gain(1);
-  const [sum] = gain(Math.SQRT1_2);
+  const [sum] = gain(1);
   sum.channelCount = 2;
   sum.channelCountMode = 'explicit';
   const [dry, setDry] = gain(1);

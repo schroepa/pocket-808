@@ -110,6 +110,29 @@ describe('Graph: Effekte je Part', () => {
     expect(lvl.setTargetAtTime.mock.calls.at(-1)?.[0]).toBe(0);
   });
 
+  it('der Panner-Ausgleich folgt Kette und Panorama', () => {
+    const s = baseState();
+    const { g } = graphFor(s);
+    const trim = g.parts.LD.trim.gain as unknown as SimParam;
+    const law = (p: number) => 1 / (2 * Math.cos(((1 - Math.abs(p)) * Math.PI) / 4));
+    expect(trim.value).toBe(1);
+    g.setPartFx('LD', { chorus: 0.5 }, 1);
+    expect(trim.at(1)).toBeCloseTo(law(0));
+    g.applyChannel('LD', { ...s.mix.LD, p: 0.8 }, true, 2);
+    expect(trim.setTargetAtTime.mock.calls.at(-1)?.[0]).toBeCloseTo(law(0.6));
+    g.setPartFx('LD', {}, 3);
+    g.releasePartFx('LD');
+    expect(trim.setValueAtTime.mock.calls.at(-1)?.[0]).toBe(1);
+    g.applyChannel('LD', { ...s.mix.LD, p: 0.2 }, true, 4);
+    expect(trim.setTargetAtTime.mock.calls).toHaveLength(1);
+  });
+
+  it('gespeicherte Effekte: der Ausgleich stimmt ab dem ersten Sample', () => {
+    const s = setPartFx(baseState(), 'BA', 'drive', 1);
+    const { g } = graphFor({ ...s, mix: { ...s.mix, BA: { ...s.mix.BA, p: 1 } } });
+    expect((g.parts.BA.trim.gain as unknown as SimParam).value).toBeCloseTo(0.5);
+  });
+
   it('setPartFx meldet eine leere Kette; wieder an vor dem Abbau behält sie', () => {
     const { ctx, g } = graphFor();
     expect(g.setPartFx('BA', {}, 0)).toBe(false);

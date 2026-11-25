@@ -34,6 +34,25 @@ describe.concurrent('Drive und Chorus je Part', () => {
     if (part === 'BA') expect(chorus.lowSide).toBeLessThan(0.1);
   });
 
+  it.for([0.5, 0.6, 0.3, 0] as const)(
+    'Einschalten ändert weder Pegel noch Delay und Reverb (Panorama %s)',
+    async (pan, { expect }) => {
+      const at = (chorus: number) =>
+        runNext<PartFxProbe>('partFx', {
+          part: 'LD',
+          sound: 'Saw',
+          midi: 69,
+          drive: 0,
+          chorus,
+          send: 0.8,
+          pan,
+        });
+      const [dry, hint] = await Promise.all([at(0), at(0.001)]);
+      expect(Math.abs(hint.l - dry.l)).toBeLessThan(dry.l * 0.02);
+      expect(Math.abs(hint.r - dry.r)).toBeLessThanOrEqual(dry.l * 0.02);
+    },
+  );
+
   it('Demo mit beiden am Anschlag übersteuert nicht', async ({ expect }) => {
     const r = await runNext<{ peak: number }>('partFxMix', {});
     expect(r.peak).toBeLessThanOrEqual(0.8);
