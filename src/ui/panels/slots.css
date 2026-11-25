@@ -1,0 +1,36 @@
+@layer components {
+  .slots {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 5px;
+  }
+  .slot {
+    position: relative;
+    min-height: max(40px, var(--touch));
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: var(--cell);
+    color: var(--ink-dim);
+    font: 700 18px var(--font-display);
+  }
+  .slot.has::after {
+    content: '';
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--ink-dim);
+  }
+  .slot.sel {
+    z-index: 1;
+    background: var(--cream);
+    color: var(--chassis);
+    box-shadow: var(--glow-cream);
+  }
+  .slot.sel.has::after {
+    background: var(--chassis);
+  }
+}

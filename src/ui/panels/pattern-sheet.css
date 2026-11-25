@@ -1,0 +1,15 @@
+@layer components {
+  .pattern-sheet {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--gap);
+  }
+  /* zwei Reihen: acht Plätze nebeneinander wären am iPhone zu schmal */
+  .pattern-sheet .slots {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .pattern-sheet .slot {
+    min-height: 56px;
+  }
+}

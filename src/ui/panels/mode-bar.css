@@ -1,0 +1,34 @@
+@layer components {
+  .mode-bar {
+    display: flex;
+    gap: 6px;
+    min-width: 0;
+  }
+  .mode-bar .tabs {
+    flex: 1;
+    min-width: 0;
+  }
+  /* gleich breite Reiter: fünf passen auch bei 390 px in eine Zeile */
+  .mode-bar .tabs button {
+    flex: 1 1 0;
+    padding: 0 2px;
+  }
+  .mode-pattern {
+    position: relative;
+    flex: none;
+    min-width: 56px;
+    min-height: var(--touch);
+    padding: 0 10px;
+    border: 0;
+    border-radius: var(--radius);
+    background: var(--cell);
+    font: 700 18px var(--font-display);
+    white-space: nowrap;
+  }
+  .mode-pattern[aria-expanded='true'] {
+    z-index: 1;
+    background: var(--cream);
+    color: var(--chassis);
+    box-shadow: var(--glow-cream);
+  }
+}
