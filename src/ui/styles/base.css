@@ -29,6 +29,14 @@ button:disabled {
   text-transform: uppercase;
   color: var(--ink-dim);
 }
+/* Überschrift links, Tasten rechts */
+.row-split {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
 .panel {
   padding: 16px var(--pad) var(--pad);
   border-radius: var(--radius-panel);

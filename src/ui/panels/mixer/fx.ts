@@ -9,6 +9,7 @@ import { holdButton } from '../../controls/hold.ts';
 import { knob } from '../../controls/knob.ts';
 import { h } from '../../dom.ts';
 import { djText, sizeText } from './format.ts';
+import './mixer.css';
 
 const DEFAULTS = fxDefaults();
 const pct = (v: number): string => `${Math.round(v * 100)}%`;

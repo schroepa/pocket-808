@@ -1,0 +1,46 @@
+@layer components {
+  .channel-page {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 10px 16px;
+  }
+  .ch-buttons {
+    display: flex;
+    gap: 6px;
+  }
+  .ch-knobs {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+  }
+  /* auch in den Zeilen des alten Mixers: dort bestimmt die Spalte die Breite */
+  .mb {
+    position: relative;
+    height: var(--touch);
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: var(--cell);
+    font: 700 15px var(--font-display);
+    color: color-mix(in srgb, var(--ink) 72%, var(--cell));
+  }
+  .ch-buttons .mb {
+    min-width: 56px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .mb.m.on {
+    z-index: 1;
+    background: var(--cream);
+    color: var(--chassis);
+    box-shadow: var(--glow-cream);
+  }
+  .mb.s.on {
+    z-index: 1;
+    background: var(--acc);
+    color: var(--chassis);
+    box-shadow: 0 0 14px color-mix(in srgb, var(--acc) 28%, transparent);
+  }
+}

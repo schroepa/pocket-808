@@ -24,28 +24,6 @@
   .mx.sel .nm {
     color: var(--ink);
   }
-  .mb {
-    position: relative;
-    height: var(--touch);
-    padding: 0;
-    border: 0;
-    border-radius: 8px;
-    background: var(--cell);
-    font: 700 15px var(--font-display);
-    color: color-mix(in srgb, var(--ink) 72%, var(--cell));
-  }
-  .mb.m.on {
-    z-index: 1;
-    background: var(--cream);
-    color: var(--chassis);
-    box-shadow: 0 0 12px rgba(212, 212, 220, 0.22);
-  }
-  .mb.s.on {
-    z-index: 1;
-    background: var(--acc);
-    color: var(--chassis);
-    box-shadow: 0 0 14px color-mix(in srgb, var(--acc) 28%, transparent);
-  }
   .fd {
     width: 100%;
     height: var(--touch);
@@ -97,7 +75,7 @@
   }
   .st-row {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
   }
   .stp {
@@ -143,5 +121,103 @@
     height: 5px;
     border-radius: 50%;
     background: var(--acc);
+  }
+}
+@layer components {
+  /* Modus Mixer: Seiten untereinander; Spalten für breite Layouts setzt layout.css */
+  .mixer-work {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 8px;
+  }
+  .mixer-work > section {
+    min-width: 0;
+  }
+  .mixer-work .scenes {
+    margin-top: 0;
+  }
+  /* FX ohne Scrollen auf dem iPhone: engere Abstände als im Gerät der langen Seite */
+  .mixer-work .fx-body .knob-grid,
+  .mixer-work .tone-row {
+    margin-bottom: 8px;
+  }
+  .mixer-work .fx-body .cap-label {
+    margin-bottom: 2px;
+  }
+  .mixer-work .stp {
+    height: 48px;
+  }
+  /* 13 Züge in zwei Reihen (7 + 6), auf 390 px je mindestens 44 px breit */
+  .channels {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .ch-strips {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px 4px;
+  }
+  .ch-strip {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+  .ch-name {
+    position: relative;
+    min-width: 0;
+    height: var(--touch);
+    padding: 10px 0 0;
+    border: 0;
+    border-radius: 8px;
+    background: var(--cell);
+    font: 700 14px var(--font-display);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--ink) 72%, var(--cell));
+  }
+  .ch-strip.sel .ch-name {
+    z-index: 1;
+    background: var(--cream);
+    color: var(--chassis);
+    box-shadow: var(--glow-cream);
+  }
+  .ch-strip .sl {
+    gap: 0;
+  }
+  .ch-strip .sl-t {
+    min-width: 0;
+    height: 84px;
+  }
+  /* der Name steht schon auf der Taste darüber */
+  .ch-strip .sl-l {
+    display: none;
+  }
+  /* Marken am Namen: links Mute, rechts Solo */
+  .ch-strip.muted .ch-name::before,
+  .ch-strip.solo .ch-name::after {
+    position: absolute;
+    top: 3px;
+    width: 13px;
+    border-radius: 3px;
+    font: 700 10px/13px var(--font-display);
+    letter-spacing: 0;
+    color: var(--chassis);
+  }
+  .ch-strip.muted .ch-name::before {
+    content: 'M';
+    left: 3px;
+    background: var(--ink-dim);
+  }
+  .ch-strip.solo .ch-name::after {
+    content: 'S';
+    right: 3px;
+    background: var(--acc);
+    box-shadow: 0 0 8px var(--acc);
+  }
+  .ch-strip.muted :is(.sl-f, .sl-h) {
+    background: color-mix(in srgb, var(--ink-dim) 55%, var(--well));
+    box-shadow: none;
   }
 }

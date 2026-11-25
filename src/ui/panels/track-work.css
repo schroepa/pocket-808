@@ -1,0 +1,16 @@
+@layer components {
+  /* Spalten für breite Layouts setzt layout.css */
+  .track-work,
+  .track-pages {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 8px;
+  }
+  .track-pages > section {
+    min-width: 0;
+  }
+  .track-work .smp-head .pads {
+    margin-bottom: 0;
+  }
+}

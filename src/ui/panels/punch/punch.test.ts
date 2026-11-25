@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { baseState } from '../../../core/defaults.ts';
 import { loadState } from '../../../core/persist.ts';
+import { show } from '../../controls/visible.ts';
 import { makeContext, pointer } from '../../test-utils.ts';
-import { PUNCH_PADS, punchDevice } from './punch.ts';
+import { PUNCH_PADS, punchDevice, punchGrid } from './punch.ts';
 
 describe('Gerät Punch', () => {
   it('8 Haltetasten; halten und loslassen; Zusammenfassung zeigt Gehaltenes', () => {
@@ -34,5 +35,18 @@ describe('Gerät Punch', () => {
     expect('punch' in s.open).toBe(false);
     expect(loadState({ open: { punch: true } }, s).open.punch).toBe(true);
     expect('punch' in loadState({ open: { punch: 'x' } }, s).open).toBe(false);
+  });
+});
+
+describe('punchGrid', () => {
+  it('acht Haltetasten ohne Gerät; Ausblenden löst', () => {
+    const { c, audio } = makeContext();
+    const el = punchGrid(c);
+    expect(el.getAttribute('aria-label')).toBe('Punch-Effekte');
+    expect(el.querySelectorAll('.punch-pad')).toHaveLength(8);
+    el.querySelector('.punch-pad')?.dispatchEvent(pointer('pointerdown'));
+    expect(audio.punchOn).toHaveBeenCalledWith('loop8');
+    show(el, false);
+    expect(audio.punchOff).toHaveBeenCalledWith('loop8');
   });
 });
