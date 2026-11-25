@@ -71,6 +71,17 @@ describe('Undo und Zwischenablage', () => {
     expect(store.state.value.patterns.A).toBe(before.patterns.A);
   });
 
+  it('clearPadTrack leert die Pad-Spur mit Zurück', () => {
+    const store = createStore(baseState());
+    store.toggleSampleStep(2, 4);
+    const before = store.state.value.patterns.A;
+    store.clearPadTrack(2);
+    expect(store.state.value.patterns.A.smp[2]?.[4]).toBe(0);
+    expect(store.canUndo.value).toBe(true);
+    store.undo();
+    expect(store.state.value.patterns.A).toBe(before);
+  });
+
   it('mehrstufig: jeder Schritt zurück, in umgekehrter Reihenfolge, danach leer', () => {
     const store = createStore(baseState());
     const s0 = store.state.value;

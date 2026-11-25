@@ -1,6 +1,7 @@
 import { deepFreeze } from '../core/freeze.ts';
 import {
   clearNotes,
+  clearPadTrack,
   clearPattern,
   clearTrack,
   copyPattern,
@@ -61,6 +62,8 @@ export interface Store {
   distributeSlices(pad: number): void;
   clearNotes(): void;
   clearTrack(): void;
+  /** Spur eines Pads im aktuellen Pattern leeren */
+  clearPadTrack(pad: number): void;
   clearPattern(): void;
   loadPreset(preset: Preset): void;
   selectSlot(slot: Slot): void;
@@ -206,6 +209,9 @@ export function createStore(
     },
     clearTrack: () => {
       withUndo(clearTrack);
+    },
+    clearPadTrack: (pad) => {
+      withUndo((s) => clearPadTrack(s, pad));
     },
     clearPattern: () => {
       withUndo(clearPattern);

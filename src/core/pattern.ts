@@ -63,6 +63,12 @@ function withSub(p: Pattern, key: SubKey, step: number, row: StepRow | null): Pa
   return { ...p, sub };
 }
 
+/** alle Sub-Steps eines Schlüssels (Stimme bzw. Pad) entfernen */
+const withoutKeySub = (p: Pattern, key: SubKey): Pattern =>
+  key in p.sub
+    ? { ...p, sub: Object.fromEntries(Object.entries(p.sub).filter(([k]) => k !== key)) }
+    : p;
+
 /** Drum-Step umschalten. Vorhandene Sub-Steps werden stattdessen gelöscht (Step aus). */
 export function toggleDrumStep(state: State, voice: VoiceId, step: number): State {
   if (subStepsOf(currentPattern(state), voice, step)) {
@@ -164,14 +170,19 @@ export function clearTrack(state: State): State {
   const voice = must(VOICE_IDS[state.sel], `Stimme ${state.sel}`);
   const next = updateCurrent(state, (q) => {
     const row = q[voice].some(Boolean) ? emptyRow() : q[voice];
-    const sub =
-      voice in q.sub
-        ? (Object.fromEntries(Object.entries(q.sub).filter(([k]) => k !== voice)) as SubMap)
-        : q.sub;
-    const cleared = row === q[voice] && sub === q.sub ? q : { ...withRow(q, voice, row), sub };
-    return withoutKeyOpt(cleared, voice);
+    return withoutKeyOpt(withoutKeySub(withRow(q, voice, row), voice), voice);
   });
   return next.preset === null ? next : { ...next, preset: null };
+}
+
+/** Spur eines Pads samt Sub-Steps und Step-Optionen leeren (Preset bleibt, wie beim Schalten). */
+export function clearPadTrack(state: State, pad: number): State {
+  const key = `P${pad}` as SubKey;
+  return updateCurrent(state, (q) => {
+    const row = must(q.smp[pad], `Sampler-Reihe ${pad}`);
+    const rows = row.some(Boolean) ? withSampleRow(q, pad, emptyRow()) : q;
+    return withoutKeyOpt(withoutKeySub(rows, key), key);
+  });
 }
 
 export const selectSlot = (state: State, slot: Slot): State =>

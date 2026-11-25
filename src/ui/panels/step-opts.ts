@@ -24,7 +24,8 @@ export interface EditorOpt {
 }
 export const createEditorOpt = (): Signal<EditorOpt> => signal({ on: false, step: -1 });
 
-const fmtTune = (v: number): string => {
+/** Tune einer Drum als Abweichung von der Mitte */
+export const fmtTune = (v: number): string => {
   const n = Math.round((v - 0.5) * 100);
   return `${n > 0 ? '+' : ''}${String(n)}`;
 };
