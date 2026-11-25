@@ -2,6 +2,7 @@ import { WAVES } from '../core/constants.ts';
 import { attackTime, decayTime, releaseTime } from '../core/envelope.ts';
 import type { SynthPatch } from '../core/types.ts';
 import { must } from '../core/util.ts';
+import { DRIFT_CENTS, softClipCurve, WARM_DRIVE } from './dsp.ts';
 import type { PartLfo } from './lfo.ts';
 import { rampFrom } from './params.ts';
 
@@ -9,6 +10,13 @@ import { rampFrom } from './params.ts';
    Amp-ADSR. Pro Part monophon: eine neue Note schneidet die vorige kurz ab.
    Etappe 6a: Akkorde paraphon (ein Filter, eine Amp, je Ton zwei Oszillatoren, Sub nur für den
    Grundton), Akzent (lauter, mehr Env) und Slide (gleitet von der klingenden Vorgängerin). */
+
+/** Kennlinie der Sättigung vor dem Filter (Warm), für alle Noten geteilt */
+const WARM_CURVE = softClipCurve(WARM_DRIVE, true);
+/** Pegel-Ausgleich für Warm: die Sättigung hebt leise Anteile an */
+export const WARM_GAIN = 0.8;
+/** Güte des zweiten Filters (Warm): flach, die Resonanz kommt vom ersten */
+const WARM_Q2 = 0.6;
 
 /** Akzent: Pegel-Faktor und zusätzliche Env-Menge */
 export const ACCENT_GAIN = 1.35;
@@ -205,6 +213,10 @@ export function synthNote(o: {
   slide?: boolean;
   /** LFO des Parts (Etappe 6b), wird an Filter bzw. Oszillatoren gelegt */
   lfo?: PartLfo;
+  /** warmer Klang: 24-dB-Filter, Sättigung vor dem Filter, leichtes Driften je Note */
+  warm?: boolean;
+  /** Zufall für das Driften (−1..1 Anteil von DRIFT_CENTS) */
+  drift?: number;
 }): SynthVoice {
   const { ctx, patch: p, time: t } = o;
   const freqs = o.midis.map((m) => 440 * Math.pow(2, (m - 69) / 12));
@@ -241,16 +253,25 @@ export function synthNote(o: {
   lp.type = 'lowpass';
   lp.frequency.value = base;
   lp.Q.value = 0.5 + p.res * 14;
-  const amp = ctx.createGain();
-  if (from) {
-    schedFltSlide(lp.frequency, t, p.fs, fR, end, base, peak);
-    schedAmpSlide(amp.gain, t, slideLevel, decayTime(p.ad), p.as, aR, end);
-  } else {
-    schedFlt(lp.frequency, t, attackTime(p.fa), decayTime(p.fd), p.fs, fR, end, base, peak);
-    schedAmp(amp.gain, t, attackTime(p.aa), decayTime(p.ad), p.as, aR, end);
+  // Warm: ein zweiter Tiefpass mit demselben Verlauf macht aus 12 dB/Oktave 24 dB/Oktave
+  const filters = [lp];
+  if (o.warm) {
+    const lp2 = ctx.createBiquadFilter();
+    lp2.type = 'lowpass';
+    lp2.frequency.value = base;
+    lp2.Q.value = WARM_Q2;
+    filters.push(lp2);
   }
+  const amp = ctx.createGain();
+  for (const f of filters) {
+    if (from) schedFltSlide(f.frequency, t, p.fs, fR, end, base, peak);
+    else schedFlt(f.frequency, t, attackTime(p.fa), decayTime(p.fd), p.fs, fR, end, base, peak);
+  }
+  if (from) schedAmpSlide(amp.gain, t, slideLevel, decayTime(p.ad), p.as, aR, end);
+  else schedAmp(amp.gain, t, attackTime(p.aa), decayTime(p.ad), p.as, aR, end);
   const life = end - t + Math.max(fR, aR) + 0.05;
   const cents = p.det * 28;
+  const drift = o.warm ? (o.drift ?? 0) * DRIFT_CENTS : 0;
   // Akkord: Mischpegel × 1/√n, damit er nicht lauter als ein Einzelton wird
   const mix = gn(0.4 / Math.sqrt(freqs.length));
   const oscs: OscillatorNode[] = [];
@@ -260,13 +281,23 @@ export function synthNote(o: {
   freqs.forEach((f, i) => {
     for (const sg of [1, -1]) {
       const n = osc(wave, f, life, fromOf(i));
-      n.detune.value = sg * cents;
+      n.detune.value = sg * cents + drift;
       n.connect(mix);
       oscs.push(n);
     }
   });
-  mix.connect(lp);
-  lp.connect(amp);
+  if (o.warm) {
+    const sat = ctx.createWaveShaper();
+    sat.curve = WARM_CURVE as Float32Array<ArrayBuffer>;
+    mix.connect(sat);
+    sat.connect(lp);
+  } else mix.connect(lp);
+  let last: AudioNode = lp;
+  for (const f of filters.slice(1)) {
+    last.connect(f);
+    last = f;
+  }
+  last.connect(amp);
   const f = must(freqs[0], 'Grundton');
   if (p.sub > 0.01) {
     const start = fromOf(0);
@@ -276,8 +307,8 @@ export function synthNote(o: {
     sg.connect(amp);
     oscs.push(n);
   }
-  o.lfo?.attach(lp, oscs);
-  const out = gn(0.6 * (o.accent ? ACCENT_GAIN : 1));
+  o.lfo?.attach(filters, oscs);
+  const out = gn(0.6 * (o.accent ? ACCENT_GAIN : 1) * (o.warm ? WARM_GAIN : 1));
   amp.connect(out);
   out.connect(o.dest);
   const level = from

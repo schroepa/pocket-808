@@ -1,8 +1,10 @@
 import { fxDefaults } from '../../../core/defaults.ts';
 import { setFxValue } from '../../../core/mixer.ts';
+import { setTape, setWarm } from '../../../core/tone.ts';
 import type { Fx } from '../../../core/types.ts';
 import { computed } from '../../../store/signals.ts';
 import type { UiContext } from '../../context.ts';
+import { chip } from '../../controls/chip.ts';
 import { holdButton } from '../../controls/hold.ts';
 import { knob } from '../../controls/knob.ts';
 import { h } from '../../dom.ts';
@@ -63,6 +65,29 @@ export function fxPanel(c: UiContext): HTMLElement {
     h('div', { class: 'knob-grid k3' }, [
       fxKnob('dj', 'Filter', 'DJ', djText, 0.5),
       fxKnob('djq', 'Reso', 'DJ', pct),
+    ]),
+    h('div', { class: 'cap-label', text: 'Klang' }),
+    h('div', { class: 'tone-row' }, [
+      chip(scope, {
+        label: 'Warm',
+        ariaLabel: 'Warmer, analoger Klang',
+        active: store.select((s) => s.warm === true),
+        onClick: () => {
+          store.update((s) => setWarm(s, s.warm !== true));
+          readout.flash(store.state.peek().warm ? 'WARM AN' : 'WARM AUS');
+        },
+      }),
+      knob(scope, {
+        label: 'Tape',
+        value: computed(() => store.state.value.tape ?? 0),
+        write: (v) => {
+          store.update((s) => setTape(s, v));
+        },
+        def: () => 0,
+        format: pct,
+        readout,
+        tag: () => 'TAPE',
+      }),
     ]),
     h('div', { class: 'cap-label', text: 'Stutter (halten)' }),
     h('div', { class: 'st-row', attrs: { role: 'group', 'aria-label': 'Stutter' } }, stutter),

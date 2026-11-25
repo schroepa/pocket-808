@@ -89,6 +89,12 @@
     background: var(--acc);
     box-shadow: 0 0 8px rgba(211, 146, 90, 0.45);
   }
+  .tone-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 16px;
+  }
   .st-row {
     display: grid;
     grid-template-columns: repeat(4, 1fr);

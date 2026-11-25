@@ -175,4 +175,8 @@ export interface State {
   fx: Fx;
   /** 8 Mixer-Szenen; fehlt, solange keine gesichert ist */
   scenes?: (SceneMix | null)[];
+  /** warmer, analoger Klang (24-dB-Filter, Sättigung, Driften); fehlt = aus */
+  warm?: true;
+  /** Tape-Charakter 0..1 (Eiern, weiche Höhen, Rauschen); fehlt = aus */
+  tape?: number;
 }

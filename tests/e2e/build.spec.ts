@@ -1,9 +1,9 @@
 import { readFileSync, statSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
-// Größe nach Etappe 6a (140 455 B, mit Step-Optionen, Punch, LCD, Akkorden) plus 20 % Puffer;
-// nach Etappe 2 waren es 114 712 B, nach 5c 94 461 B, nach 5a 70 855 B
-const BUDGET_BYTES = 168_500;
+// Größe mit Vorlagen und Klangcharakter (182 373 B, davon rund 17 kB Vorlagen-Daten) plus 10 % Puffer;
+// nach Etappe 8b waren es 153 840 B, nach 6a 140 455 B, nach Etappe 2 114 712 B, nach 5a 70 855 B
+const BUDGET_BYTES = 200_000;
 const DIST = new URL('../../dist/index.html', import.meta.url);
 
 test.describe('gebaute dist/index.html', () => {

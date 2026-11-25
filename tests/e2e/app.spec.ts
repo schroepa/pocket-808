@@ -104,7 +104,7 @@ test('Tap-Tempo setzt das Tempo, mehrstufiges Zurück nimmt zwei Änderungen nac
 
   // zwei Änderungen mit Zurück, dann zweimal zurück bis der Knopf leer ist
   await page.getByRole('button', { name: 'Pattern leeren' }).click();
-  await page.getByRole('button', { name: 'House' }).click();
+  await page.locator('.presets .chip', { hasText: 'House' }).click();
   const back = page.getByRole('button', { name: 'Zurück', exact: true });
   await expect(back).toBeEnabled();
   await back.click();

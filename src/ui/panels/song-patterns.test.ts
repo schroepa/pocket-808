@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { PRESETS } from '../../core/constants.ts';
 import { initialState } from '../../core/initial.ts';
+import { applyTemplate, KITS, templatesOf } from '../../core/templates/index.ts';
 import { makeContext } from '../test-utils.ts';
 import { patternsPanel } from './patterns.ts';
 import { songPanel } from './song.ts';
@@ -164,5 +165,115 @@ describe('Würfeln', () => {
     expect(c.readout.text.value).toBe('Variation gewürfelt');
     store.undo();
     expect(store.state.value.patterns.A).toBe(before);
+  });
+});
+
+describe('Vorlagen-Browser', () => {
+  const setup = (state = initialState()) => {
+    const ctx = makeContext({ state });
+    const el = patternsPanel(ctx.c);
+    const chips = (cls: string) => [...el.querySelectorAll<HTMLButtonElement>(`.${cls} .chip`)];
+    const pick = (cls: string, text: string) => {
+      const b = chips(cls).find((x) => x.textContent === text);
+      if (!b) throw new Error(text);
+      return b;
+    };
+    const hint = () => el.querySelector('.tpl-hint')?.textContent ?? '';
+    const scopeRow = () => el.querySelector<HTMLElement>('.tpl-scope');
+    return { ...ctx, el, chips, pick, hint, scopeRow };
+  };
+
+  it('startet bei „Basis“; ein Stil zeigt seine Vorlagen, Hinweis und die Lade-Auswahl', () => {
+    const { chips, pick, hint, scopeRow } = setup();
+    expect(chips('genres').map((b) => b.textContent)).toEqual([
+      'Basis',
+      'Lo-Fi',
+      'Hip-Hop',
+      'Trap',
+      'House',
+      'Techno',
+    ]);
+    expect(pick('genres', 'Basis').getAttribute('aria-pressed')).toBe('true');
+    expect(hint()).toMatch(/^Einfache Drum-Muster/);
+    expect(scopeRow()?.hidden).toBe(true);
+    pick('genres', 'Lo-Fi').click();
+    expect(chips('presets').map((b) => b.textContent)).toEqual(
+      templatesOf('lofi').map((t) => t.name),
+    );
+    expect(hint()).toMatch(/^5 Vorlagen\./);
+    expect(scopeRow()?.hidden).toBe(false);
+    pick('genres', 'Basis').click();
+    expect(chips('presets').map((b) => b.textContent)).toEqual(PRESETS.map((p) => p.name));
+    expect(scopeRow()?.hidden).toBe(true);
+  });
+
+  it('lädt eine Vorlage komplett, markiert sie und Zurück stellt alles wieder her', () => {
+    const { store, pick, hint, c, el } = setup();
+    const before = store.state.value;
+    pick('genres', 'Trap').click();
+    pick('presets', 'Atlanta Trap').click();
+    const s = store.state.value;
+    expect([s.tempo, s.preset, s.cur]).toEqual([140, 'Atlanta Trap', 'A']);
+    expect(s.synth.BA.preset).toBe('808');
+    expect(s.warm).toBe(true);
+    expect(pick('presets', 'Atlanta Trap').getAttribute('aria-pressed')).toBe('true');
+    expect(hint()).toBe('Atlanta Trap: Hat-Rolls, 808 mit Slide, Glöckchen-Melodie (140 BPM)');
+    expect(c.readout.text.value).toBe('ATLANTA TRAP · 140 BPM');
+    [...el.querySelectorAll<HTMLButtonElement>('.tools .chip')]
+      .find((b) => b.textContent === 'Zurück')
+      ?.click();
+    expect(store.state.value).toBe(before);
+  });
+
+  it('„Drums“ und „Sound“ laden nur ihren Teil', () => {
+    const { store, pick, el } = setup();
+    const before = store.state.value;
+    pick('genres', 'House').click();
+    const radio = (text: string) =>
+      [...el.querySelectorAll<HTMLButtonElement>('.tpl-scope [role=radio]')].find(
+        (b) => b.textContent === text,
+      );
+    radio('Drums')?.click();
+    pick('presets', 'Classic House').click();
+    let s = store.state.value;
+    expect(s.tempo).toBe(124);
+    expect(s.patterns.A.BD).toEqual([1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]);
+    expect(s.patterns.A.notes).toBe(before.patterns.A.notes);
+    expect(s.synth).toBe(before.synth);
+    store.undo();
+    radio('Sound')?.click();
+    pick('presets', 'Deep House').click();
+    s = store.state.value;
+    expect(s.patterns).toBe(before.patterns);
+    expect(s.tempo).toBe(before.tempo);
+    expect(s.synth.BA.preset).toBe('Deep');
+  });
+
+  it('öffnet beim Stil der zuletzt geladenen Vorlage', () => {
+    const tpl = templatesOf('techno')[1];
+    if (!tpl) throw new Error('Vorlage fehlt');
+    const { pick, chips } = setup(applyTemplate(initialState(), tpl, 'all'));
+    expect(pick('genres', 'Techno').getAttribute('aria-pressed')).toBe('true');
+    expect(
+      chips('presets')
+        .find((b) => b.textContent === tpl.name)
+        ?.getAttribute('aria-pressed'),
+    ).toBe('true');
+  });
+
+  it('Kit: lädt die Drum-Parameter mit Zurück und markiert das aktive Kit', () => {
+    const { store, pick, chips, c } = setup();
+    expect(chips('kits').map((b) => b.textContent)).toEqual(KITS.map((k) => k.name));
+    expect(pick('kits', 'Classic').getAttribute('aria-pressed')).toBe('true');
+    pick('kits', 'Lo-Fi').click();
+    expect(store.state.value.params.SD).toEqual({ level: 0.7, tune: 0.35, decay: 0.35 });
+    expect(pick('kits', 'Lo-Fi').getAttribute('aria-pressed')).toBe('true');
+    expect(pick('kits', 'Classic').getAttribute('aria-pressed')).toBe('false');
+    expect(c.readout.text.value).toBe('KIT LO-FI');
+    store.undo();
+    expect(pick('kits', 'Classic').getAttribute('aria-pressed')).toBe('true');
+    // ein gedrehter Regler: kein Kit mehr aktiv
+    store.update((s) => ({ ...s, params: { ...s.params, BD: { ...s.params.BD, tune: 0.11 } } }));
+    expect(chips('kits').some((b) => b.getAttribute('aria-pressed') === 'true')).toBe(false);
   });
 });

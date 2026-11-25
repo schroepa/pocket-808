@@ -1,4 +1,4 @@
-import { SYN_PRESETS } from '../../../core/constants.ts';
+import { SYNTH_SOUNDS } from '../../../core/templates/index.ts';
 import { applySynthPreset } from '../../../core/synth.ts';
 import type { UiContext } from '../../context.ts';
 import { chip } from '../../controls/chip.ts';
@@ -23,7 +23,7 @@ export function synthPresets(c: UiContext): HTMLElement {
       inner.dispose();
       inner = createScope();
       list.replaceChildren(
-        ...SYN_PRESETS[part].map((p) =>
+        ...SYNTH_SOUNDS[part].map((p) =>
           chip(inner, {
             label: p.name,
             active: store.select((s) => s.synth[part].preset === p.name),

@@ -103,3 +103,57 @@ test('Mixer und FX: im Fenster, Touch-Ziele ≥ 44 px', async ({ page }, info) =
     expect(small).toEqual([]);
   }
 });
+
+test('Vorlagen-Browser: Stil wählen, Vorlage laden, Warm und Tape an; bleibt nach Neuladen', async ({
+  page,
+}) => {
+  await page.locator('.genres .chip', { hasText: 'Lo-Fi' }).click();
+  const tpl = page.locator('.presets .chip', { hasText: 'Dusty Tape' });
+  await tpl.click();
+  await expect(tpl).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.tpl-hint')).toContainText('78 BPM');
+  await expect(page.locator('.kits .chip', { hasText: 'Lo-Fi' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  const saved = async () =>
+    page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem('pocket808.v1') ?? '{}') as {
+          tape?: number;
+          warm?: boolean;
+          tempo?: number;
+        },
+    );
+  await expect.poll(async () => (await saved()).tape).toBe(0.6);
+  expect((await saved()).warm).toBe(true);
+  expect((await saved()).tempo).toBe(78);
+  await page.reload();
+  // nach dem Neuladen öffnet der Browser beim Stil der geladenen Vorlage
+  await expect(page.locator('.presets .chip', { hasText: 'Dusty Tape' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  // Zurück gibt es nach dem Neuladen nicht mehr; eine andere Vorlage ersetzt den Klang wieder
+  await page.locator('.genres .chip', { hasText: 'Techno' }).click();
+  await page.locator('.presets .chip', { hasText: 'Peak Techno' }).click();
+  await expect.poll(async () => (await saved()).tape).toBeUndefined();
+  await page.locator('.tools .chip', { hasText: 'Zurück' }).click();
+  await expect.poll(async () => (await saved()).tape).toBe(0.6);
+});
+
+test('Vorlagen-Browser: im Fenster, Touch-Ziele ≥ 44 px', async ({ page }, info) => {
+  await page.locator('.genres .chip', { hasText: 'Trap' }).click();
+  const width = await page.evaluate(() => document.documentElement.clientWidth);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+    width,
+  );
+  for (const sel of ['.genres .chip', '.presets .chip', '.kits .chip', '.tpl-scope [role=radio]']) {
+    for (const el of await page.locator(sel).all()) {
+      const box = await el.boundingBox();
+      // am Desktop (Maus) dürfen die Ziele kleiner sein
+      if (info.project.name !== 'desktop') expect(box?.height ?? 0, sel).toBeGreaterThanOrEqual(44);
+      expect((box?.x ?? 0) + (box?.width ?? 0), sel).toBeLessThanOrEqual(width + 1);
+    }
+  }
+});

@@ -1,10 +1,19 @@
 import type { Rng } from '../core/random.ts';
 import type { DrumParams, VoiceId } from '../core/types.ts';
+import { softClipCurve } from './dsp.ts';
 
 /*
  * Die zehn Drum-Stimmen, 1:1 aus Legacy (VOICE_FN). Einzige gewollte Abweichung:
  * Rauschen startet sample-genau (Entscheidung 2026-10-14).
+ * Mit `warm` klingen sie näher an der Schaltung der 808: Hats und Becken laufen durch zwei
+ * Bandpässe, Bass Drum und Toms sättigen stärker, das Snare-Rauschen verliert seine Schärfe.
  */
+
+/** Kennlinien für Warm: Bass Drum kräftig, Toms sanft */
+const WARM_KICK = softClipCurve(2.6, true);
+const WARM_TOM = softClipCurve(1.4, true);
+/** Bandpässe der 808-Metallstimmen (Hz) */
+const METAL_BANDS = [3440, 7100];
 
 export interface VoiceKit {
   ctx: BaseAudioContext;
@@ -14,6 +23,8 @@ export interface VoiceKit {
   rnd: Rng;
   /** Legacy ohChoke: die zuletzt gestartete Open Hat, die CH/OH abwürgen */
   choke: { gain: GainNode | null };
+  /** warmer Klang */
+  warm?: boolean;
 }
 
 type Voice = (k: VoiceKit, t: number, p: DrumParams) => void;
@@ -71,7 +82,12 @@ const tom =
     env(g, t, 1, dec, 0.002);
     const out = gn(k, p.level * 0.85);
     o.connect(g);
-    g.connect(out);
+    if (k.warm) {
+      const sh = k.ctx.createWaveShaper();
+      sh.curve = WARM_TOM as Float32Array<ArrayBuffer>;
+      g.connect(sh);
+      sh.connect(out);
+    } else g.connect(out);
     out.connect(k.out);
   };
 
@@ -86,9 +102,20 @@ const metal = (
 ): GainNode => {
   const g = k.ctx.createGain();
   env(g, t, 1, dec, 0.0008);
-  const h = flt(k, 'highpass', hp, 0.8);
+  // Warm: der Hochpass sitzt tiefer, damit das untere Band (3,4 kHz) den Körper liefert
+  const h = flt(k, 'highpass', k.warm ? hp * 0.55 : hp, 0.8);
   const out = gn(k, level);
-  for (const f of METAL) osc(k, 'square', f * kk, t, dec + 0.06).connect(h);
+  if (k.warm) {
+    // wie in der 808: die sechs Rechtecke laufen durch zwei Bandpässe, erst dann durch den Hochpass
+    const sum = gn(k, 1.6);
+    const bands = METAL_BANDS.map((f) => flt(k, 'bandpass', f * kk, 2.2));
+    for (const f of METAL) {
+      const o = osc(k, 'square', f * kk, t, dec + 0.06);
+      for (const b of bands) o.connect(b);
+    }
+    for (const b of bands) b.connect(sum);
+    sum.connect(h);
+  } else for (const f of METAL) osc(k, 'square', f * kk, t, dec + 0.06).connect(h);
   h.connect(g);
   g.connect(out);
   return out;
@@ -110,7 +137,7 @@ export const VOICE_FN: Record<VoiceId, Voice> = {
     const g = k.ctx.createGain();
     env(g, t, 1, dec, 0.002);
     const sh = k.ctx.createWaveShaper();
-    sh.curve = k.kick as Float32Array<ArrayBuffer>;
+    sh.curve = (k.warm ? WARM_KICK : k.kick) as Float32Array<ArrayBuffer>;
     const out = gn(k, p.level * 0.9);
     o.connect(g);
     g.connect(sh);
@@ -136,7 +163,11 @@ export const VOICE_FN: Record<VoiceId, Voice> = {
     const g = k.ctx.createGain();
     env(g, t, 0.7, 0.1 + p.decay * 0.25);
     n.connect(hp);
-    hp.connect(g);
+    if (k.warm) {
+      const lp = flt(k, 'lowpass', 8500, 0.5);
+      hp.connect(lp);
+      lp.connect(g);
+    } else hp.connect(g);
     g.connect(out);
     out.connect(k.out);
   },
@@ -260,13 +291,22 @@ export function renderVoice(opts: {
   noise: AudioBuffer;
   kick: Float32Array;
   rnd: Rng;
+  warm?: boolean;
 }): Promise<AudioBuffer> {
   const { createOffline, sampleRate, voice } = opts;
   const oc = createOffline(1, Math.ceil(sampleRate * VOICE_DURATION[voice]), sampleRate);
   const bus = oc.createGain();
   bus.connect(oc.destination);
   VOICE_FN[voice](
-    { ctx: oc, out: bus, noise: opts.noise, kick: opts.kick, rnd: opts.rnd, choke: { gain: null } },
+    {
+      ctx: oc,
+      out: bus,
+      noise: opts.noise,
+      kick: opts.kick,
+      rnd: opts.rnd,
+      choke: { gain: null },
+      warm: opts.warm === true,
+    },
     0,
     { ...opts.params, level: 1 },
   );

@@ -204,3 +204,31 @@ describe('Szenen im Mixer', () => {
     expect(scene(1)?.getAttribute('aria-pressed')).toBe('false');
   });
 });
+
+describe('Klang im FX-Feld', () => {
+  it('Warm schaltet um, Tape stellt den Wert und löscht das Feld bei 0', () => {
+    const { c, store } = makeContext();
+    const el = fxPanel(c);
+    const warm = el.querySelector<HTMLButtonElement>('[aria-label="Warmer, analoger Klang"]');
+    warm?.click();
+    expect(store.state.value.warm).toBe(true);
+    expect(warm?.getAttribute('aria-pressed')).toBe('true');
+    expect(c.readout.text.value).toBe('WARM AN');
+    warm?.click();
+    expect('warm' in store.state.value).toBe(false);
+    expect(c.readout.text.value).toBe('WARM AUS');
+    const tape = el.querySelector('[role=slider][aria-label="Tape"]');
+    key(tape, 'End');
+    expect(store.state.value.tape).toBe(1);
+    expect(c.readout.text.value).toBe('TAPE Tape 100%');
+    key(tape, 'Home');
+    expect('tape' in store.state.value).toBe(false);
+    // Doppeltipp setzt auf den Standard (aus)
+    key(tape, 'End');
+    for (let i = 0; i < 2; i++) {
+      tape?.dispatchEvent(pointer('pointerdown'));
+      tape?.dispatchEvent(pointer('pointerup'));
+    }
+    expect('tape' in store.state.value).toBe(false);
+  });
+});
