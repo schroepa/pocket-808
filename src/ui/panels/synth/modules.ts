@@ -2,8 +2,8 @@ import { ARP_LABELS, ARP_MODES, lfoHz, setArp, setLfo } from '../../../core/arp.
 import { WAVES } from '../../../core/constants.ts';
 import { synthDefaults } from '../../../core/defaults.ts';
 import { attackTime, decayTime, releaseTime } from '../../../core/envelope.ts';
-import { setSynthValue, setWave, shiftOctave } from '../../../core/synth.ts';
-import type { ArpMode, SynthKey } from '../../../core/types.ts';
+import { setPartFx, setSynthValue, setWave, shiftOctave } from '../../../core/synth.ts';
+import type { ArpMode, PartFxKey, SynthKey } from '../../../core/types.ts';
 import { computed, signal } from '../../../store/signals.ts';
 import type { UiContext } from '../../context.ts';
 import { chip } from '../../controls/chip.ts';
@@ -25,7 +25,7 @@ const ADSR = [
   ['r', 'R', 'Release', (v: number) => fmtTime(releaseTime(v))],
 ] as const;
 
-/** Die fünf SH-101-Module des gewählten Parts (Legacy buildSynth, Abschnitt „Sound“). */
+/** Die SH-101-Module des gewählten Parts, dazu Effekt, Arp und LFO (Legacy buildSynth, Abschnitt „Sound“). */
 export function synthModules(c: UiContext): HTMLElement {
   const { store, scope, audio, readout } = c;
   const part = store.select((s) => s.part);
@@ -127,6 +127,19 @@ export function synthModules(c: UiContext): HTMLElement {
       readout,
       tag,
     });
+  const fxKnob = (k: PartFxKey, label: string) =>
+    knob(scope, {
+      label,
+      value: computed(() => patch.value[k] ?? 0),
+      write: (v) => {
+        store.update((s) => setPartFx(s, s.part, k, v));
+      },
+      def: () => 0,
+      format: pct,
+      readout,
+      tag,
+      onEnd: hear,
+    });
   return h('div', { class: 'sh' }, [
     h('div', { class: 'shm w2' }, [
       h('h4', { text: 'Oszillator' }),
@@ -157,6 +170,10 @@ export function synthModules(c: UiContext): HTMLElement {
     h('div', { class: 'shm w2' }, [
       h('h4', { text: 'Out' }),
       h('div', { class: 'shk' }, [kn('dly', 'Delay'), kn('lvl', 'Level')]),
+    ]),
+    h('div', { class: 'shm w2' }, [
+      h('h4', { text: 'Effekt' }),
+      h('div', { class: 'shk' }, [fxKnob('drive', 'Drive'), fxKnob('chorus', 'Chorus')]),
     ]),
     h('div', { class: 'shm w2' }, [
       h('h4', { text: 'Arp' }),

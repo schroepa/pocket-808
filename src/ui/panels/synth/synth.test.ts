@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { NOTE_NAMES, SCALES, SYN_PRESETS } from '../../../core/constants.ts';
 import { SYNTH_SOUNDS } from '../../../core/templates/index.ts';
 import { setArp } from '../../../core/arp.ts';
+import { applySynthPreset } from '../../../core/synth.ts';
 import { baseState, synthDefaults } from '../../../core/defaults.ts';
 import type { State } from '../../../core/types.ts';
 import { must } from '../../../core/util.ts';
@@ -399,6 +400,54 @@ describe('Arp und LFO', () => {
     expect(synthSummary(s)).not.toMatch(/Arp/);
     const on = setArp(s, s.part, { m: 'up', r: 1, o: 1 });
     expect(synthSummary(on)).toMatch(/ · Arp$/);
+  });
+});
+
+describe('Effekt: Drive und Chorus', () => {
+  const slider = (el: Element, label: string) =>
+    must(el.querySelector(`[role=slider][aria-label="${label}"]`) ?? undefined, label);
+  const key = (el: Element, k: string) => {
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: k }));
+  };
+
+  it('schreiben den gewählten Part, zeigen Prozent, heben das Preset auf und hören vor', () => {
+    const { c, store, audio } = makeContext();
+    store.update((s) => ({ ...s, part: 'LD' }));
+    const el = synthModules(c);
+    key(slider(el, 'Chorus'), 'End');
+    expect(store.state.value.synth.LD.chorus).toBe(1);
+    expect(store.state.value.synth.LD.preset).toBeNull();
+    expect(c.readout.text.value).toBe('LEAD Chorus 100 %');
+    key(slider(el, 'Drive'), 'End');
+    expect(store.state.value.synth.LD.drive).toBe(1);
+    expect('drive' in store.state.value.synth.BA).toBe(false);
+    expect(audio.auditionNote).not.toHaveBeenCalled();
+    for (let i = 0; i < 2; i++)
+      for (const type of ['pointerdown', 'pointerup'])
+        slider(el, 'Drive').dispatchEvent(pointer(type));
+    expect(audio.auditionNote).toHaveBeenCalledWith('LD', 0, 2);
+  });
+
+  it('Doppeltipp schaltet aus; Preset und Part-Wechsel bewegen die Knobs', () => {
+    const { c, store } = makeContext();
+    store.update((s) => ({ ...s, part: 'BA' }));
+    const el = synthModules(c);
+    const drive = slider(el, 'Drive');
+    key(drive, 'End');
+    for (let i = 0; i < 2; i++) {
+      drive.dispatchEvent(pointer('pointerdown'));
+      drive.dispatchEvent(pointer('pointerup'));
+    }
+    expect('drive' in store.state.value.synth.BA).toBe(false);
+    const reese = must(
+      SYNTH_SOUNDS.BA.find((p) => p.name === 'Reese'),
+      'Reese',
+    );
+    store.update((s) => applySynthPreset(s, 'BA', reese));
+    expect(drive.getAttribute('aria-valuenow')).toBe('30');
+    expect(slider(el, 'Chorus').getAttribute('aria-valuenow')).toBe('45');
+    store.update((s) => ({ ...s, part: 'LD' }));
+    expect(drive.getAttribute('aria-valuenow')).toBe('0');
   });
 });
 
