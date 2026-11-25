@@ -1,0 +1,32 @@
+@layer components {
+  /* bricht notfalls um: nie horizontal scrollen */
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    padding: 3px;
+    border-radius: var(--radius);
+    background: var(--cell);
+  }
+  .tabs button {
+    position: relative;
+    flex: 1 0 auto;
+    min-width: var(--touch);
+    min-height: var(--touch);
+    padding: 0 8px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    font: 600 13px var(--font-display);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    /* Kontrast wie beim Segment (axe) */
+    color: color-mix(in srgb, var(--ink) 72%, var(--cell));
+  }
+  .tabs button[aria-selected='true'] {
+    z-index: 1;
+    background: var(--cream);
+    color: var(--chassis);
+    box-shadow: var(--glow-cream);
+  }
+}
