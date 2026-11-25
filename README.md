@@ -6,7 +6,7 @@
 
 Aufmachen, auf *Start* tippen, und der Beat läuft. Pocket 808 braucht keine Installation, kein Konto und keinen Server. Alles, was du baust, bleibt in deinem Browser.
 
-> Diese README ist ein **lebendes Dokument**. Sie wird mit jeder Änderung am Projekt aktualisiert. Stand: 2026-11-25, Version 0.27.0.
+> Diese README ist ein **lebendes Dokument**. Sie wird mit jeder Änderung am Projekt aktualisiert. Stand: 2026-11-25, Version 0.28.0.
 
 ---
 
@@ -29,6 +29,7 @@ Aufmachen, auf *Start* tippen, und der Beat läuft. Pocket 808 braucht keine Ins
   - Pro Note **Akzent** (lauter und heller), **Slide** (gleitet wie bei der TB-303 von der vorigen Note herüber) und **Akkorde** (Dreiklang, Vierklang, Quinte, Oktave, immer passend zur gewählten Tonart). Gesetzt wird mit dem Werkzeug über der Piano-Roll.
   - **Arpeggiator** wie beim SH-101: Auf, Ab, Auf-Ab oder Zufall, in Sechzehnteln oder Zweiunddreißigsteln über eine oder zwei Oktaven. Mit einem Akkord entsteht daraus sofort eine Figur.
   - **LFO** je Stimme für Wobble (Cutoff) oder Vibrato (Pitch), von 0,1 bis 19 Hz.
+  - **Drive und Chorus** je Stimme: Drive macht Bässe dicht und fett, Chorus zieht Flächen und Leads stereo auf, während die tiefen Frequenzen in der Mitte bleiben. Alle Synth-Presets nutzen beides.
   - Tonart und Skala wählst du aus, die Piano-Roll bleibt automatisch in der Tonart, falsche Töne gibt es nicht.
   - Ein tempo-synchrones Delay ist eingebaut.
 - **Eigene Sounds:**
@@ -173,6 +174,7 @@ flowchart LR
   - **Akkordtöne** werden über Halbton-Ziele gewählt (Terz, Quinte, Septime) und auf die nächste Stufe der Skala gelegt. So bleibt jeder Akkord leitereigen, und in der Pentatonik ist eine Quinte trotzdem eine Quinte. Akzent und Akkord hört man beim Setzen im Stand sofort.
   - Der **Arpeggiator** plant im Scheduler aus den Tönen einer Note eine Folge einzelner monophoner Noten (`core/arp.ts`). Der Zufallsmodus hat einen eigenen, reproduzierbaren Zufallsstrom.
   - Der **LFO** ist ein einziger Sinus mit Gain je Stimme. Er entsteht erst, wenn Depth über 0 steht, und verschwindet bei 0 wieder. Pro Note kommt kein Knoten dazu: Der LFO wird auf `detune` des Filters bzw. der Oszillatoren gelegt und wieder gelöst, sobald die Note endet.
+  - **Drive und Chorus** (`audio/partfx.ts`) sitzen je Stimme zwischen Eingang und Pegel und entstehen erst, wenn ein Regler über 0 steht. Solange sie läuft, gleicht ein Pegel vor dem Panner aus, dass er Stereo anders verteilt als Mono: Lautstärke, Panorama, Delay und Reverb ändern sich beim Einschalten nicht. Drive ist eine feste Sättigungs-Kennlinie mit Pegelausgleich, Chorus sind zwei langsam modulierte Verzögerungen (links, rechts) hinter einem Hochpass bei 250 Hz.
   - Die Attribute stehen nur in der Note, wenn sie gesetzt sind (`a`, `s`, `ch`). Alte Speicherstände bleiben dadurch bytegleich, und ohne Attribute entsteht kein einziger zusätzlicher Audio-Knoten.
 - **Reverb:** Die Impulsantwort wird aus Rauschen mit exponentiellem Abfall berechnet, die Höhen werden über die Zeit gedämpft. Ändert sich die Raumgröße, wird der Hall entprellt neu berechnet und knackfrei getauscht.
 - **Live-Parameter:** Mixer, Effekte, Tempo und Synth-Werte wirken während der Wiedergabe. Die Engine hört per Effekt auf genau die Teile des Zustands, die sie braucht, und setzt nur, was sich geändert hat.
@@ -230,10 +232,10 @@ Pocket 808 wird mit mehr Testcode als App-Code gebaut. Jeder Commit läuft durch
 
 | Ebene | Was geprüft wird | Umfang |
 |---|---|---|
-| **Unit** | `core`, `store`, `audio`, `ui` und `platform` einzeln (Oberfläche in jsdom), mit Eigenschafts- und Modelltests (fast-check); Abdeckung ≥ 90 % pro Datei erzwungen | 793 Tests |
-| **Referenz** | Die neue Engine klingt wie die bewährte alte App, die eingefroren als Vergleichsmaßstab in `tests/reference/legacy/oracle.html` liegt (sie wird nicht mehr ausgeliefert): Beide rendern dieselben Szenarien offline (`node-web-audio-api`) und werden über **Klang-Fingerabdrücke** (Spitze, RMS-Verlauf in 10 ms, spektraler Schwerpunkt) verglichen, dazu Speicherstände, Scheduler-Sequenzen und das Umrechnen importierter Samples (bitgleich) | 210 Tests, 15 Mix-Szenarien, 50 Drum-Varianten, WAV-Export, Step-Optionen, Locks und Fill, Punch-Effekte, Akzent, Slide, Akkorde, Arpeggiator, LFO, Chop und Pitch pro Step; dazu jede der 21 Vorlagen offline gerendert und auf Pegel geprüft (keine Übersteuerung, keine Löcher) |
+| **Unit** | `core`, `store`, `audio`, `ui` und `platform` einzeln (Oberfläche in jsdom), mit Eigenschafts- und Modelltests (fast-check); Abdeckung ≥ 90 % pro Datei erzwungen | 810 Tests |
+| **Referenz** | Die neue Engine klingt wie die bewährte alte App, die eingefroren als Vergleichsmaßstab in `tests/reference/legacy/oracle.html` liegt (sie wird nicht mehr ausgeliefert): Beide rendern dieselben Szenarien offline (`node-web-audio-api`) und werden über **Klang-Fingerabdrücke** (Spitze, RMS-Verlauf in 10 ms, spektraler Schwerpunkt) verglichen, dazu Speicherstände, Scheduler-Sequenzen und das Umrechnen importierter Samples (bitgleich) | 218 Tests, 15 Mix-Szenarien, 50 Drum-Varianten, WAV-Export, Step-Optionen, Locks und Fill, Punch-Effekte, Akzent, Slide, Akkorde, Arpeggiator, LFO, Chop und Pitch pro Step, Drive und Chorus; dazu jede der 21 Vorlagen offline gerendert und auf Pegel geprüft (keine Übersteuerung, keine Löcher) |
 | **Bench** | Performance-Budget: Audio-Knoten pro Sekunde und Renderzeit für ein Demo- und ein Worst-Case-Pattern | Demo 47 Knoten/s, Worst-Case 429 Knoten/s |
-| **E2E** | Playwright auf iPhone hoch und quer, iPad hoch und quer (WebKit) und Desktop (Chromium): Funktion, Kürzel, kein horizontaler Scroll, Screenshots je Gerät, Barrierefreiheit mit axe (keine schweren Verstöße), alte Speicherstände, Artifact-Host, Projekt sichern und öffnen, WAV-Export, Step-Optionen, Fill und Locks, Punch und Bounce, Würfel und Szenen, Akzent und Akkorde, Arp und LFO, Chop und Pitch, Tap-Tempo und Undo-Stapel, Live-Aufnahme, keine Long Tasks beim Spielen, Touch-Ziele ≥ 44 px, Größenbudget | 257 Tests |
+| **E2E** | Playwright auf iPhone hoch und quer, iPad hoch und quer (WebKit) und Desktop (Chromium): Funktion, Kürzel, kein horizontaler Scroll, Screenshots je Gerät, Barrierefreiheit mit axe (keine schweren Verstöße), alte Speicherstände, Artifact-Host, Projekt sichern und öffnen, WAV-Export, Step-Optionen, Fill und Locks, Punch und Bounce, Würfel und Szenen, Akzent und Akkorde, Arp und LFO, Drive und Chorus, Chop und Pitch, Tap-Tempo und Undo-Stapel, Live-Aufnahme, keine Long Tasks beim Spielen, Touch-Ziele ≥ 44 px, Größenbudget | 262 Tests |
 
 - **Toleranzen kalibriert:** Die Toleranzen der Klang-Fingerabdrücke sind kalibriert. Ein Halbton Verstimmung oder 10 % mehr Decay werden erkannt, Rauschschwankungen nicht.
 - **Mutationsprüfung:** Wir bauen absichtlich Fehler ein, zum Beispiel einen ausgebauten Live-Effekt, falschen Swing oder eine Closed Hat, die die Open Hat nicht mehr abwürgt. Der passende Test muss rot werden, sonst fehlt ein Test.
@@ -311,7 +313,7 @@ Nach dem Fundament, in dieser Reihenfolge:
 3. ~~Velocity und Accent, Wahrscheinlichkeit und Bedingungen pro Step~~
 4. ~~**Performance**, inspiriert von Teenage Engineering: Fill-Taste und Parameter-Locks pro Step (4a), Punch-in-Effekte zum Halten und Bounce aufs Pad (4b)~~
 5. ~~**Spielspaß:** animiertes Display wie beim OP-1, Würfel für Variationen, Mixer- und Mute-Szenen~~
-6. ~~**Synth:** Akkorde, Slide und Accent (6a), Arpeggiator und LFO (6b)~~
+6. ~~**Synth:** Akkorde, Slide und Accent (6a), Arpeggiator und LFO (6b), Drive und Chorus (10a)~~
 7. ~~**Sampler:** Chop-Modus, melodische Tastatur, Pitch pro Step~~
 8. ~~Live-Aufnahme mit Count-in~~ (8b), Pattern-Länge 8–32 (8c); ~~Tap-Tempo, mehrstufiges Undo~~ (8a)
 

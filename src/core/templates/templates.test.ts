@@ -105,7 +105,7 @@ describe('Kits und Sounds', () => {
   it('Sounds: Werks-Presets vorn und unverändert, Namen eindeutig, Werte in 0..1', () => {
     for (const part of ['BA', 'LD'] as const) {
       const list = SYNTH_SOUNDS[part];
-      expect(list.slice(0, 3)).toEqual(SYN_PRESETS[part]);
+      expect(list.slice(0, 3).map(({ name, v }) => ({ name, v }))).toEqual(SYN_PRESETS[part]);
       expect(list.length).toBeGreaterThanOrEqual(8);
       expect(new Set(list.map((p) => p.name)).size).toBe(list.length);
       for (const p of list) {
@@ -117,6 +117,36 @@ describe('Kits und Sounds', () => {
         }
       }
     }
+  });
+
+  it('Sounds: Drive und Chorus je Preset, soundPatch trägt sie', () => {
+    const table = (part: 'BA' | 'LD') =>
+      Object.fromEntries(
+        SYNTH_SOUNDS[part].map((x) => [x.name, [x.fx?.drive ?? 0, x.fx?.chorus ?? 0]]),
+      );
+    expect(table('BA')).toEqual({
+      Sub: [0.15, 0],
+      Acid: [0.5, 0],
+      Pluck: [0.25, 0.15],
+      '808': [0.35, 0],
+      Reese: [0.3, 0.45],
+      Deep: [0.2, 0.1],
+      Rubber: [0.3, 0],
+      Mellow: [0.1, 0.25],
+    });
+    expect(table('LD')).toEqual({
+      Saw: [0.15, 0.45],
+      Pulse: [0.2, 0.3],
+      Soft: [0, 0.5],
+      Keys: [0.1, 0.4],
+      Pad: [0, 0.8],
+      Stab: [0.25, 0.4],
+      Bell: [0, 0.35],
+      Squelch: [0.4, 0],
+      Flute: [0, 0.25],
+    });
+    expect(soundPatch('BA', { p: 'Reese' })).toMatchObject({ drive: 0.3, chorus: 0.45 });
+    expect('chorus' in soundPatch('BA', { p: 'Sub' })).toBe(false);
   });
 
   it('soundPatch: Preset, Abweichungen, Oktave, Arp und LFO', () => {

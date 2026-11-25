@@ -145,3 +145,26 @@ test('Arp und LFO setzen, bleibt nach Neuladen', async ({ page }) => {
     'Pitch',
   );
 });
+
+test('Drive und Chorus: setzen, Preset laden, bleibt nach Neuladen', async ({ page }) => {
+  await openSynth(page);
+  const syn = page.locator('#dev-synth');
+  await syn.locator('.syn-presets .chip', { hasText: 'Reese' }).click();
+  const chorus = syn.locator('[role=slider][aria-label="Chorus"]');
+  await expect(chorus).toHaveAttribute('aria-valuenow', '45');
+  const drive = syn.locator('[role=slider][aria-label="Drive"]');
+  await drive.focus();
+  await page.keyboard.press('End');
+  await page.waitForTimeout(400);
+  await page.reload();
+  await openSynth(page);
+  const again = page.locator('#dev-synth');
+  await expect(again.locator('[role=slider][aria-label="Drive"]')).toHaveAttribute(
+    'aria-valuenow',
+    '100',
+  );
+  await expect(again.locator('[role=slider][aria-label="Chorus"]')).toHaveAttribute(
+    'aria-valuenow',
+    '45',
+  );
+});

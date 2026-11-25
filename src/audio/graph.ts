@@ -2,7 +2,7 @@ import { CHANNELS, PARTS } from '../core/constants.ts';
 import { channelGain, channelPan, masterGain } from '../core/mix.ts';
 import type { Rng } from '../core/random.ts';
 import { sameTone, toneOf, type Tone } from '../core/tone.ts';
-import type { ChannelId, Fx, MixChannel, Part, State } from '../core/types.ts';
+import type { ChannelId, Fx, MixChannel, Part, PartFx, State } from '../core/types.ts';
 import {
   delayTime,
   djFilter,
@@ -16,6 +16,7 @@ import {
   vinylNoise,
 } from './dsp.ts';
 import { holdAt, rampFrom } from './params.ts';
+import { createPartFx, stereoTrim, type PartFxChain } from './partfx.ts';
 
 /*
  * Master-Kette wie Legacy setupGraph:
@@ -30,13 +31,26 @@ export interface ChannelNodes {
   snd: GainNode;
 }
 
+/** trim: zwischen Kanal-Fader und Panner; 1 ohne Effektkette, sonst der Stereo-Ausgleich */
+export interface PartNodes {
+  inp: GainNode;
+  lvl: GainNode;
+  snd: GainNode;
+  trim: GainNode;
+}
+
 export interface Graph {
   readonly ctx: BaseAudioContext;
   readonly bus: GainNode;
   readonly noise: AudioBuffer;
   readonly kick: Float32Array;
   readonly chan: Record<ChannelId, ChannelNodes>;
-  readonly parts: Record<Part, { inp: GainNode; snd: GainNode }>;
+  /** Stimmen speisen inp (immer 1); dahinter liegen die Effekte, dann der Pegel lvl */
+  readonly parts: Record<Part, PartNodes>;
+  /** Drive und Chorus eines Parts; true: die Kette ist leer und kann nach der Blende weg */
+  setPartFx(part: Part, fx: PartFx, t: number | null): boolean;
+  /** eine leere Effektkette abbauen (eine wieder benutzte bleibt) */
+  releasePartFx(part: Part): void;
   /** t = null: Anfangswert direkt setzen (Legacy init), sonst weich mit setTargetAtTime */
   setMaster(v: number, t: number | null): void;
   applyChannel(id: ChannelId, ch: MixChannel, audible: boolean, t: number | null): void;
@@ -206,15 +220,36 @@ export function createGraph(
     chan[id] = { in: inn, pan, snd };
   }
   // ein Eingang pro Synth-Stimme mit Delay-Send
-  const parts = {} as Record<Part, { inp: GainNode; snd: GainNode }>;
+  const parts = {} as Record<Part, PartNodes>;
   for (const id of PARTS) {
     const inp = c.createGain();
+    const lvl = c.createGain();
     const snd = c.createGain();
-    inp.connect(chan[id].in);
-    inp.connect(snd);
+    inp.connect(lvl);
+    lvl.connect(chan[id].in);
+    lvl.connect(snd);
     snd.connect(dly);
-    parts[id] = { inp, snd };
+    const trim = c.createGain();
+    trim.gain.value = 1;
+    chan[id].in.disconnect(chan[id].pan);
+    chan[id].in.connect(trim);
+    trim.connect(chan[id].pan);
+    parts[id] = { inp, lvl, snd, trim };
   }
+  const partFx: Record<Part, PartFxChain | undefined> = { BA: undefined, LD: undefined };
+  /** Panorama je Part (−1..1): bestimmt den Ausgleich vor dem Panner */
+  const partPan: Record<Part, number> = { BA: 0, LD: 0 };
+  const isPart = (id: ChannelId): id is Part => (PARTS as readonly ChannelId[]).includes(id);
+  /** Ausgleich sofort setzen, im selben Schritt wie das Ein- oder Aushängen der Kette */
+  const switchTrim = (part: Part, t: number | null): void => {
+    const g = parts[part].trim.gain;
+    const v = partFx[part] ? stereoTrim(partPan[part]) : 1;
+    if (t === null) g.value = v;
+    else {
+      g.cancelScheduledValues(t);
+      g.setValueAtTime(v, t);
+    }
+  };
 
   let stutter: Stutter | null = null;
   const makeStutter = (): Stutter => {
@@ -467,6 +502,14 @@ export function createGraph(
       const n = chan[id];
       const g = channelGain(ch, aud);
       const pn = channelPan(ch);
+      if (isPart(id)) {
+        partPan[id] = pn;
+        if (partFx[id]) {
+          const g = parts[id].trim.gain;
+          if (t === null) g.value = stereoTrim(pn);
+          else g.setTargetAtTime(stereoTrim(pn), t, 0.02);
+        }
+      }
       if (t === null) {
         n.in.gain.value = g;
         n.pan.pan.value = pn;
@@ -497,9 +540,27 @@ export function createGraph(
       dly.delayTime.setTargetAtTime(delayTime(st.tempo), t, 0.05);
       for (const id of PARTS) {
         const p = st.synth[id];
-        parts[id].inp.gain.setTargetAtTime(aud[id] ? p.lvl * p.lvl : 0, t, 0.02);
+        parts[id].lvl.gain.setTargetAtTime(aud[id] ? p.lvl * p.lvl : 0, t, 0.02);
         parts[id].snd.gain.setTargetAtTime(p.dly * 0.7, t, 0.02);
       }
+    },
+    setPartFx(part, fx, t) {
+      let chain = partFx[part];
+      if (!chain) {
+        if (!fx.drive && !fx.chorus) return false;
+        chain = createPartFx(c, parts[part].inp, parts[part].lvl);
+        partFx[part] = chain;
+        switchTrim(part, t);
+      }
+      chain.set(fx, t);
+      return chain.idle;
+    },
+    releasePartFx(part) {
+      const chain = partFx[part];
+      if (!chain?.idle) return;
+      chain.dispose();
+      partFx[part] = undefined;
+      switchTrim(part, c.currentTime);
     },
     muteReverb(t) {
       rvOut.gain.setTargetAtTime(0, t, 0.01);
@@ -646,6 +707,7 @@ export function createGraph(
   for (const id of CHANNELS) graph.applyChannel(id, s.mix[id], audible[id], null);
   graph.applyFx(s.fx, null);
   graph.syncSynth(s, audible, c.currentTime);
+  for (const id of PARTS) graph.setPartFx(id, s.synth[id], null);
   tone = toneOf(s);
   routeTone(c.currentTime, true);
   return graph;

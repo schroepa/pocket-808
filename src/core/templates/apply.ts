@@ -50,6 +50,7 @@ export function soundPatch(part: Part, snd: TemplateSound): SynthPatch {
     // mit Abweichungen ist es nicht mehr das reine Preset
     preset: snd.v ? null : preset.name,
     ...preset.v,
+    ...preset.fx,
     ...snd.v,
     ...(snd.arp ? { arp: { ...snd.arp } } : {}),
     ...(snd.lfo ? { lfo: { ...snd.lfo } } : {}),

@@ -240,3 +240,11 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 | Rec (Transport) | Aufnahme scharf; ein Start zählt einen Takt vor | ✅ | `transport` in `record.test.ts`, `engine.test.ts`, `app.spec.ts` |
 | Spurname, Pad, Tastatur, Tonname der Roll | Schlag rastet auf den nächsten Step und wird gesetzt (Overdub, Song: laufendes Pattern) | ✅ | `core/record.test.ts`, `record.test.ts`, `engine.test.ts` |
 | Take | alle Schläge bis Stopp = ein Zurück-Schritt | ✅ | `store.test.ts`, `record.test.ts`, `app.spec.ts` |
+
+## Drive und Chorus (Etappe 10a)
+
+| Funktion | Verhalten | Stand | Tests |
+|---|---|---|---|
+| Drive je Part (Doppeltipp: aus) | Sättigung, Lautheit etwa gleich | ✅ | `partfx.test.ts`, `next-partfx.test.ts`, `synth.test.ts` |
+| Chorus je Part (Doppeltipp: aus) | Stereo-Breite, unter 250 Hz mittig | ✅ | `partfx.test.ts`, `next-partfx.test.ts`, `synth.test.ts`, `synth.spec.ts` |
+| Presets und Vorlagen | setzen Drive und Chorus passend zum Sound | ✅ | `templates.test.ts`, `synth.test.ts` |
