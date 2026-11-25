@@ -15,7 +15,6 @@
     justify-content: center;
     gap: 6px;
   }
-  /* auch in den Zeilen des alten Mixers: dort bestimmt die Spalte die Breite */
   .mb {
     position: relative;
     height: var(--touch);

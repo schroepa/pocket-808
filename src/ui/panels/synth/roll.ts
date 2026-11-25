@@ -1,19 +1,20 @@
-import { ROWS, SCALES } from '../../../core/constants.ts';
+import { NOTE_NAMES, ROWS, SCALES } from '../../../core/constants.ts';
 import { degreeName } from '../../../core/music.ts';
 import { CHORD_LABELS, CHORD_MARKS } from '../../../core/notes.ts';
 import { currentPattern } from '../../../core/pattern.ts';
 import { noteAt } from '../../../core/synth.ts';
 import type { ChordKind } from '../../../core/types.ts';
 import { must } from '../../../core/util.ts';
-import { computed, signal, type ReadonlySignal } from '../../../store/signals.ts';
+import { computed, type ReadonlySignal } from '../../../store/signals.ts';
 import type { UiContext } from '../../context.ts';
 import { chip } from '../../controls/chip.ts';
 import { markColumn } from '../../controls/marker.ts';
+import { selectField } from '../../controls/select.ts';
 import { bind, h } from '../../dom.ts';
 import type { Nav, RollTool } from '../../nav.ts';
 import { recordTap } from '../../record.ts';
-import { synthKeyRow } from './head.ts';
 import { clearVoiceChip } from './presets.ts';
+import './modules.css';
 import './roll.css';
 
 const LENGTHS = [
@@ -225,10 +226,27 @@ export function rollGrid(c: UiContext, roll: Nav['roll']): HTMLElement {
   ]);
 }
 
-/** Piano-Roll des gewählten Parts: Bedienung und Raster (Legacy renderRoll). */
-export function pianoRoll(c: UiContext): HTMLElement {
-  const roll: Nav['roll'] = { page: signal(0), tool: signal<RollTool>('note') };
-  return h('div', { class: 'roll-wrap' }, [rollControls(c, roll), rollGrid(c, roll)]);
+/** Tonart und Skala */
+function synthKeyRow(c: UiContext): HTMLElement {
+  const { store, scope } = c;
+  return h('div', { class: 'syn-row' }, [
+    selectField(scope, {
+      label: 'Tonart',
+      options: NOTE_NAMES,
+      value: store.select((s) => s.key),
+      write: (k) => {
+        store.update((s) => ({ ...s, key: k }));
+      },
+    }),
+    selectField(scope, {
+      label: 'Skala',
+      options: SCALES.map((x) => x.name),
+      value: store.select((s) => s.scale),
+      write: (i) => {
+        store.update((s) => ({ ...s, scale: i }));
+      },
+    }),
+  ]);
 }
 
 /**

@@ -1,13 +1,16 @@
 import { vi, type Mock } from 'vitest';
+import { VOICE_IDS } from '../core/constants.ts';
 import { baseState } from '../core/defaults.ts';
 import type { State } from '../core/types.ts';
+import { must } from '../core/util.ts';
 import type { Timer } from '../store/persist.ts';
 import { createSampleBank } from '../store/samples.ts';
 import { signal } from '../store/signals.ts';
 import { createStore } from '../store/store.ts';
 import type { UiAudio, UiContext } from './context.ts';
 import { createScope } from './dom.ts';
-import { createReadout, voiceLine } from './readout.ts';
+import { displayLine } from './panels/display.ts';
+import { createReadout } from './readout.ts';
 
 export interface ManualTimer extends Timer {
   advance(ms: number): void;
@@ -114,7 +117,12 @@ export function makeContext(opts: { state?: State; available?: boolean } = {}) {
       Promise.resolve<'shared' | 'downloaded' | 'cancelled' | 'failed'>('downloaded'),
     ),
   };
-  const readout = createReadout(scope, voiceLine(store, audio.available), timer);
+  // Grundzeile wie im Gerät, Spur = gewählte Drum
+  const line = displayLine(
+    { store, audio },
+    { mode: signal('spur'), track: store.select((s) => must(VOICE_IDS[s.sel], 'Stimme')) },
+  );
+  const readout = createReadout(scope, line, timer);
   const recording: { stop: Mock<() => void>; finish: (b: ArrayBuffer | null) => void } = {
     stop: vi.fn<() => void>(),
     finish: () => undefined,

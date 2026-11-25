@@ -1,13 +1,14 @@
 @layer components {
-  /* welche der beiden Formen sichtbar ist, bestimmt layout.css */
+  /* welche der beiden Formen sichtbar ist, bestimmt die Shell (mobile: Leiste, sonst Tasten) */
   .track-bar {
     display: grid;
     grid-template-columns: var(--touch) minmax(0, 1fr) var(--touch);
     gap: 4px;
   }
+  /* 13 Tasten in einer Reihe; ist sie schmaler als 13 Touch-Ziele, bricht sie um statt zu stauchen */
   .track-keys {
     display: grid;
-    grid-template-columns: repeat(13, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(var(--touch), 1fr));
     gap: 4px;
   }
   :is(.track-step, .track-title, .track-key, .track-pad) {

@@ -1,12 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { currentPattern } from '../core/pattern.ts';
 import { stepOptOf } from '../core/stepopts.ts';
-import { tracks } from './panels/tracks.ts';
-import { samplerPads } from './panels/sampler/pads.ts';
+import { signal } from '../store/signals.ts';
+import type { Layout } from './layout.ts';
+import { createNav, type RollTool } from './nav.ts';
+import { allTracks } from './panels/all-tracks.ts';
 import { samplerKeyboard } from './panels/sampler/keyboard.ts';
-import { pianoRoll } from './panels/synth/roll.ts';
+import { samplerPads } from './panels/sampler/pads.ts';
+import { rollGrid } from './panels/synth/roll.ts';
 import { transport } from './panels/transport.ts';
 import { makeContext } from './test-utils.ts';
+
+/** „Alle Spuren“ mit den Beschriftungen, die wie die Spurnamen aufnehmen */
+const tracks = (c: ReturnType<typeof makeContext>['c']) =>
+  allTracks(c, createNav(c.scope, c.store, signal<Layout>('desktop')));
 
 const arm = (c: ReturnType<typeof makeContext>, step = 4) => {
   c.audio.setRecording(true);
@@ -41,7 +48,7 @@ describe('Aufnehmen über die Tippflächen', () => {
     clear(ctx);
     const el = tracks(c);
     const lab = (id: string) =>
-      [...el.querySelectorAll<HTMLButtonElement>('.lab')].find((b) => b.textContent === id);
+      [...el.querySelectorAll<HTMLButtonElement>('.at-lab')].find((b) => b.textContent === id);
     arm(ctx, 4);
     lab('SD')?.click();
     expect(currentPattern(store.state.value).SD[4]).toBe(1);
@@ -63,7 +70,7 @@ describe('Aufnehmen über die Tippflächen', () => {
     const { c, store } = ctx;
     clear(ctx);
     const el = tracks(c);
-    const sd = [...el.querySelectorAll<HTMLButtonElement>('.lab')].find(
+    const sd = [...el.querySelectorAll<HTMLButtonElement>('.at-lab')].find(
       (b) => b.textContent === 'SD',
     );
     arm(ctx, 3);
@@ -80,7 +87,7 @@ describe('Aufnehmen über die Tippflächen', () => {
     const { c, store } = ctx;
     clear(ctx);
     const el = tracks(c);
-    const sd = [...el.querySelectorAll<HTMLButtonElement>('.lab')].find(
+    const sd = [...el.querySelectorAll<HTMLButtonElement>('.at-lab')].find(
       (b) => b.textContent === 'SD',
     );
     ctx.audio.nearestStep.mockReturnValue({ step: 4, slot: 'A' });
@@ -113,13 +120,13 @@ describe('Aufnehmen über die Tippflächen', () => {
     expect(stepOptOf(currentPattern(store.state.value), 'P1', 6).n).toBe(7);
   });
 
-  it('Piano-Roll: Tonname nimmt die Note mit gewählter Länge und Part auf', () => {
+  it('Notenrolle: Tonname nimmt die Note mit gewählter Länge und Part auf', () => {
     const ctx = makeContext();
     const { c, store } = ctx;
     store.update((s) => ({ ...s, part: 'LD', noteLen: 2 }));
     clear(ctx);
     arm(ctx, 8);
-    const el = pianoRoll(c);
+    const el = rollGrid(c, { page: signal(0), tool: signal<RollTool>('note') });
     el.querySelectorAll<HTMLButtonElement>('.rl')[11]?.click(); // Stufe 0
     expect(currentPattern(store.state.value).notes.LD[8]).toEqual({ d: 0, l: 2 });
     expect(c.readout.text.value).toMatch(/^REC · .+ · Step 9$/);

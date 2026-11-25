@@ -17,7 +17,7 @@ import './drum-pages.css';
 
 /* Seiten der Drum-Spuren (Trig, Klang) und die Seite Trig der Sampler-Pads. */
 
-export interface TrigParts {
+interface TrigParts {
   /** Umschalter Sub und Opt */
   readonly chips: readonly HTMLElement[];
   /** Sub-Editor und Step-Optionen, je nur im eigenen Modus sichtbar */
@@ -86,8 +86,8 @@ function trigParts(c: UiContext, o: TrigTarget): TrigParts {
   return { chips, panels: [subPanel, optPanel] };
 }
 
-/** Trig-Teile des gewählten Sampler-Pads (auch für die Steps im Sampler-Gerät) */
-export function padTrigParts(c: UiContext, nav: Pick<Nav, 'padSub' | 'padOpt'>): TrigParts {
+/** Trig-Teile des gewählten Sampler-Pads */
+function padTrigParts(c: UiContext, nav: Pick<Nav, 'padSub' | 'padOpt'>): TrigParts {
   const sel = c.store.select((s) => s.smp.sel);
   return trigParts(c, {
     sub: nav.padSub,

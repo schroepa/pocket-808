@@ -1,4 +1,16 @@
 @layer components {
+  .ed-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .ed-head h2 {
+    font: 700 22px/1 var(--font-display);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
   .ed-head h2 small {
     margin-left: 8px;
     font: 500 13px var(--font-display);
@@ -47,30 +59,5 @@
   }
   .blk.play small {
     color: var(--chassis);
-  }
-  .patterns .chips {
-    margin: 8px 0 14px;
-  }
-  .tpl-hint {
-    margin: 0 0 12px;
-    font-size: 13px;
-    line-height: 1.4;
-    color: var(--ink-dim);
-    min-height: 2.8em;
-  }
-  .tpl-scope {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-  .tpl-scope[hidden] {
-    display: none;
-  }
-  .tpl-scope-label {
-    font: 600 12px var(--font-display);
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--ink-dim);
   }
 }

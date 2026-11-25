@@ -12,7 +12,7 @@ import { viewTabs } from '../../controls/view-tabs.ts';
 import { show } from '../../controls/visible.ts';
 import { bind, h, listen } from '../../dom.ts';
 import type { Layout } from '../../layout.ts';
-import { channelPage, muteSolo, panReverb } from '../channel.ts';
+import { channelPage } from '../channel.ts';
 import { fxPanel } from './fx.ts';
 import './mixer.css';
 
@@ -28,65 +28,6 @@ function nameButton(id: ChannelId, className: string, select: () => void): HTMLB
     attrs: { type: 'button', 'aria-label': `Kanal ${CHANNEL_NAMES[id]} wählen` },
     on: { click: select },
   });
-}
-
-/** 13 Kanalzüge mit M, S, Fader; Pan und Reverb des gewählten Kanals (Legacy buildMixFx) */
-export function mixerPanel(c: UiContext): HTMLElement {
-  const { store, scope, readout } = c;
-  const selected = signal<ChannelId>('BD');
-  const rows = CHANNELS.map((id) => {
-    const full = CHANNEL_NAMES[id];
-    const select = (): void => {
-      selected.value = id;
-    };
-    const name = nameButton(id, 'nm', select);
-    const fader = h('input', {
-      class: 'fd',
-      attrs: { type: 'range', min: '0', max: '100', step: '1', 'aria-label': `Lautstärke ${full}` },
-    });
-    bind(
-      scope,
-      () => level(store.state.value.mix[id].v),
-      (v) => {
-        fader.value = v;
-      },
-    );
-    listen(scope, fader, 'pointerdown', select);
-    listen(scope, fader, 'input', () => {
-      store.update((s) => setChannelValue(s, id, 'v', Number(fader.value) / 100));
-      readout.flash(`${full} Fader ${fader.value}`);
-    });
-    listen(scope, fader, 'dblclick', () => {
-      store.update((s) => setChannelValue(s, id, 'v', DEFAULTS[id].v));
-    });
-    const row = h('div', { class: 'mx' }, [
-      name,
-      ...muteSolo(c, signal(id), { m: 'M', s: 'S' }),
-      fader,
-    ]);
-    bind(
-      scope,
-      () => selected.value === id,
-      (on) => {
-        row.classList.toggle('sel', on);
-      },
-    );
-    return row;
-  });
-  const label = h('div', { class: 'cap-label mix-sel' });
-  bind(
-    scope,
-    () => `Kanal: ${CHANNEL_NAMES[selected.value]}`,
-    (t) => {
-      label.textContent = t;
-    },
-  );
-  return h('div', { class: 'mixer-body' }, [
-    h('div', { class: 'mix' }, rows),
-    label,
-    h('div', { class: 'knob-grid k2' }, panReverb(c, selected)),
-    sceneRow(c),
-  ]);
 }
 
 /** Seite Kanäle: 13 Züge mit senkrechtem Fader; darunter M, S, Pan und Reverb des gewählten */

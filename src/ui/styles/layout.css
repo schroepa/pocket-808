@@ -1,243 +1,312 @@
-/* Drei Layouts über data-layout (layout.ts). Komponenten kennen keine Breakpoints. */
+/*
+ * Rahmen des Geräts je Layout (data-layout aus layout.ts). Komponenten kennen keine Breakpoints.
+ * Das Dokument scrollt nie: Die Shell ist genau so hoch wie das Fenster, nur Arbeitsfläche und
+ * Step-Bereich dürfen scrollen, wenn ihr Inhalt nicht hineinpasst. Sichtbarkeit setzt allein show().
+ */
 
-/* Spalte „Sequencer“ (Editor, Spuren, Song, Werkzeuge) ist nur auf dem Desktop ein eigener Block */
-.col-main,
-.col-extra {
-  display: contents;
-}
-
-/* Mobile (Grundform): eine Spalte, Startleiste fest unten */
+/* Mobile hochkant (Grundform): eine Spalte, die Arbeitsfläche nimmt den Rest der Höhe */
 .shell {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  max-width: 520px;
-  margin-inline: auto;
-  padding: 12px max(16px, env(safe-area-inset-right)) calc(112px + env(safe-area-inset-bottom))
-    max(16px, env(safe-area-inset-left));
-}
-[data-area='transport'] {
-  position: fixed;
-  inset: auto 0 0;
-  z-index: 10;
-  padding: 16px max(16px, calc((100vw - 520px) / 2 + 16px), env(safe-area-inset-right))
-    calc(14px + env(safe-area-inset-bottom))
-    max(16px, calc((100vw - 520px) / 2 + 16px), env(safe-area-inset-left));
-  background: linear-gradient(to top, var(--chassis) 72%, transparent);
-}
-
-/* Geräte als Akkordeon: Köpfe und Körper verschränkt */
-[data-layout='mobile'] :is(.dev-heads, .dev-bodies) {
-  display: contents;
-}
-[data-layout='mobile'] .dev-head:nth-child(1) {
-  order: 0;
-}
-[data-layout='mobile'] .dev-body:nth-child(1) {
-  order: 1;
-}
-[data-layout='mobile'] .dev-head:nth-child(2) {
-  order: 2;
-}
-[data-layout='mobile'] .dev-body:nth-child(2) {
-  order: 3;
-}
-[data-layout='mobile'] .dev-head:nth-child(3) {
-  order: 4;
-}
-[data-layout='mobile'] .dev-body:nth-child(3) {
-  order: 5;
-}
-[data-layout='mobile'] .dev-head:nth-child(4) {
-  order: 6;
-}
-[data-layout='mobile'] .dev-body:nth-child(4) {
-  order: 7;
-}
-
-/* Tablet: Geräte als Tabs nebeneinander */
-[data-layout='tablet'] .dev-heads {
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
-  gap: 6px;
-}
-/* Tabs: mit fünf Geräten reicht der Platz nicht für Zusammenfassungen (nur Fragmente); das offene
-   Gerät steht darunter. Für Screenreader bleibt sie im Kopf erhalten. */
-[data-layout='tablet'] .dev-head .dev-sum {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-[data-layout='tablet'] .dev-head .plate {
-  font-size: 15px;
-  letter-spacing: 0.08em;
-}
-[data-layout='tablet'] .dev-head[aria-selected='true'] {
-  background: var(--cell);
-}
-
-/* Tablet hochkant – Entwurf A: breite Spalte, Sequencer über die volle Breite */
-@media (orientation: portrait) {
-  [data-layout='tablet'] .shell {
-    max-width: 900px;
-    padding-inline: max(24px, env(safe-area-inset-left)) max(24px, env(safe-area-inset-right));
-  }
-  [data-layout='tablet'] [data-area='transport'] {
-    padding-inline: max(24px, calc((100vw - 900px) / 2 + 24px), env(safe-area-inset-left))
-      max(24px, calc((100vw - 900px) / 2 + 24px), env(safe-area-inset-right));
-  }
-}
-
-/* Tablet quer – Entwurf B: Kopfleiste, links Sequencer, rechts Gerät mit eigenem Scroll */
-@media (orientation: landscape) {
-  [data-layout='tablet'] .shell {
-    display: grid;
-    /* minmax(0, …): breite Inhalte (Tabs mit Zusammenfassung, Roll) dürfen die Spalte nicht sprengen */
-    grid-template-columns: minmax(0, 52fr) minmax(0, 48fr);
-    grid-template-areas:
-      'brand deck'
-      'slots transport'
-      'editor devices'
-      'tracks devices'
-      'song devices'
-      'patterns devices';
-    align-items: start;
-    gap: 16px 20px;
-    max-width: 1400px;
-    /* iPhone quer: Notch/Dynamic Island an den Seiten freihalten */
-    padding: 12px max(24px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom))
-      max(24px, env(safe-area-inset-left));
-  }
-  [data-layout='tablet'] [data-area='transport'] {
-    position: static;
-    padding: 0;
-    background: none;
-  }
-  [data-layout='tablet'] [data-area='devices'] {
-    position: sticky;
-    top: 12px;
-    max-height: calc(100dvh - 24px);
-    overflow: auto;
-  }
-}
-
-/* Desktop – Entwurf C: Studio-Pult. Links der Sequencer als Spalte, rechts die Geräte in zwei
-   Textspalten (fließen nach Höhe), oben eine stehende Kopfleiste. Alles bei 1440 × 900 ohne Scrollen
-   passt bei touchtauglichen Größen nicht (Ruling 5d): der Inhalt scrollt, die Kopfleiste bleibt. */
-[data-layout='desktop'] .shell {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto auto;
   grid-template-areas:
-    'brand brand deck deck deck deck slots slots slots transport transport transport'
-    'main main main main devices devices devices devices devices devices devices devices'
-    'extra extra extra extra devices devices devices devices devices devices devices devices';
-  /* die dritte Zeile nimmt die Höhe der Geräte auf, Song folgt direkt den Spuren */
-  grid-template-rows: auto auto 1fr;
-  align-items: start;
-  gap: 16px;
-  max-width: 1920px;
-  min-height: 100dvh;
-  padding: 16px 24px;
+    'display'
+    'modes'
+    'tracks'
+    'work'
+    'steps'
+    'transport';
+  gap: 6px;
+  height: 100dvh;
+  max-width: 560px;
+  margin-inline: auto;
+  overflow: hidden;
+  padding: max(6px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
+    max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
 }
-/* Angesprungene und fokussierte Elemente nicht unter der stehenden Kopfleiste verstecken */
-html[data-layout='desktop'] {
-  scroll-padding-top: 120px;
+[data-area='display'] {
+  grid-area: display;
 }
-[data-layout='desktop'] :is(.col-main, .col-extra) {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  min-width: 0;
-}
-[data-layout='desktop'] .col-main {
-  grid-area: main;
-}
-[data-layout='desktop'] .col-extra {
-  grid-area: extra;
-}
-[data-layout='desktop'] [data-area='transport'] {
-  position: static;
-  padding: 0;
-  background: none;
-}
-[data-layout='desktop']
-  :is([data-area='brand'], [data-area='deck'], [data-area='slots'], [data-area='transport']) {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  align-self: stretch;
-  margin: -8px;
-  padding: 8px;
-  background: var(--chassis);
-}
-[data-layout='desktop'] .brand h1 {
-  font-size: 26px;
-}
-[data-layout='desktop'] .stripe {
-  display: none;
-}
-/* schmale Spalte: Datei- und Kürzel-Knopf unter den Titel */
-[data-layout='desktop'] .brand {
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 8px;
-}
-[data-layout='desktop'] .brand-tools {
-  margin-left: 0;
-}
-[data-layout='desktop'] :is(.slots, .transport) {
-  align-content: center;
-}
-[data-layout='desktop'] .devices {
-  display: block;
-  min-width: 0;
-}
-[data-layout='desktop'] .dev-bodies {
-  columns: 2 360px;
-  column-gap: 16px;
-}
-[data-layout='desktop'] .dev-body {
-  break-inside: avoid;
-  margin-bottom: 16px;
-}
-[data-layout='desktop'] .dev-name {
-  display: block;
-  margin-bottom: 12px;
-  font: 700 20px var(--font-display);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #a9a9b6;
-}
-
-[data-area='brand'] {
-  grid-area: brand;
-}
-[data-area='deck'] {
-  grid-area: deck;
-}
-[data-area='slots'] {
-  grid-area: slots;
-}
-[data-area='editor'] {
-  grid-area: editor;
+[data-area='modes'] {
+  grid-area: modes;
 }
 [data-area='tracks'] {
   grid-area: tracks;
 }
-[data-area='devices'] {
-  grid-area: devices;
+[data-area='work'] {
+  grid-area: work;
+}
+[data-area='steps'] {
+  grid-area: steps;
 }
 [data-area='transport'] {
   grid-area: transport;
 }
-[data-area='song'] {
-  grid-area: song;
+/* scrollen nur, wenn der Platz nicht reicht; der Innenabstand lässt dem Glow Platz */
+:is([data-area='work'], [data-area='steps']) {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
-[data-area='patterns'] {
-  grid-area: patterns;
+[data-area='work'] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  padding: 4px 2px;
+}
+[data-area='work'] > section {
+  min-width: 0;
+  min-height: 0;
+}
+/* die Plattenkiste scrollt in ihren Abschnitten: Sie braucht die volle Höhe */
+[data-area='work'] > section[data-mode='sound'] {
+  height: 100%;
+  overflow: hidden;
+}
+[data-area='steps'] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 6px;
+  padding: 2px;
+}
+/* Flächen liegen über Arbeitsfläche und Step-Bereich; Display, Modusleiste und Transport bleiben frei */
+.shell > .sheet {
+  grid-row: work-start / steps-end;
+  grid-column: work-start / steps-end;
+}
+/* 16 Steps in zwei Reihen, etwas flacher als auf großen Bildschirmen */
+[data-layout='mobile'] .step-area :is(.step, .ss, .ns) {
+  height: 46px;
+}
+[data-layout='mobile'] .drum-steps {
+  gap: 6px 10px;
+}
+[data-layout='mobile'] :is(.smp-steps, .note-steps) {
+  gap: 6px 5px;
+}
+
+/* Telefon quer: Display und Modusleiste in einer Zeile, Arbeitsfläche und Step-Bereich nebeneinander */
+@media (orientation: landscape) {
+  [data-layout='mobile'] .shell {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'display modes'
+      'tracks steps'
+      'work steps'
+      'work transport';
+    column-gap: 12px;
+    max-width: none;
+    padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right));
+  }
+  /* ohne Step-Bereich (Noten, Tasten, Mixer, Song) bekommt die Arbeitsfläche die ganze Breite */
+  [data-layout='mobile'] .shell:has(> [data-area='steps'][hidden]) {
+    grid-template-areas:
+      'display modes'
+      'tracks tracks'
+      'work work'
+      'transport transport';
+  }
+  [data-layout='mobile'] [data-area='modes'] {
+    align-self: center;
+  }
+  /* Flächen links über Spurwahl und Arbeitsfläche: Steps und Transport bleiben bedienbar */
+  [data-layout='mobile'] .shell > .sheet {
+    grid-row: tracks-start / work-end;
+    grid-column: work-start / work-end;
+  }
+  /* breiter als hoch: Pad-Feld in 6 bzw. 8 Spalten, damit es ohne Scrollen passt */
+  [data-layout='mobile'] .track-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  [data-layout='mobile'] .track-pads .pads {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 4px;
+  }
+}
+
+/* Tablet: eine Spalte; die Seiten einer Ansicht stehen als Spalten nebeneinander */
+[data-layout='tablet'] .shell {
+  gap: 10px;
+  max-width: 1400px;
+  padding: max(12px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right))
+    max(14px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+}
+/* Flex statt auto-fit-Raster: Reiter und die breite Tastatur dürfen eine eigene Zeile haben, ohne
+   leere Spalten zu erzwingen (Spaltenbreite wie repeat(auto-fit, minmax(240px, 1fr))) */
+:is([data-layout='tablet'], [data-layout='desktop']) :is(.track-pages, .mixer-work) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+}
+:is([data-layout='tablet'], [data-layout='desktop']) :is(.track-pages, .mixer-work) > section {
+  flex: 1 1 240px;
+}
+:is([data-layout='tablet'], [data-layout='desktop']) .mixer-work > .tabs {
+  flex-basis: 100%;
+}
+/* 14 Tasten zu je ≥ 44 px brauchen die ganze Breite: unter den übrigen Seiten der Ansicht */
+:is([data-layout='tablet'], [data-layout='desktop']) .track-pages > section[data-page='tasten'] {
+  flex-basis: 100%;
+  order: 1;
+}
+/* „Alle Spuren“ hat bis zu 20 Zeilen: höchstens gut die halbe Höhe, darin scrollen */
+:is([data-layout='tablet'], [data-layout='desktop']) [data-area='steps'] {
+  max-height: 58dvh;
+}
+[data-layout='tablet'] :is(.at-lab, .at-cell) {
+  height: 28px;
+}
+
+/* Desktop: Display und Transport oben, darunter Modi und Spurtasten, Step-Bereich unten */
+[data-layout='desktop'] .shell {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'display transport'
+    'modes tracks'
+    'work work'
+    'steps steps';
+  gap: 12px 24px;
+  max-width: 1920px;
+  padding: 16px 24px;
+}
+[data-layout='desktop'] [data-area='transport'] {
+  align-self: center;
+}
+[data-layout='desktop'] .track-pages > section {
+  flex-basis: 280px;
+}
+/* Desktop (Maus, Ziele ≥ 32 px): dichtere Regler und Raster, damit Seiten und Alle Spuren passen */
+[data-layout='desktop'] .knob {
+  width: 40px;
+  height: 40px;
+  margin: 4px;
+}
+[data-layout='desktop'] .knob-wrap {
+  gap: 0;
+}
+[data-layout='desktop'] .shm {
+  padding: 6px 6px 4px;
+}
+[data-layout='desktop'] .shm h4 {
+  margin-bottom: 2px;
+}
+[data-layout='desktop'] .sl-t {
+  height: 72px;
+}
+[data-layout='desktop'] .env-svg {
+  height: 26px;
+  margin-bottom: 4px;
+}
+[data-layout='desktop'] :is(.at-lab, .at-cell) {
+  height: 20px;
+}
+[data-layout='desktop'] .all-tracks {
+  gap: 2px;
+}
+[data-layout='desktop'] .at-cell::after {
+  inset: 4px 1px;
+}
+[data-layout='desktop'] .lower-notes .roll {
+  margin-bottom: 0;
+}
+[data-layout='desktop'] .lower-notes :is(.rl, .pc) {
+  height: 22px;
+}
+
+/* Seite Noten mit Rolle (mobile, tablet): die Rolle füllt die Höhe der Arbeitsfläche, Zeilen ≥ 18 px */
+[data-area='work']:has([data-slot='roll'] .roll)
+  > section[data-mode='spur']:has(section[data-page='noten']:not([hidden])) {
+  height: 100%;
+}
+section[data-mode='spur']:has(section[data-page='noten']:not([hidden]) .roll)
+  :is(.track-work, .track-pages, section[data-page='noten'], .synth-notes) {
+  height: 100%;
+  min-height: 0;
+}
+section[data-mode='spur']:has(section[data-page='noten']:not([hidden]) .roll) .track-work {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+section[data-mode='spur']:has(section[data-page='noten']:not([hidden]) .roll) .track-pages {
+  grid-template-rows: minmax(0, 1fr);
+}
+.synth-notes:has(.roll) {
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+}
+[data-slot='roll'] .roll {
+  height: 100%;
+  grid-template-rows: auto repeat(12, minmax(18px, 1fr));
+  gap: 1px;
+  padding: 4px;
+}
+[data-slot='roll'] .roll :is(.rl, .pc) {
+  height: 100%;
+}
+
+/* Telefon: dichtere Seiten, damit sie ab 390 × 660 ohne Scrollen passen (Ziele bleiben ≥ 44 px) */
+[data-layout='mobile'] .track-work {
+  gap: 6px;
+}
+[data-layout='mobile'] .sh {
+  gap: 6px;
+}
+[data-layout='mobile'] .shm {
+  padding: 5px 6px 3px;
+}
+[data-layout='mobile'] .shm h4 {
+  margin-bottom: 2px;
+}
+[data-layout='mobile'] .syn-row {
+  margin-bottom: 2px;
+}
+[data-layout='mobile'] .knob-wrap {
+  gap: 0;
+}
+[data-layout='mobile'] .knob {
+  width: 44px;
+  height: 44px;
+  margin: 4px;
+}
+[data-layout='mobile'] .sl-t {
+  height: 72px;
+}
+[data-layout='mobile'] .env-svg {
+  height: 26px;
+  margin-bottom: 4px;
+}
+[data-layout='mobile'] .track-work .smp-head .pad {
+  height: 46px;
+}
+[data-layout='mobile'] .track-work .smp-head .pads {
+  gap: 2px;
+}
+[data-layout='mobile'] .track-work .smp-head .pad small {
+  max-width: 40px;
+}
+[data-layout='mobile'] .screen {
+  padding: 3px;
+}
+[data-layout='mobile'] .screen canvas {
+  height: 52px;
+}
+/* Pad-Feld ohne Scrollen: Ein Wischen auf einem Pad würde bei Rec einen Schlag aufnehmen */
+[data-layout='mobile'] .sheet :is(.track-pad, .pad) {
+  height: 52px;
+}
+[data-layout='mobile'] .sheet {
+  padding: 10px;
+  gap: 8px;
+}
+[data-layout='mobile'] :is(.screen, .smp-tools, .smp-chop, .knob-grid) {
+  margin-bottom: 4px;
+}
+[data-layout='mobile'] :is(.opt-panel, .sub-ed) {
+  margin-top: 6px;
+  padding: 8px;
+}
+[data-layout='mobile'] :is(.opt-panel, .opt-ctl) {
+  gap: 6px;
 }

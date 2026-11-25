@@ -3,18 +3,20 @@ import { signal } from '../store/signals.ts';
 import { h } from './dom.ts';
 import { installKeys, SHORTCUTS, shortcutHelp } from './keys.ts';
 import type { Layout } from './layout.ts';
+import { createNav } from './nav.ts';
 import { makeContext } from './test-utils.ts';
 
 function setup(l: Layout = 'desktop') {
   const ctx = makeContext();
   const layout = signal<Layout>(l);
-  installKeys(ctx.c, layout, document);
+  const nav = createNav(ctx.scope, ctx.store, layout);
+  installKeys(ctx.c, layout, document, nav);
   const press = (key: string, init: KeyboardEventInit = {}, target: Element = document.body) => {
     const e = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init });
     target.dispatchEvent(e);
     return e;
   };
-  return { ...ctx, layout, press };
+  return { ...ctx, layout, nav, press };
 }
 
 describe('installKeys', () => {
@@ -64,21 +66,38 @@ describe('installKeys', () => {
     scope.dispose();
   });
 
-  it('Pfeile wählen die Spur, begrenzt; auf einem Regler nicht', () => {
-    const { press, store, scope } = setup();
+  it('↑/↓ wählen unter allen Spuren BD…SM, halten an den Enden; auf einem Regler nicht', () => {
+    const { press, nav, store, scope } = setup();
     press('ArrowUp');
-    expect(store.state.value.sel).toBe(0);
-    press('ArrowDown');
+    expect(nav.track.value).toBe('BD');
+    expect(press('ArrowDown').defaultPrevented).toBe(true);
+    expect(nav.track.value).toBe('SD');
     expect(store.state.value.sel).toBe(1);
-    store.update((s) => ({ ...s, sel: 9 }));
-    press('ArrowDown');
-    expect(store.state.value.sel).toBe(9);
+    for (let i = 0; i < 12; i++) press('ArrowDown');
+    expect(nav.track.value).toBe('SM');
+    press('ArrowUp');
+    press('ArrowUp');
+    expect(nav.track.value).toBe('BA');
+    expect(store.state.value.part).toBe('BA');
+    for (let i = 0; i < 3; i++) press('ArrowDown');
+    expect(nav.track.value).toBe('SM');
     const slider = h('div', { attrs: { role: 'slider', tabindex: '0' } });
     document.body.append(slider);
     press('ArrowUp', {}, slider);
-    expect(store.state.value.sel).toBe(9);
+    expect(nav.track.value).toBe('SM');
     press('ArrowUp', { ctrlKey: true });
-    expect(store.state.value.sel).toBe(9);
+    expect(nav.track.value).toBe('SM');
+    slider.remove();
+    scope.dispose();
+  });
+
+  it('↑/↓ wählen die Spur auch auf einem Reiter (Reiter nutzen nur ←/→)', () => {
+    const { press, nav, scope } = setup();
+    const tab = h('button', { attrs: { role: 'tab' } });
+    document.body.append(tab);
+    press('ArrowDown', {}, tab);
+    expect(nav.track.value).toBe('SD');
+    tab.remove();
     scope.dispose();
   });
 
@@ -171,7 +190,8 @@ describe('Kürzel für Projekt sichern und öffnen', () => {
     for (const d of document.querySelectorAll('dialog')) d.remove();
     const ctx = makeContext();
     const actions = { save: vi.fn(), open: vi.fn() };
-    installKeys(ctx.c, signal<Layout>('desktop'), document, actions);
+    const layout = signal<Layout>('desktop');
+    installKeys(ctx.c, layout, document, createNav(ctx.scope, ctx.store, layout), actions);
     const press = (key: string, init: KeyboardEventInit) => {
       const e = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init });
       document.body.dispatchEvent(e);
@@ -191,6 +211,7 @@ describe('Kürzel für Projekt sichern und öffnen', () => {
 
   it('die Hilfe nennt die neuen Kürzel', () => {
     expect(SHORTCUTS.map(([k]) => k)).toEqual(expect.arrayContaining(['⌘/Strg + S', '⌘/Strg + O']));
+    expect(SHORTCUTS).toContainEqual(['↑ / ↓', 'Spur wählen']);
   });
 });
 
@@ -198,7 +219,8 @@ describe('Taste F hält Fill (Desktop)', () => {
   it('keydown an, keyup aus, Wiederholungen zählen nicht', () => {
     for (const d of document.querySelectorAll('dialog')) d.remove();
     const ctx = makeContext();
-    installKeys(ctx.c, signal<Layout>('desktop'), document);
+    const layout = signal<Layout>('desktop');
+    installKeys(ctx.c, layout, document, createNav(ctx.scope, ctx.store, layout));
     const fire = (type: string, init: KeyboardEventInit = {}) =>
       document.body.dispatchEvent(
         new KeyboardEvent(type, { key: 'f', bubbles: true, cancelable: true, ...init }),
@@ -222,7 +244,8 @@ describe('Taste T tippt das Tempo (Desktop)', () => {
   it('zwei Tipps im Takt setzen das Tempo; Wiederholung und ⌘ zählen nicht', () => {
     for (const d of document.querySelectorAll('dialog')) d.remove();
     const ctx = makeContext();
-    installKeys(ctx.c, signal<Layout>('desktop'), document);
+    const layout = signal<Layout>('desktop');
+    installKeys(ctx.c, layout, document, createNav(ctx.scope, ctx.store, layout));
     const now = vi.spyOn(performance, 'now');
     const press = (t: number, init: KeyboardEventInit = {}) => {
       now.mockReturnValue(t);

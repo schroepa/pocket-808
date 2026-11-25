@@ -280,6 +280,16 @@ describe('allTracks', () => {
 });
 
 describe('allTracks: Beschriftung', () => {
+  it('eigenes Drum-Sample markiert die Beschriftung (Klasse cust)', () => {
+    const { el, c } = setup();
+    const cust = () => [...el.querySelectorAll('.at-lab.cust')].map((b) => b.textContent);
+    expect(cust()).toEqual([]);
+    c.samples.setDrum('SD', { pcm, name: 'Snare' });
+    expect(cust()).toEqual(['SD']);
+    c.samples.setDrum('SD', null);
+    expect(cust()).toEqual([]);
+  });
+
   it('Drum, Bass und Lead: wählt und spielt an', () => {
     const { el, nav, store, audio } = setup();
     const before = currentPattern(store.state.value);

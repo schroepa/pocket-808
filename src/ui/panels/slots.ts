@@ -11,7 +11,7 @@ import './slots.css';
 export function slots(c: UiContext, onPick?: () => void): HTMLElement {
   const group = h('div', {
     class: 'slots',
-    attrs: { role: 'group', 'aria-label': 'Pattern wählen', 'data-area': 'slots' },
+    attrs: { role: 'group', 'aria-label': 'Pattern wählen' },
   });
   for (const k of SLOTS) {
     const sel = c.store.select((s) => s.cur === k);

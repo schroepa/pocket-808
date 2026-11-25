@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { must } from '../../core/util.ts';
 import { signal } from '../../store/signals.ts';
 import { createScope, h } from '../dom.ts';
-import { punchDevice } from '../panels/punch/punch.ts';
+import { punchGrid } from '../panels/punch/punch.ts';
 import { makeContext, pointer } from '../test-utils.ts';
 import { holdButton, releaseHolds } from './hold.ts';
 import { sheet } from './sheet.ts';
@@ -332,7 +332,7 @@ describe('show', () => {
 
   it('show(el,false) löst ein gehaltenes Punch-Pad', () => {
     const { c, audio, scope } = makeContext();
-    const el = punchDevice(c).body(scope);
+    const el = punchGrid({ ...c, scope });
     document.body.append(el);
     const pad = must(el.querySelectorAll('button')[0], 'Pad');
     pad.dispatchEvent(pointer('pointerdown'));

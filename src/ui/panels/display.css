@@ -68,6 +68,7 @@
   .display .lcd-unit {
     font-size: 11px;
     letter-spacing: 0.1em;
+    opacity: 0.8;
   }
   :is(.lcd-pattern, .display .lcd-sub) {
     min-width: 0;
@@ -98,7 +99,9 @@
     align-items: center;
     gap: 4px;
   }
-  .display-tools .chip {
+  /* nur die Auslöser, nicht die Knöpfe in den Dialogen dahinter */
+  .display-tools > .chip,
+  .display-tools > div > .chip {
     padding: 0 8px;
     letter-spacing: 0.06em;
   }

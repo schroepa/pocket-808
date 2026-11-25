@@ -53,7 +53,7 @@ export function trackTap(c: UiContext, nav: Nav, el: HTMLElement, id: TrackId, p
 }
 
 /** vorige bzw. nächste Spur in der Reihenfolge der Kanäle; an den Enden bleibt die Wahl */
-export function shiftTrack(nav: Nav, d: -1 | 1): void {
+export function shiftTrack(nav: Pick<Nav, 'track' | 'selectTrack'>, d: -1 | 1): void {
   const i = CHANNELS.indexOf(nav.track.peek()) + d;
   if (i < 0 || i >= CHANNELS.length) return;
   nav.selectTrack(must(CHANNELS[i], 'Spur'));

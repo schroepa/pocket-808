@@ -55,9 +55,9 @@ function patchKit(c: UiContext) {
 }
 type PatchKit = ReturnType<typeof patchKit>;
 
-/** ein Modul über die volle Breite: Überschrift und Inhalt */
-const module = (title: string, children: readonly HTMLElement[]): HTMLElement =>
-  h('div', { class: 'shm w2' }, [h('h4', { text: title }), ...children]);
+/** ein Modul über die volle Breite: Überschrift und Inhalt; `pair` passt auch halb breit */
+const module = (title: string, children: readonly HTMLElement[], pair = false): HTMLElement =>
+  h('div', { class: pair ? 'shm w2 pair' : 'shm w2' }, [h('h4', { text: title }), ...children]);
 const knobRow = (knobs: readonly HTMLElement[]): HTMLElement => h('div', { class: 'shk' }, knobs);
 
 function oscModule(c: UiContext, k: PatchKit): HTMLElement {
@@ -86,13 +86,17 @@ function oscModule(c: UiContext, k: PatchKit): HTMLElement {
           hear();
         },
       }),
+    ]),
+    // Oktave neben Detune und Sub: spart auf dem Telefon eine Zeile
+    knobRow([
       h('div', { class: 'oct-grp' }, [
         chip(scope, { label: '−', ariaLabel: 'Oktave tiefer', onClick: shift(-1) }),
         oct,
         chip(scope, { label: '+', ariaLabel: 'Oktave höher', onClick: shift(1) }),
       ]),
+      kn('det', 'Detune'),
+      kn('sub', 'Sub'),
     ]),
-    knobRow([kn('det', 'Detune'), kn('sub', 'Sub')]),
   ]);
 }
 
@@ -100,7 +104,7 @@ const filterModule = (k: PatchKit): HTMLElement =>
   module('Filter', [knobRow([k.kn('cut', 'Cutoff'), k.kn('res', 'Reso'), k.kn('env', 'Env')])]);
 
 const outModule = (k: PatchKit): HTMLElement =>
-  module('Out', [knobRow([k.kn('dly', 'Delay'), k.kn('lvl', 'Level')])]);
+  module('Out', [knobRow([k.kn('dly', 'Delay'), k.kn('lvl', 'Level')])], true);
 
 /** Hüllkurve mit Anzeige und vier Schiebereglern */
 function envModule(c: UiContext, k: PatchKit, pre: 'f' | 'a', name: string): HTMLElement {
@@ -152,7 +156,7 @@ function fxModule(c: UiContext, k: PatchKit): HTMLElement {
       tag,
       onEnd: hear,
     });
-  return module('Effekt', [knobRow([fxKnob('drive', 'Drive'), fxKnob('chorus', 'Chorus')])]);
+  return module('Effekt', [knobRow([fxKnob('drive', 'Drive'), fxKnob('chorus', 'Chorus')])], true);
 }
 
 function arpModule(c: UiContext, k: PatchKit): HTMLElement {
@@ -229,37 +233,23 @@ function lfoModule(c: UiContext, k: PatchKit): HTMLElement {
       readout,
       tag,
     });
+  // Ziel neben den beiden Reglern: das Modul bleibt eine Zeile hoch
   return module('LFO', [
     knobRow([
       lfoKnob('r', 'Rate', (v) => `${lfoHz(v).toFixed(2)} Hz`, 0.5),
       lfoKnob('d', 'Depth', (v) => String(Math.round(v * 100)), 0),
+      segment(scope, {
+        label: 'LFO-Ziel',
+        options: [
+          { value: 'cut', label: 'Cutoff' },
+          { value: 'pit', label: 'Pitch' },
+        ],
+        value: computed(() => lfo.value.t),
+        write: (t) => {
+          store.update((s) => setLfo(s, s.part, { t }));
+        },
+      }),
     ]),
-    segment(scope, {
-      label: 'LFO-Ziel',
-      options: [
-        { value: 'cut', label: 'Cutoff' },
-        { value: 'pit', label: 'Pitch' },
-      ],
-      value: computed(() => lfo.value.t),
-      write: (t) => {
-        store.update((s) => setLfo(s, s.part, { t }));
-      },
-    }),
-  ]);
-}
-
-/** Die SH-101-Module des gewählten Parts, dazu Effekt, Arp und LFO (Legacy buildSynth, Abschnitt „Sound“). */
-export function synthModules(c: UiContext): HTMLElement {
-  const k = patchKit(c);
-  return h('div', { class: 'sh' }, [
-    oscModule(c, k),
-    filterModule(k),
-    envModule(c, k, 'f', 'Filter'),
-    envModule(c, k, 'a', 'Amp'),
-    outModule(k),
-    fxModule(c, k),
-    arpModule(c, k),
-    lfoModule(c, k),
   ]);
 }
 

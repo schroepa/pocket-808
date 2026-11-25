@@ -26,12 +26,6 @@
       grid-template-columns: repeat(16, minmax(0, 1fr));
     }
   }
-  /* ebenso im Sampler-Gerät der langen Seite */
-  @container sampler (min-width: 640px) {
-    .smp-steps {
-      grid-template-columns: repeat(16, minmax(0, 1fr));
-    }
-  }
   /* Pad- und Noten-Steps; Drum-Steps gestaltet controls/step-button.css */
   :is(.ss, .ns) {
     position: relative;

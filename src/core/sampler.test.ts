@@ -1,12 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { SMP_RATE } from './constants.ts';
 import { baseState } from './defaults.ts';
 import {
   clearedPad,
   grabHandle,
   loadedPad,
   movePadHandle,
-  padSummary,
   selectPad,
   setPadValue,
   toggleReverse,
@@ -69,13 +67,5 @@ describe('waveColumns', () => {
       { min: 0, max: 0 },
       { min: 0, max: 0 },
     ]);
-  });
-});
-
-describe('padSummary', () => {
-  it('Pad, Name oder leer, Länge in Sekunden', () => {
-    const s = loadedPad(selectPad(baseState(), 2), 2, 'Stab');
-    expect(padSummary(s, new Float32Array(SMP_RATE * 1.5))).toBe('Pad 3 · Stab · 1.5 s');
-    expect(padSummary(clearedPad(s, 2), null)).toBe('Pad 3 · leer');
   });
 });

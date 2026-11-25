@@ -52,11 +52,3 @@ export function clearVoiceChip(c: UiContext): HTMLElement {
     },
   });
 }
-
-/** Presets des gewählten Parts und „Stimme leeren“ */
-export function synthPresets(c: UiContext): HTMLElement {
-  return h('div', { class: 'syn-foot' }, [
-    synthSoundList(c),
-    h('div', { class: 'chips syn-tools' }, [clearVoiceChip(c)]),
-  ]);
-}

@@ -1,7 +1,4 @@
 @layer components {
-  .synth-body {
-    container: synth / inline-size;
-  }
   .sh {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -14,39 +11,43 @@
     border-radius: 14px;
     background: var(--cell);
   }
-  /* schmal: jedes Modul über die volle Breite (vier ADSR-Regler brauchen ≥ 4 × 44 px) */
+  /* jedes Modul über die volle Breite (vier ADSR-Regler brauchen ≥ 4 × 44 px); breite Seiten
+     stellen je zwei nebeneinander */
   .shm.w2,
   .shm.env {
     grid-column: 1 / -1;
   }
-  @container synth (min-width: 480px) {
-    .shm.env {
-      grid-column: auto;
-    }
-  }
-  @container synth (min-width: 640px) {
-    .sh {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-    .shm.w2,
-    .shm.env {
-      grid-column: span 2;
-    }
-  }
-  /* Seiten des Geräts: je höchstens eine Hüllkurve, unter 640 px über die volle Breite */
   .synth-page {
     container: synth / inline-size;
   }
   .synth-page .sh {
     margin-bottom: 0;
   }
-  @container synth (max-width: 639px) {
-    .synth-page .shm.env {
+  /* kleine Module (zwei Regler) stehen paarweise nebeneinander */
+  .synth-page .shm.pair {
+    grid-column: auto;
+  }
+  /* Segmente füllen die Modulbreite: jede Taste mindestens Touch-Breite */
+  .shm .seg {
+    display: flex;
+  }
+  /* im Regler-Streifen (LFO-Ziel) nur so breit wie nötig */
+  .shk .seg {
+    flex: 0 1 auto;
+  }
+  .shm .seg button {
+    flex: 1 1 auto;
+    min-width: var(--touch);
+    padding: 0 8px;
+  }
+  @container synth (min-width: 640px) {
+    .shm.w2,
+    .shm.env {
+      grid-column: auto;
+    }
+    .synth-page .shm:only-child {
       grid-column: 1 / -1;
     }
-  }
-  .synth-page .shm:only-child {
-    grid-column: 1 / -1;
   }
   .shm h4 {
     margin: 0 0 10px 4px;
@@ -66,7 +67,11 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: space-around;
+    align-items: center;
     gap: 6px;
+  }
+  .shk .oct {
+    min-width: 48px;
   }
   .shs {
     display: grid;

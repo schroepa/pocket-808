@@ -16,8 +16,10 @@ const DEFAULTS = mixDefaults();
 
 type Id = ReadonlySignal<ChannelId>;
 
-/** Mute und Solo des Kanals; `text` ist die sichtbare Beschriftung beider Tasten */
-export function muteSolo(c: UiContext, id: Id, text: { m: string; s: string }): HTMLElement[] {
+const TEXT = { m: 'Mute', s: 'Solo' } as const;
+
+/** Mute und Solo des Kanals */
+function muteSolo(c: UiContext, id: Id): HTMLElement[] {
   const { store, scope } = c;
   return (
     [
@@ -27,7 +29,7 @@ export function muteSolo(c: UiContext, id: Id, text: { m: string; s: string }): 
   ).map(([key, word, toggle]) => {
     const b = h('button', {
       class: `mb ${key}`,
-      text: text[key],
+      text: TEXT[key],
       attrs: { type: 'button' },
       on: {
         click: () => {
@@ -83,7 +85,7 @@ function channelKnob(
 }
 
 /** Pan (rastet in der Mitte) und Reverb-Send */
-export function panReverb(c: UiContext, id: Id): HTMLElement[] {
+function panReverb(c: UiContext, id: Id): HTMLElement[] {
   return [channelKnob(c, id, 'p', 'Pan', panText, 0.5), channelKnob(c, id, 'r', 'Reverb', pct)];
 }
 
@@ -92,7 +94,7 @@ export function channelPage(c: UiContext, id: Id, o: { level?: boolean } = {}): 
   const level =
     o.level === false ? [] : [channelKnob(c, id, 'v', 'Level', (v) => String(Math.round(v * 100)))];
   return h('div', { class: 'channel-page' }, [
-    h('div', { class: 'ch-buttons' }, muteSolo(c, id, { m: 'Mute', s: 'Solo' })),
+    h('div', { class: 'ch-buttons' }, muteSolo(c, id)),
     h('div', { class: 'ch-knobs' }, [...level, ...panReverb(c, id)]),
   ]);
 }

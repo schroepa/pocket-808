@@ -1,72 +1,4 @@
 @layer components {
-  .mix {
-    display: grid;
-    gap: 6px;
-    margin-bottom: 14px;
-  }
-  .mx {
-    display: grid;
-    grid-template-columns: 62px var(--touch) var(--touch) minmax(0, 1fr);
-    gap: 6px;
-    align-items: center;
-  }
-  .mx .nm {
-    height: var(--touch);
-    padding: 0 0 0 6px;
-    border: 0;
-    background: none;
-    text-align: left;
-    font: 600 16px var(--font-display);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: color-mix(in srgb, var(--ink) 72%, var(--panel));
-  }
-  .mx.sel .nm {
-    color: var(--ink);
-  }
-  .fd {
-    width: 100%;
-    height: var(--touch);
-    margin: 0;
-    background: transparent;
-    touch-action: pan-y;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  .fd::-webkit-slider-runnable-track {
-    height: 4px;
-    border-radius: 2px;
-    background: var(--cell);
-  }
-  .fd::-webkit-slider-thumb {
-    width: 20px;
-    height: 20px;
-    margin-top: -8px;
-    border-radius: 50%;
-    background: var(--ink);
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  .fd::-moz-range-track {
-    height: 4px;
-    border-radius: 2px;
-    background: var(--cell);
-  }
-  .fd::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    border: 0;
-    border-radius: 50%;
-    background: var(--ink);
-  }
-  .mx.sel .fd::-webkit-slider-thumb {
-    background: var(--acc);
-    box-shadow: 0 0 8px rgba(211, 146, 90, 0.45);
-  }
-  .mx.sel .fd::-moz-range-thumb {
-    background: var(--acc);
-    box-shadow: 0 0 8px rgba(211, 146, 90, 0.45);
-  }
   .tone-row {
     display: flex;
     align-items: center;
@@ -137,7 +69,7 @@
   .mixer-work .scenes {
     margin-top: 0;
   }
-  /* FX ohne Scrollen auf dem iPhone: engere Abstände als im Gerät der langen Seite */
+  /* FX ohne Scrollen auf dem iPhone: engere Abstände */
   .mixer-work .fx-body .knob-grid,
   .mixer-work .tone-row {
     margin-bottom: 8px;
@@ -153,11 +85,18 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 10px;
+    container: channels / inline-size;
   }
   .ch-strips {
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 8px 4px;
+  }
+  /* breit genug: alle 13 Züge in einer Reihe */
+  @container channels (min-width: 620px) {
+    .ch-strips {
+      grid-template-columns: repeat(13, minmax(0, 1fr));
+    }
   }
   .ch-strip {
     display: grid;

@@ -134,22 +134,18 @@ export function songPanel(c: UiContext): HTMLElement {
       },
     ),
   ]);
-  return h(
-    'section',
-    { class: 'panel song', attrs: { 'aria-label': 'Song', 'data-area': 'song' } },
-    [
-      h('div', { class: 'ed-head' }, [
-        h('h2', {}, ['Song', h('small', { text: 'Reihenfolge' })]),
-        chip(scope, {
-          label: 'Leeren',
-          onClick: () => {
-            store.clearSong();
-            selected.value = -1;
-          },
-        }),
-      ]),
-      chain,
-      tools,
-    ],
-  );
+  return h('div', { class: 'panel song' }, [
+    h('div', { class: 'ed-head' }, [
+      h('h2', {}, ['Song', h('small', { text: 'Reihenfolge' })]),
+      chip(scope, {
+        label: 'Leeren',
+        onClick: () => {
+          store.clearSong();
+          selected.value = -1;
+        },
+      }),
+    ]),
+    chain,
+    tools,
+  ]);
 }

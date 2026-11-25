@@ -10,7 +10,9 @@
   .track-pages > section {
     min-width: 0;
   }
+  /* die Pad-Reihe: acht Pads nebeneinander */
   .track-work .smp-head .pads {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
     margin-bottom: 0;
   }
 }

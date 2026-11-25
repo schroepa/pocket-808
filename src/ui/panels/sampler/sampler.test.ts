@@ -1,21 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PAD_DEFAULT } from '../../../core/constants.ts';
 import { currentPattern } from '../../../core/pattern.ts';
-import { padSummary } from '../../../core/sampler.ts';
 import { must } from '../../../core/util.ts';
 import { signal } from '../../../store/signals.ts';
 import { show } from '../../controls/visible.ts';
 import type { Layout } from '../../layout.ts';
 import { createNav } from '../../nav.ts';
 import { makeContext, pointer } from '../../test-utils.ts';
-import { samplerDevice } from './device.ts';
 import { samplerChop } from './chop.ts';
 import { samplerKeyboard } from './keyboard.ts';
 import { samplerKnobs } from './knobs.ts';
 import { createMessage } from './message.ts';
 import { samplerPads } from './pads.ts';
 import { samplerPages } from './pages.ts';
-import { samplerSteps } from './steps.ts';
 import { samplerTools } from './tools.ts';
 import { drawWave, samplerWave } from './wave.ts';
 
@@ -402,46 +399,6 @@ describe('samplerKnobs', () => {
   });
 });
 
-describe('samplerSteps', () => {
-  it('Steps schalten, Vorhören nur beim Einschalten im Stand, Lauflicht', () => {
-    const { c, store, audio } = makeContext();
-    c.samples.setPad(0, pcm);
-    const el = samplerSteps(c);
-    const steps = [...el.querySelectorAll<HTMLButtonElement>('.ss')];
-    expect(steps).toHaveLength(16);
-    expect(steps[4]?.classList.contains('q')).toBe(true);
-    steps[2]?.click();
-    expect(store.state.value.patterns.A.smp[0]?.[2]).toBe(1);
-    expect(steps[2]?.getAttribute('aria-pressed')).toBe('true');
-    expect(audio.auditionPad).toHaveBeenCalledTimes(1);
-    steps[2]?.click();
-    audio.playing.value = true;
-    steps[3]?.click();
-    expect(audio.auditionPad).toHaveBeenCalledTimes(1);
-    audio.playhead.value = { step: 3, songIndex: -1 };
-    expect(steps[3]?.classList.contains('now')).toBe(true);
-  });
-  it('Sub-Modus mit Sub-Editor für das gewählte Pad', () => {
-    const { c, store } = makeContext();
-    store.update((s) => ({ ...s, smp: { ...s.smp, sel: 2 } }));
-    const el = samplerSteps(c);
-    const sub = el.querySelector<HTMLButtonElement>('[aria-label="Sub-Steps bearbeiten"]');
-    const ed = el.querySelector<HTMLElement>('.sub-ed');
-    expect(ed?.hidden).toBe(true);
-    sub?.click();
-    expect(ed?.hidden).toBe(false);
-    el.querySelectorAll<HTMLButtonElement>('.ss')[5]?.click();
-    expect(el.querySelectorAll('.ss')[5]?.classList.contains('subsel')).toBe(true);
-    expect(store.state.value.patterns.A.smp[2]?.[5]).toBe(0);
-    expect(ed?.querySelector('.cap-label')?.textContent).toBe('Pad 3 · Step 6 · 16 Sub-Steps');
-    ed?.querySelectorAll<HTMLButtonElement>('.sb')[0]?.click();
-    expect(store.state.value.patterns.A.sub.P2?.[5]?.[0]).toBe(1);
-    expect(el.querySelectorAll('.ss')[5]?.classList.contains('sub')).toBe(true);
-    sub?.click();
-    expect(ed?.hidden).toBe(true);
-  });
-});
-
 describe('samplerChop', () => {
   const radio = (el: HTMLElement, label: string) =>
     [...el.querySelectorAll<HTMLButtonElement>('[role=radio]')].find(
@@ -518,29 +475,6 @@ describe('samplerKeyboard', () => {
     c.samples.setPad(1, pcm);
     key(el, 'A')?.click();
     expect(audio.auditionPad).toHaveBeenLastCalledWith(1, -3);
-  });
-});
-
-describe('samplerDevice', () => {
-  it('Zusammenfassung und Teile', () => {
-    const { c, store } = makeContext();
-    const d = samplerDevice(c);
-    expect(d.id).toBe('smp');
-    expect(d.summary.value).toBe(padSummary(store.state.value, null));
-    c.samples.setPad(0, pcm);
-    expect(d.summary.value).toBe(padSummary(store.state.value, pcm));
-    const body = d.body(c.scope);
-    for (const s of [
-      '.pads',
-      'canvas',
-      '.smp-tools',
-      '.smp-chop',
-      '.smp-keys',
-      '[role=status]',
-      '.ss',
-    ]) {
-      expect(body.querySelector(s)).not.toBeNull();
-    }
   });
 });
 

@@ -75,6 +75,14 @@ function drumRow(c: UiContext, nav: Nav, voice: VoiceId): HTMLElement {
   markSteps(c, cells, nav.drumSub, nav.drumOpt, selected);
   const lab = label(voice, name);
   trackTap(c, nav, lab, voice);
+  // eigenes Sample wie an den Spurtasten markieren
+  bind(
+    scope,
+    () => c.samples.drums.value.has(voice),
+    (on) => {
+      lab.classList.toggle('cust', on);
+    },
+  );
   return row(c, lab, cells, selected);
 }
 

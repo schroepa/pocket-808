@@ -1,4 +1,58 @@
 @layer components {
+  /* Seite Noten kompakt: Tonart, Skala, Leeren · Takthälfte, Länge · Werkzeug · Rolle */
+  .synth-notes {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    grid-template-areas:
+      'key scale clear'
+      'half half len'
+      'tools tools tools'
+      'roll roll roll';
+    align-items: start;
+    gap: 6px;
+  }
+  .synth-notes :is(.syn-row, .roll-head) {
+    display: contents;
+  }
+  .synth-notes .syn-row > .fld:first-child {
+    grid-area: key;
+  }
+  .synth-notes .syn-row > .fld:last-child {
+    grid-area: scale;
+  }
+  /* die Auswahl zeigt „A“ und „Moll“: die Beschriftung bleibt nur für Screenreader */
+  .synth-notes .fld span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .synth-notes .roll-head > .chips:nth-child(1) {
+    grid-area: half;
+  }
+  .synth-notes .roll-head > .chips:nth-child(2) {
+    grid-area: len;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+  }
+  .synth-notes .roll-head > .chips:nth-child(3) {
+    grid-area: tools;
+  }
+  .synth-notes .syn-tools {
+    grid-area: clear;
+  }
+  .synth-notes [data-slot='roll'] {
+    grid-area: roll;
+    min-height: 0;
+  }
+  .synth-notes [data-slot='roll']:empty {
+    display: none;
+  }
+  .synth-notes .roll {
+    margin-bottom: 0;
+  }
   .roll-head {
     display: flex;
     flex-wrap: wrap;

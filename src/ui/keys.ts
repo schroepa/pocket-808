@@ -4,11 +4,15 @@ import type { ReadonlySignal } from '../store/signals.ts';
 import type { UiContext } from './context.ts';
 import { chip } from './controls/chip.ts';
 import { h, listen } from './dom.ts';
-import { tap } from './tap.ts';
 import type { Layout } from './layout.ts';
+import type { Nav } from './nav.ts';
+import { tap } from './tap.ts';
+import { shiftTrack } from './track.ts';
+import './keys.css';
 
 const TEXT = 'input, textarea, select, [contenteditable]';
-const OWN_ARROWS = '[role=slider], [role=radio], [role=tab]';
+/** Regler und Segmente nutzen ↑/↓ selbst; Reiter nur ←/→, dort wählen ↑/↓ weiter die Spur */
+const OWN_ARROWS = '[role=slider], [role=radio]';
 
 export const SHORTCUTS: readonly (readonly [string, string])[] = [
   ['Leertaste', 'Start / Stopp'],
@@ -29,11 +33,15 @@ export interface FileActions {
   open(): void;
 }
 
-/** Tastaturkürzel, nur im Desktop-Layout; Texteingaben und eigene Tasten der Regler haben Vorrang. */
+/**
+ * Tastaturkürzel, nur im Desktop-Layout; Texteingaben und eigene Tasten der Regler haben Vorrang.
+ * ↑/↓ wählen die vorige bzw. nächste Spur unter allen 13.
+ */
 export function installKeys(
   c: UiContext,
   layout: ReadonlySignal<Layout>,
   doc: Document,
+  nav: Pick<Nav, 'track' | 'selectTrack'>,
   files?: FileActions,
 ): void {
   const { store, audio, readout } = c;
@@ -61,8 +69,7 @@ export function installKeys(
     } else if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !mod) {
       if (t.closest(OWN_ARROWS)) return;
       e.preventDefault();
-      const d = e.key === 'ArrowUp' ? -1 : 1;
-      store.update((s) => ({ ...s, sel: Math.min(9, Math.max(0, s.sel + d)) }));
+      shiftTrack(nav, e.key === 'ArrowUp' ? -1 : 1);
     } else if (mod && k === 'z' && !e.shiftKey) {
       e.preventDefault();
       store.undo();
@@ -97,7 +104,7 @@ function installFillKey(c: UiContext, doc: Document): void {
   }
 }
 
-/** Knopf „?“ mit Dialog, der die Kürzel auflistet (nur auf dem Desktop sichtbar, deck.css). */
+/** Knopf „?“ mit Dialog, der die Kürzel auflistet (nur auf dem Desktop sichtbar, keys.css). */
 export function shortcutHelp(c: UiContext): HTMLElement {
   const dialog = h('dialog', { class: 'keys-help', attrs: { 'aria-label': 'Tastaturkürzel' } }, [
     h('h2', { text: 'Tastaturkürzel' }),

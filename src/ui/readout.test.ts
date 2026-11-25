@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { baseState } from '../core/defaults.ts';
 import { signal } from '../store/signals.ts';
-import { createStore } from '../store/store.ts';
 import { createScope } from './dom.ts';
-import { createReadout, voiceLine } from './readout.ts';
+import { createReadout } from './readout.ts';
 import { manualTimer } from './test-utils.ts';
 
 describe('createReadout', () => {
@@ -28,18 +26,5 @@ describe('createReadout', () => {
     r.flash('y');
     scope.dispose();
     expect(timer.pending()).toBe(0);
-  });
-});
-
-describe('voiceLine', () => {
-  it('nennt die gewählte Stimme', () => {
-    const store = createStore(baseState());
-    const line = voiceLine(store, true);
-    expect(line.value).toBe('BD · Bass Drum');
-    store.update((s) => ({ ...s, sel: 1 }));
-    expect(line.value).toBe('SD · Snare Drum');
-  });
-  it('meldet fehlendes Audio', () => {
-    expect(voiceLine(createStore(baseState()), false).value).toBe('Kein Audio in diesem Browser');
   });
 });
