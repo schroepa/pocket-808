@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures.ts';
+import { closeSheet, openTempo } from './nav.ts';
 
 test.beforeEach(async ({ page }) => {
   // Teilen-Menü abschalten: Playwright prüft den Download-Weg (Teilen ist per Unit-Test abgedeckt)
@@ -25,10 +26,23 @@ async function closeFile(page: Page) {
   await dialog(page).getByRole('button', { name: 'Schließen' }).click();
   await expect(dialog(page)).toBeHidden();
 }
-const tempo = (page: Page) => page.getByRole('slider', { name: 'Tempo' });
+const slider = (page: Page) => page.getByRole('slider', { name: 'Tempo' });
+/** Anzeigetext des Tempo-Reglers; er liegt in der Tempo-Fläche, die danach wieder zu ist */
+async function tempoText(page: Page): Promise<string> {
+  const sheet = await openTempo(page);
+  const text = await slider(page).getAttribute('aria-valuetext');
+  await closeSheet(sheet);
+  return text ?? '';
+}
+async function expectTempo(page: Page, text: string) {
+  const sheet = await openTempo(page);
+  await expect(slider(page)).toHaveAttribute('aria-valuetext', text);
+  await closeSheet(sheet);
+}
 
 test('Projekt sichern, ändern, öffnen und ersetzen; bleibt nach Neuladen', async ({ page }) => {
-  const before = await tempo(page).getAttribute('aria-valuetext');
+  const before = await tempoText(page);
+  expect(before).toMatch(/^\d+ BPM$/);
   await openFile(page);
   const download = page.waitForEvent('download');
   await dialog(page).getByRole('button', { name: 'Projekt sichern' }).click();
@@ -39,8 +53,10 @@ test('Projekt sichern, ändern, öffnen und ersetzen; bleibt nach Neuladen', asy
   await expect(status(page)).toHaveText('Projekt gesichert');
   await closeFile(page);
 
-  await tempo(page).press('End');
-  await expect(tempo(page)).toHaveAttribute('aria-valuetext', '200 BPM');
+  const sheet = await openTempo(page);
+  await slider(page).press('End');
+  await expect(slider(page)).toHaveAttribute('aria-valuetext', '200 BPM');
+  await closeSheet(sheet);
 
   await openFile(page);
   const chooser = page.waitForEvent('filechooser');
@@ -56,14 +72,15 @@ test('Projekt sichern, ändern, öffnen und ersetzen; bleibt nach Neuladen', asy
   await dialog(page).getByRole('button', { name: 'Ersetzen' }).click();
   await expect(status(page)).toHaveText('Projekt geöffnet');
   await closeFile(page);
-  await expect(tempo(page)).toHaveAttribute('aria-valuetext', before ?? '');
+  await expectTempo(page, before);
   await page.waitForTimeout(400);
   await page.reload();
-  await expect(tempo(page)).toHaveAttribute('aria-valuetext', before ?? '');
+  await expectTempo(page, before);
 });
 
 test('fremde Datei: Meldung, nichts ändert sich', async ({ page }) => {
-  const before = await tempo(page).getAttribute('aria-valuetext');
+  const before = await tempoText(page);
+  expect(before).toMatch(/^\d+ BPM$/);
   await openFile(page);
   const chooser = page.waitForEvent('filechooser');
   await dialog(page).getByRole('button', { name: 'Projekt öffnen' }).click();
@@ -76,11 +93,12 @@ test('fremde Datei: Meldung, nichts ändert sich', async ({ page }) => {
   });
   await expect(status(page)).toHaveText('Keine Pocket-808-Datei');
   await closeFile(page);
-  await expect(tempo(page)).toHaveAttribute('aria-valuetext', before ?? '');
+  await expectTempo(page, before);
 });
 
 test('Pattern 1× als WAV: gültiger Kopf und passende Länge', async ({ page }) => {
-  const bpm = Number((await tempo(page).getAttribute('aria-valuetext'))?.split(' ')[0]);
+  const bpm = Number((await tempoText(page)).split(' ')[0]);
+  expect(bpm).toBeGreaterThan(0);
   await openFile(page);
   await dialog(page).getByRole('button', { name: 'WAV erzeugen' }).click();
   await expect(status(page)).toHaveText(/^Export fertig/, { timeout: 30_000 });

@@ -1,4 +1,5 @@
 import { expect, test } from './fixtures.ts';
+import { expectTrack, trackSteps } from './nav.ts';
 
 test('alter Speicherstand lädt (Tempo, Auswahl, Steps)', async ({ page }) => {
   await page.addInitScript(() => {
@@ -14,9 +15,6 @@ test('alter Speicherstand lädt (Tempo, Auswahl, Steps)', async ({ page }) => {
   });
   await page.goto('/');
   await expect(page.locator('.lcd-digits')).toHaveText('123');
-  await expect(page.locator('[data-area=editor] h2')).toContainText('SD');
-  await expect(page.locator('[data-area=editor] .steps .step').nth(4)).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  await expectTrack(page, 'SD', 'Snare Drum');
+  await expect((await trackSteps(page)).nth(4)).toHaveAttribute('aria-pressed', 'true');
 });
