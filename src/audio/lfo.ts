@@ -15,8 +15,8 @@ export interface PartLfo {
   readonly target: Target;
   /** Rate, Depth und Ziel live ändern (Hub mit Anker) */
   set(l: LfoSettings, t: number): void;
-  /** an eine Note legen: Cutoff auf den Filter, Pitch auf jeden Oszillator */
-  attach(filter: BiquadFilterNode, oscs: readonly OscillatorNode[]): void;
+  /** an eine Note legen: Cutoff auf die Filter, Pitch auf jeden Oszillator */
+  attach(filters: readonly BiquadFilterNode[], oscs: readonly OscillatorNode[]): void;
   /** Hub auf 0 fahren, dann stoppen (kein Sprung im Cutoff bzw. in der Tonhöhe) */
   stop(t: number): void;
 }
@@ -64,10 +64,10 @@ export function createLfo(ctx: BaseAudioContext, l: LfoSettings, t: number): Par
       target = next.t;
       fade(gains[target], lfoCents(next), at);
     },
-    attach(filter, oscs) {
+    attach(filters, oscs) {
       if (target === 'cut') {
         const first = oscs[0];
-        if (first) link(filter.detune, first);
+        if (first) for (const f of filters) link(f.detune, first);
       } else for (const o of oscs) link(o.detune, o);
     },
     stop(at) {

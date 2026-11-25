@@ -1,6 +1,7 @@
 import { CHANNELS, PARTS } from '../core/constants.ts';
 import { channelGain, channelPan, masterGain } from '../core/mix.ts';
 import type { Rng } from '../core/random.ts';
+import { sameTone, toneOf, type Tone } from '../core/tone.ts';
 import type { ChannelId, Fx, MixChannel, Part, State } from '../core/types.ts';
 import {
   delayTime,
@@ -9,6 +10,10 @@ import {
   noiseData,
   reverbReturn,
   softClipCurve,
+  TAPE_RANGE,
+  tapeCurve,
+  tapeSettings,
+  vinylNoise,
 } from './dsp.ts';
 import { holdAt, rampFrom } from './params.ts';
 
@@ -51,7 +56,36 @@ export interface Graph {
   punchOff(kind: GraphPunch, t: number, fx: Fx): void;
   /** Abgriff hinter dem Master für das LCD (erst bei der ersten Anforderung angelegt, ohne Ausgang) */
   analyser(): AnalyserNode;
+  /**
+   * Klangcharakter des Masters (Warm, Tape). Die Kette liegt nur im Signalweg, solange eines von
+   * beiden an ist; sonst wird sie abgebaut und der Weg ist der alte.
+   */
+  setTone(tone: Tone, t: number): void;
+  /** Bandrauschen nur während der Wiedergabe */
+  setPlaying(on: boolean, t: number): void;
 }
+
+/** Master-Klang: Bandsättigung → Eiern (Delay) → Tiefpass → Kuhschwänze; dazu Bandrauschen */
+interface ToneChain {
+  inp: GainNode;
+  sat: WaveShaperNode;
+  wow: DelayNode;
+  wowDepth: GainNode;
+  flutterDepth: GainNode;
+  lp: BiquadFilterNode;
+  lo: BiquadFilterNode;
+  hi: BiquadFilterNode;
+  hiss: GainNode;
+  sources: AudioScheduledSourceNode[];
+  /** Stufe der Sättigungs-Kennlinie (−1: noch keine gesetzt) */
+  level: number;
+}
+/** Grundverzögerung des Eierns (s) und Stufen der Sättigung */
+const WOW_BASE = 0.006;
+const TAPE_STEPS = 16;
+/** Kuhschwänze für Warm (dB) */
+const WARM_LOW_DB = 2;
+const WARM_HIGH_DB = -3;
 
 /** Punch-Effekte, die im Graphen leben (Loops nutzen den Stutter, Half-Time den Scheduler) */
 export type GraphPunch = 'tape' | 'crush' | 'echo' | 'lp' | 'hp';
@@ -295,6 +329,129 @@ export function createGraph(
 
   let scopeNode: AnalyserNode | null = null;
 
+  let tone: Tone = { warm: false, tape: 0 };
+  let chain: ToneChain | null = null;
+  let playing = false;
+  const curves = new Map<number, Float32Array>();
+  const buildChain = (t: number): ToneChain => {
+    const inp = c.createGain();
+    inp.gain.value = 1 / TAPE_RANGE;
+    const sat = c.createWaveShaper();
+    const wow = c.createDelay(0.05);
+    wow.delayTime.value = WOW_BASE;
+    const lp = c.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 18000;
+    lp.Q.value = 0.5;
+    const lo = c.createBiquadFilter();
+    lo.type = 'lowshelf';
+    lo.frequency.value = 120;
+    lo.gain.value = 0;
+    const hi = c.createBiquadFilter();
+    hi.type = 'highshelf';
+    hi.frequency.value = 7500;
+    hi.gain.value = 0;
+    inp.connect(sat);
+    sat.connect(wow);
+    wow.connect(lp);
+    lp.connect(lo);
+    lo.connect(hi);
+    // Eiern: zwei langsame Sinusse modulieren die Verzögerung (Wow tief, Flutter schnell)
+    const lfo = (hz: number): { osc: OscillatorNode; depth: GainNode } => {
+      const osc = c.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = hz;
+      const depth = c.createGain();
+      depth.gain.value = 0;
+      osc.connect(depth);
+      depth.connect(wow.delayTime);
+      osc.start(t);
+      return { osc, depth };
+    };
+    const w = lfo(0.55);
+    const f = lfo(6.3);
+    const hiss = c.createGain();
+    hiss.gain.value = 0;
+    const src = c.createBufferSource();
+    const buf = c.createBuffer(1, c.sampleRate * 3, c.sampleRate);
+    buf.getChannelData(0).set(vinylNoise(c.sampleRate, 3, random('tape')));
+    src.buffer = buf;
+    src.loop = true;
+    src.connect(hiss);
+    hiss.connect(lo);
+    src.start(t);
+    return {
+      inp,
+      sat,
+      wow,
+      wowDepth: w.depth,
+      flutterDepth: f.depth,
+      lp,
+      lo,
+      hi,
+      hiss,
+      sources: [w.osc, f.osc, src],
+      level: -1,
+    };
+  };
+  const applyTone = (ch: ToneChain, t: number, direct: boolean): void => {
+    const level = Math.round(tone.tape * TAPE_STEPS);
+    if (level !== ch.level) {
+      let curve = curves.get(level);
+      if (!curve) {
+        curve = tapeCurve(level / TAPE_STEPS);
+        curves.set(level, curve);
+      }
+      ch.sat.curve = curve as Float32Array<ArrayBuffer>;
+      ch.level = level;
+    }
+    const ts = tapeSettings(tone.tape);
+    const set = (p: AudioParam, v: number): void => {
+      if (direct) p.value = v;
+      else p.setTargetAtTime(v, t, 0.03);
+    };
+    set(ch.lp.frequency, ts.lp);
+    set(ch.wowDepth.gain, ts.wow);
+    set(ch.flutterDepth.gain, ts.flutter);
+    set(ch.lo.gain, tone.warm ? WARM_LOW_DB : 0);
+    set(ch.hi.gain, tone.warm ? WARM_HIGH_DB : 0);
+    set(ch.hiss.gain, playing ? ts.noise : 0);
+  };
+  const dropChain = (ch: ToneChain, t: number): void => {
+    try {
+      djHP.disconnect(ch.inp);
+      ch.hi.disconnect();
+    } catch {
+      /* schon getrennt */
+    }
+    djHP.connect(comp);
+    for (const s of ch.sources) {
+      try {
+        s.stop(t);
+      } catch {
+        /* schon gestoppt */
+      }
+    }
+  };
+  const routeTone = (t: number, direct: boolean): void => {
+    const active = tone.warm || tone.tape > 0;
+    if (active && !chain) {
+      chain = buildChain(t);
+      try {
+        djHP.disconnect(comp);
+      } catch {
+        /* nicht verbunden */
+      }
+      djHP.connect(chain.inp);
+      chain.hi.connect(comp);
+      applyTone(chain, t, true);
+    } else if (active && chain) applyTone(chain, t, direct);
+    else if (chain) {
+      dropChain(chain, t);
+      chain = null;
+    }
+  };
+
   const graph: Graph = {
     ctx,
     bus,
@@ -458,6 +615,21 @@ export function createGraph(
       }
       return scopeNode;
     },
+    setTone(next, t) {
+      if (sameTone(next, tone)) return;
+      tone = next;
+      routeTone(t, false);
+    },
+    setPlaying(on, t) {
+      playing = on;
+      // der Offline-Export startet knapp vor 0: Zeiten nie negativ
+      if (chain)
+        chain.hiss.gain.setTargetAtTime(
+          on ? tapeSettings(tone.tape).noise : 0,
+          Math.max(0, t),
+          0.05,
+        );
+    },
     stutterOff(t) {
       const st = stutter;
       if (!st?.on) return;
@@ -474,5 +646,7 @@ export function createGraph(
   for (const id of CHANNELS) graph.applyChannel(id, s.mix[id], audible[id], null);
   graph.applyFx(s.fx, null);
   graph.syncSynth(s, audible, c.currentTime);
+  tone = toneOf(s);
+  routeTone(c.currentTime, true);
   return graph;
 }

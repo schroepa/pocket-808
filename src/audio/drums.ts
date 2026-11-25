@@ -30,6 +30,8 @@ export interface DrumBank {
    * dieselbe Warteschlange; nicht mehr gewünschte Aufträge werden beim Start übersprungen.
    */
   wantVariants(list: readonly VariantSpec[]): void;
+  /** Klangcharakter geändert: alle Stimmen und gewünschten Varianten neu rendern */
+  refresh(): void;
   /** Zeitgeber löschen, ausstehende Renderaufträge verwerfen */
   dispose(): void;
 }
@@ -58,6 +60,8 @@ export function createDrumBank(o: {
   timer: EngineTimer;
   params: () => Record<VoiceId, DrumParams>;
   samples?: ReadonlyMap<VoiceId, DrumSample>;
+  /** warmer Klang: andere Synthese und kleine Zufallsschwankungen je Treffer */
+  warm?: () => boolean;
 }): DrumBank {
   const { graph, timer } = o;
   const ctx = graph.ctx;
@@ -72,6 +76,8 @@ export function createDrumBank(o: {
   /** gewünschte Varianten (Locks im Zustand, Treffer ohne fertige Variante) */
   let wanted = new Set<string>();
   const choke = { gain: null as GainNode | null };
+  const warm = (): boolean => o.warm?.() ?? false;
+  const human = o.random('human');
   // Eine Warteschlange für alle Offline-Renderings: nie zwei gleichzeitig (iPhone)
   let renders: Promise<void> = Promise.resolve();
   let prerendering: Promise<void> | null = null;
@@ -89,6 +95,7 @@ export function createDrumBank(o: {
         noise: graph.noise,
         kick: graph.kick,
         rnd: o.random(`voice:${VOICE_IDS.indexOf(voice)}`),
+        warm: warm(),
       });
       if (tokens[voice] === tok) buffers[voice] = buf;
     } catch {
@@ -110,6 +117,7 @@ export function createDrumBank(o: {
         noise: graph.noise,
         kick: graph.kick,
         rnd: o.random(`voice:${VOICE_IDS.indexOf(v.voice)}`),
+        warm: warm(),
       });
       variants.set(key, buf);
       while (variants.size > MAX_VARIANTS) {
@@ -211,6 +219,16 @@ export function createDrumBank(o: {
       timer.clearTimeout(rerenderTimers[voice]);
       rerenderTimers[voice] = timer.setTimeout(() => void enqueue(() => render(voice)), 90);
     },
+    refresh() {
+      variants.clear();
+      for (const voice of RENDER_ORDER) void enqueue(() => render(voice));
+      for (const key of wanted) {
+        if (pending.has(key)) continue;
+        const [voice, tune, decay] = key.split('|') as [VoiceId, string, string];
+        pending.add(key);
+        void enqueue(() => renderVariant({ voice, tune: Number(tune), decay: Number(decay) }, key));
+      }
+    },
     ready: (voice) => !!buffers[voice],
     setSample(voice, s) {
       if (s) samples.set(voice, s);
@@ -244,7 +262,15 @@ export function createDrumBank(o: {
         // noch nicht vorgerendert: live synthetisieren (Legacy-Rückfall). Abwürgen und Stehlen
         // greifen dabei nur unter Live-Stimmen (choke), nicht gegenüber Buffern – wie Legacy.
         VOICE_FN[voice](
-          { ctx, out: dest, noise: graph.noise, kick: graph.kick, rnd: Math.random, choke },
+          {
+            ctx,
+            out: dest,
+            noise: graph.noise,
+            kick: graph.kick,
+            rnd: Math.random,
+            choke,
+            warm: warm(),
+          },
           t,
           p,
         );
@@ -255,11 +281,17 @@ export function createDrumBank(o: {
       const src = ctx.createBufferSource();
       src.buffer = buf;
       const g = ctx.createGain();
-      g.gain.value = p.level;
+      // Warm: kein Treffer gleicht dem anderen (Tonhöhe ±0,3 %, Pegel ±3 %), ohne neue Knoten
+      let level = p.level;
+      if (warm()) {
+        src.playbackRate.value = 1 + (human() - 0.5) * 0.006;
+        level *= 1 + (human() - 0.5) * 0.06;
+      }
+      g.gain.value = level;
       src.connect(g);
       g.connect(dest);
       src.start(t, 0);
-      last.set(voice, { src, g, v: p.level });
+      last.set(voice, { src, g, v: level });
     },
     dispose() {
       disposed = true;

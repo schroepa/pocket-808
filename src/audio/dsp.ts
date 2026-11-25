@@ -124,3 +124,60 @@ export const reverbReturn = (fx: Pick<Fx, 'ret'>): number => fx.ret * 1.6;
 export const delayTime = (tempo: number): number => Math.min(1.9, (3 * 60) / tempo / 4);
 export const stutterPeriod = (tempo: number, fraction: number): number =>
   Math.min(1.9, (60 / tempo) * fraction);
+
+/* ---------- Klangcharakter (Warm, Tape) ---------- */
+
+/** Sättigung vor dem Synth-Filter: weich, bei kleinen Pegeln fast linear */
+export const WARM_DRIVE = 1.5;
+/** größte zufällige Verstimmung je Note in Cent (Driften) */
+export const DRIFT_CENTS = 5;
+/** Eingangsbereich der Tape-Kennlinie: der Shaper sieht das Bus-Signal durch TAPE_RANGE geteilt */
+export const TAPE_RANGE = 4;
+
+/**
+ * Band-Sättigung über ±TAPE_RANGE: y = tanh(d·x)/d, bei kleinen Pegeln Verstärkung 1.
+ * amount 0 ist praktisch linear, amount 1 drückt Spitzen weich zusammen.
+ */
+export function tapeCurve(amount: number): Float32Array {
+  const n = 2048;
+  const c = new Float32Array(n);
+  const d = 0.05 + 0.45 * amount;
+  for (let i = 0; i < n; i++) {
+    const x = ((i * 2) / (n - 1) - 1) * TAPE_RANGE;
+    c[i] = Math.tanh(d * x) / d;
+  }
+  return c;
+}
+
+/** Tape-Regler → Tiefpass (Hz), Tonhöhen-Eiern (s Verzögerungshub) und Rauschpegel */
+export function tapeSettings(amount: number): {
+  lp: number;
+  wow: number;
+  flutter: number;
+  noise: number;
+} {
+  const a = Math.min(1, Math.max(0, amount));
+  return {
+    lp: 18000 * Math.pow(4200 / 18000, a),
+    wow: a * 0.0016,
+    flutter: a * 0.00005,
+    noise: a * a * 0.016,
+  };
+}
+
+/** Band- und Vinylrauschen: leises, dumpfes Rauschen mit vereinzelten Knacksern */
+export function vinylNoise(sampleRate: number, seconds: number, rnd: Rng): Float32Array {
+  const n = Math.floor(sampleRate * seconds);
+  const d = new Float32Array(n);
+  let hiss = 0;
+  let click = 0;
+  // im Mittel etwa sieben Knackser pro Sekunde, unabhängig von der Abtastrate
+  const rate = 7 / sampleRate;
+  for (let i = 0; i < n; i++) {
+    hiss += (rnd() * 2 - 1 - hiss) * 0.35;
+    if (rnd() < rate) click = (rnd() < 0.5 ? -1 : 1) * (0.3 + 0.7 * rnd());
+    d[i] = hiss * 0.22 + click;
+    click *= 0.82;
+  }
+  return d;
+}

@@ -260,6 +260,15 @@ export function loadState(src: unknown, base: State): State {
   }
   if ('preset' in src) s.preset = typeof src.preset === 'string' ? src.preset : null;
   if (isArr(src.scenes)) s.scenes = readScenes(src.scenes, s.mix);
+  // Klang-Schalter nur, wenn gesetzt: alte Stände bleiben ohne die Felder
+  if ('warm' in src) {
+    if (src.warm === true) s.warm = true;
+    else delete s.warm;
+  }
+  if ('tape' in src) {
+    if (isNum(src.tape) && src.tape > 0) s.tape = clamp(src.tape, 0, 1);
+    else delete s.tape;
+  }
   return s;
 }
 
@@ -312,5 +321,7 @@ export function serialize(state: State): State {
     fx: c.fx,
     // Szenen nur, wenn vorhanden: alte Stände bleiben bytegleich
     ...(c.scenes ? { scenes: c.scenes } : {}),
+    ...(c.warm ? { warm: true as const } : {}),
+    ...(c.tape ? { tape: c.tape } : {}),
   };
 }

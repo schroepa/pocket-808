@@ -9,6 +9,7 @@ import type { Rng } from '../core/random.ts';
 import { toPcm, type DrumSample } from '../core/samples.ts';
 import { nextBar, songStart, stepSlot, type SongCursor } from '../core/song.ts';
 import { stepDuration, subStepOffset, swingDelay } from '../core/timing.ts';
+import { sameTone, toneOf } from '../core/tone.ts';
 import {
   condPasses,
   drumLockVariants,
@@ -182,6 +183,7 @@ export function createEngine(o: EngineOptions): Engine {
   let loops: Partial<Record<Slot, number>> = {};
   const chance = random('prob');
   const arpRnd = random('arp');
+  const driftRnd = random('drift');
   /** LFO je Part, nur solange Depth > 0 (Etappe 6b) */
   const lfos: Record<Part, PartLfo | undefined> = { BA: undefined, LD: undefined };
   /** Fill-Taste gehalten? */
@@ -273,6 +275,21 @@ export function createEngine(o: EngineOptions): Engine {
         }),
       );
     };
+    const tone = store.select(toneOf, sameTone);
+    live(
+      () => tone.value,
+      (v) => {
+        g.setTone(v, now());
+      },
+    );
+    // Warm ändert die Synthese der Drums: neu vorrendern
+    const warm = store.select((s) => s.warm === true);
+    live(
+      () => warm.value,
+      () => {
+        drums?.refresh();
+      },
+    );
     const master = store.select((s) => s.master);
     live(
       () => master.value,
@@ -394,6 +411,7 @@ export function createEngine(o: EngineOptions): Engine {
       timer,
       params: () => state().params,
       samples: drumSamples,
+      warm: () => state().warm === true,
     });
     sampler = createSampler(c, pads);
     // zuerst die Grundstimmen in die Warteschlange, danach die Varianten der Locks (watchLive)
@@ -432,6 +450,7 @@ export function createEngine(o: EngineOptions): Engine {
     attrs: NoteAttrs = {},
   ): void => {
     if (!graph || !ctx) return;
+    const warm = state().warm === true;
     synthLast[part] = synthNote({
       ctx,
       dest: graph.parts[part].inp,
@@ -443,6 +462,7 @@ export function createEngine(o: EngineOptions): Engine {
       accent: attrs.accent === true,
       slide: attrs.slide === true,
       ...(lfos[part] ? { lfo: lfos[part] } : {}),
+      ...(warm ? { warm, drift: driftRnd() * 2 - 1 } : {}),
     });
   };
   const schedulePad = (pad: number, t: number, velocity = 1, lock?: StepOpt): void => {
@@ -611,6 +631,7 @@ export function createEngine(o: EngineOptions): Engine {
     history.length = 0;
     arpQueue.BA = [];
     arpQueue.LD = [];
+    graph?.setPlaying(false, t);
     batch(() => {
       playing.value = false;
       playhead.value = { step: -1, songIndex: -1 };
@@ -638,6 +659,7 @@ export function createEngine(o: EngineOptions): Engine {
       nextTime = now() + START_DELAY;
       takeId.value++;
       if (recording.peek()) nextTime = countIn(nextTime);
+      graph?.setPlaying(true, now());
       interval = timer.setInterval(pump, LOOKAHEAD_MS);
       pump();
     },
