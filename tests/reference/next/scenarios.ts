@@ -9,7 +9,8 @@ import { synthNote } from '../../../src/audio/synth.ts';
 import { renderVoice, type OfflineFactory } from '../../../src/audio/voices.ts';
 import { CHANNELS, DRUM_DEFAULTS, SYN_PRESETS, VOICE_IDS } from '../../../src/core/constants.ts';
 import { initialState } from '../../../src/core/initial.ts';
-import { applyTemplate, TEMPLATES } from '../../../src/core/templates/index.ts';
+import { applyTemplate, SYNTH_SOUNDS, TEMPLATES } from '../../../src/core/templates/index.ts';
+import { applySynthPreset, setPartFx } from '../../../src/core/synth.ts';
 import { audibleChannels } from '../../../src/core/mix.ts';
 import { seededRandom } from '../../../src/core/random.ts';
 import type {
@@ -1026,7 +1027,107 @@ export async function templateLevels(args: {
   };
 }
 
+export interface PartFxProbe {
+  peak: number;
+  rmsDb: number;
+  monoDb: number;
+  /** RMS(L−R) / RMS(L+R), gesamt und unter etwa 150 Hz */
+  side: number;
+  lowSide: number;
+  /** RMS der ersten Differenz / RMS: steigt mit den Obertönen */
+  brightness: number;
+}
+
+const rmsOf = (x: Float32Array): number => Math.sqrt(x.reduce((s, v) => s + v * v, 0) / x.length);
+const lowpass150 = (x: Float32Array): Float32Array => {
+  const k = 1 - Math.exp((-2 * Math.PI * 150) / SR);
+  let a = 0;
+  let b = 0;
+  return x.map((v) => {
+    a += (v - a) * k;
+    b += (a - b) * k;
+    return b;
+  });
+};
+
+/** Eine lange Note eines Sounds durch den echten Graphen, mit Drive und Chorus */
+export async function partFx(args: {
+  part: Part;
+  sound: string;
+  midi: number;
+  drive: number;
+  chorus: number;
+}): Promise<PartFxProbe> {
+  let s = structuredClone(initialState());
+  const sound = must(
+    SYNTH_SOUNDS[args.part].find((x) => x.name === args.sound),
+    args.sound,
+  );
+  s = applySynthPreset(s, args.part, { name: sound.name, v: sound.v });
+  s = setPartFx(setPartFx(s, args.part, 'drive', args.drive), args.part, 'chorus', args.chorus);
+  s = {
+    ...s,
+    synth: { ...s.synth, [args.part]: { ...s.synth[args.part], dly: 0 } },
+    mix: Object.fromEntries(CHANNELS.map((id) => [id, { ...s.mix[id], r: 0 }])) as State['mix'],
+  };
+  const { ctx, graph } = graphFor(s, 2, 1);
+  synthNote({
+    ctx,
+    dest: graph.parts[args.part].inp,
+    patch: s.synth[args.part],
+    midis: [args.midi],
+    time: 0.05,
+    duration: 1.6,
+    previous: undefined,
+  });
+  const buf = await ctx.startRendering();
+  const cut = (c: number) =>
+    buf.getChannelData(c).slice(Math.round(0.2 * SR), Math.round(1.6 * SR));
+  const L = cut(0);
+  const R = cut(1);
+  const mid = L.map((v, i) => (v + (R[i] ?? 0)) / 2);
+  const side = L.map((v, i) => (v - (R[i] ?? 0)) / 2);
+  const diff = L.map((v, i) => v - (L[i - 1] ?? v));
+  const both = Math.sqrt((rmsOf(L) ** 2 + rmsOf(R) ** 2) / 2);
+  return {
+    peak: Math.max(
+      ...[0, 1].map((c) => buf.getChannelData(c).reduce((m, v) => Math.max(m, Math.abs(v)), 0)),
+    ),
+    rmsDb: 20 * Math.log10(both),
+    monoDb: 20 * Math.log10(rmsOf(mid)),
+    side: rmsOf(side) / rmsOf(mid),
+    lowSide: rmsOf(lowpass150(side)) / rmsOf(lowpass150(mid)),
+    brightness: rmsOf(diff) / rmsOf(L),
+  };
+}
+
+/** Demo-Song mit Drive und Chorus auf beiden Parts am Anschlag: Spitze des Mixes */
+export async function partFxMix(): Promise<{ peak: number }> {
+  const random = seededRandom(1);
+  let state = structuredClone(initialState());
+  for (const part of ['BA', 'LD'] as const)
+    state = setPartFx(setPartFx(state, part, 'drive', 1), part, 'chorus', 1);
+  const buf = await renderOffline({
+    state,
+    pads: factorySamples(random('factory')),
+    drums: {},
+    playFor: 5,
+    seconds: 5,
+    createContext: createOffline,
+    createOffline,
+    random,
+  });
+  if (!buf) throw new Error('Export abgebrochen');
+  return {
+    peak: Math.max(
+      ...[0, 1].map((c) => buf.getChannelData(c).reduce((m, v) => Math.max(m, Math.abs(v)), 0)),
+    ),
+  };
+}
+
 export const SCENARIOS: Record<string, (args: never) => Promise<unknown>> = {
+  partFx,
+  partFxMix,
   templateLevels,
   chopHits,
   synthAttrs,

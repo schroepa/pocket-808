@@ -19,6 +19,7 @@ import {
   type StepOptions,
 } from '../core/stepopts.ts';
 import type {
+  PartFx,
   ChannelId,
   LfoSettings,
   Note,
@@ -275,6 +276,30 @@ export function createEngine(o: EngineOptions): Engine {
         }),
       );
     };
+    // Drive und Chorus je Part; eine leere Kette wird nach der Blende abgebaut
+    for (const id of PARTS) {
+      const fx = store.select(
+        (s): PartFx => {
+          const { drive, chorus } = s.synth[id];
+          return { ...(drive ? { drive } : {}), ...(chorus ? { chorus } : {}) };
+        },
+        (a, b) => a.drive === b.drive && a.chorus === b.chorus,
+      );
+      let release: unknown;
+      live(
+        () => fx.value,
+        (v) => {
+          timer.clearTimeout(release);
+          if (g.setPartFx(id, v, now()))
+            release = timer.setTimeout(() => {
+              g.releasePartFx(id);
+            }, 100);
+        },
+      );
+      disposers.push(() => {
+        timer.clearTimeout(release);
+      });
+    }
     const tone = store.select(toneOf, sameTone);
     live(
       () => tone.value,

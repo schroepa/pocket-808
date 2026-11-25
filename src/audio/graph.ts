@@ -2,7 +2,7 @@ import { CHANNELS, PARTS } from '../core/constants.ts';
 import { channelGain, channelPan, masterGain } from '../core/mix.ts';
 import type { Rng } from '../core/random.ts';
 import { sameTone, toneOf, type Tone } from '../core/tone.ts';
-import type { ChannelId, Fx, MixChannel, Part, State } from '../core/types.ts';
+import type { ChannelId, Fx, MixChannel, Part, PartFx, State } from '../core/types.ts';
 import {
   delayTime,
   djFilter,
@@ -16,6 +16,7 @@ import {
   vinylNoise,
 } from './dsp.ts';
 import { holdAt, rampFrom } from './params.ts';
+import { createPartFx, type PartFxChain } from './partfx.ts';
 
 /*
  * Master-Kette wie Legacy setupGraph:
@@ -36,7 +37,12 @@ export interface Graph {
   readonly noise: AudioBuffer;
   readonly kick: Float32Array;
   readonly chan: Record<ChannelId, ChannelNodes>;
-  readonly parts: Record<Part, { inp: GainNode; snd: GainNode }>;
+  /** Stimmen speisen inp (immer 1); dahinter liegen die Effekte, dann der Pegel lvl */
+  readonly parts: Record<Part, { inp: GainNode; lvl: GainNode; snd: GainNode }>;
+  /** Drive und Chorus eines Parts; true: die Kette ist leer und kann nach der Blende weg */
+  setPartFx(part: Part, fx: PartFx, t: number | null): boolean;
+  /** eine leere Effektkette abbauen (eine wieder benutzte bleibt) */
+  releasePartFx(part: Part): void;
   /** t = null: Anfangswert direkt setzen (Legacy init), sonst weich mit setTargetAtTime */
   setMaster(v: number, t: number | null): void;
   applyChannel(id: ChannelId, ch: MixChannel, audible: boolean, t: number | null): void;
@@ -206,15 +212,18 @@ export function createGraph(
     chan[id] = { in: inn, pan, snd };
   }
   // ein Eingang pro Synth-Stimme mit Delay-Send
-  const parts = {} as Record<Part, { inp: GainNode; snd: GainNode }>;
+  const parts = {} as Record<Part, { inp: GainNode; lvl: GainNode; snd: GainNode }>;
   for (const id of PARTS) {
     const inp = c.createGain();
+    const lvl = c.createGain();
     const snd = c.createGain();
-    inp.connect(chan[id].in);
-    inp.connect(snd);
+    inp.connect(lvl);
+    lvl.connect(chan[id].in);
+    lvl.connect(snd);
     snd.connect(dly);
-    parts[id] = { inp, snd };
+    parts[id] = { inp, lvl, snd };
   }
+  const partFx: Record<Part, PartFxChain | undefined> = { BA: undefined, LD: undefined };
 
   let stutter: Stutter | null = null;
   const makeStutter = (): Stutter => {
@@ -497,9 +506,25 @@ export function createGraph(
       dly.delayTime.setTargetAtTime(delayTime(st.tempo), t, 0.05);
       for (const id of PARTS) {
         const p = st.synth[id];
-        parts[id].inp.gain.setTargetAtTime(aud[id] ? p.lvl * p.lvl : 0, t, 0.02);
+        parts[id].lvl.gain.setTargetAtTime(aud[id] ? p.lvl * p.lvl : 0, t, 0.02);
         parts[id].snd.gain.setTargetAtTime(p.dly * 0.7, t, 0.02);
       }
+    },
+    setPartFx(part, fx, t) {
+      let chain = partFx[part];
+      if (!chain) {
+        if (!fx.drive && !fx.chorus) return false;
+        chain = createPartFx(c, parts[part].inp, parts[part].lvl);
+        partFx[part] = chain;
+      }
+      chain.set(fx, t);
+      return chain.idle;
+    },
+    releasePartFx(part) {
+      const chain = partFx[part];
+      if (!chain?.idle) return;
+      chain.dispose();
+      partFx[part] = undefined;
     },
     muteReverb(t) {
       rvOut.gain.setTargetAtTime(0, t, 0.01);
@@ -646,6 +671,7 @@ export function createGraph(
   for (const id of CHANNELS) graph.applyChannel(id, s.mix[id], audible[id], null);
   graph.applyFx(s.fx, null);
   graph.syncSynth(s, audible, c.currentTime);
+  for (const id of PARTS) graph.setPartFx(id, s.synth[id], null);
   tone = toneOf(s);
   routeTone(c.currentTime, true);
   return graph;

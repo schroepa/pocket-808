@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { lfoHz, setArp, setLfo } from '../core/arp.ts';
 import { baseState } from '../core/defaults.ts';
+import { setPartFx } from '../core/synth.ts';
 import type { State } from '../core/types.ts';
 import { must } from '../core/util.ts';
 import { createStore } from '../store/store.ts';
@@ -24,6 +25,8 @@ const SPIED = vi.hoisted(
       'stutterOff',
       'punchOn',
       'punchOff',
+      'setPartFx',
+      'releasePartFx',
     ] as const,
 );
 type Spies = { [K in (typeof SPIED)[number]]: MockInstance<Graph[K]> };
@@ -170,6 +173,31 @@ describe('createEngine', () => {
     expect(chord).toBe(plain + 4);
     expect(gains()).toContainEqual(expect.closeTo(0.81, 5));
     engine.dispose();
+  });
+
+  it('Drive und Chorus: Preset und Zurück schalten um, leere Ketten werden später abgebaut', () => {
+    vi.useFakeTimers();
+    const store = createStore(baseState());
+    const engine = createEngine({
+      store,
+      createContext: () => fakeContext() as never,
+      timer: manualTimer(),
+      prerender: false,
+    });
+    engine.prepare();
+    const g = must(graphs.at(-1), 'Graph');
+    store.replaceState(setPartFx(store.state.peek(), 'BA', 'drive', 0.5));
+    expect(g.setPartFx).toHaveBeenLastCalledWith('BA', { drive: 0.5 }, 0);
+    vi.advanceTimersByTime(200);
+    expect(g.releasePartFx).not.toHaveBeenCalled();
+    store.undo();
+    expect(g.setPartFx).toHaveBeenLastCalledWith('BA', {}, 0);
+    vi.advanceTimersByTime(50);
+    expect(g.releasePartFx).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(100);
+    expect(g.releasePartFx).toHaveBeenCalledWith('BA');
+    engine.dispose();
+    vi.useRealTimers();
   });
 
   it('LFO je Part: erst bei Depth > 0 angelegt, bei 0 gestoppt und verworfen, live geändert', () => {
