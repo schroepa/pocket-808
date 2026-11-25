@@ -1,11 +1,15 @@
 import { SYNTH_SOUNDS } from '../../../core/templates/index.ts';
 import { applySynthPreset } from '../../../core/synth.ts';
+import type { Part } from '../../../core/types.ts';
 import type { UiContext } from '../../context.ts';
 import { chip } from '../../controls/chip.ts';
 import { bind, createScope, h } from '../../dom.ts';
 
-/** Preset-Chips des gewählten Parts (Legacy synPresets) */
-export function synthSoundList(c: UiContext): HTMLElement {
+/** Preset-Chips des gewählten Parts (Legacy synPresets); onPick nach dem Laden und Vorhören */
+export function synthSoundList(
+  c: UiContext,
+  onPick?: (part: Part, name: string) => void,
+): HTMLElement {
   const { store, scope, audio } = c;
   const list = h('div', {
     class: 'chips syn-presets',
@@ -30,6 +34,7 @@ export function synthSoundList(c: UiContext): HTMLElement {
             onClick: () => {
               store.update((s) => applySynthPreset(s, part, p));
               audio.auditionNote(part, 0, 2);
+              onPick?.(part, p.name);
             },
           }),
         ),
