@@ -51,4 +51,26 @@
   .patterns .chips {
     margin: 8px 0 14px;
   }
+  .tpl-hint {
+    margin: 0 0 12px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--ink-dim);
+    min-height: 2.8em;
+  }
+  .tpl-scope {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .tpl-scope[hidden] {
+    display: none;
+  }
+  .tpl-scope-label {
+    font: 600 12px var(--font-display);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
 }

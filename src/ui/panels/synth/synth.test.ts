@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { NOTE_NAMES, SCALES, SYN_PRESETS } from '../../../core/constants.ts';
+import { SYNTH_SOUNDS } from '../../../core/templates/index.ts';
 import { setArp } from '../../../core/arp.ts';
 import { baseState, synthDefaults } from '../../../core/defaults.ts';
 import type { State } from '../../../core/types.ts';
@@ -407,13 +408,14 @@ describe('synthPresets', () => {
     store.update((s) => ({ ...s, part: 'BA' }));
     const el = synthPresets(c);
     const chips = () => [...el.querySelectorAll<HTMLButtonElement>('.syn-presets .chip')];
-    expect(chips().map((b) => b.textContent)).toEqual(SYN_PRESETS.BA.map((p) => p.name));
+    expect(chips().map((b) => b.textContent)).toEqual(SYNTH_SOUNDS.BA.map((p) => p.name));
+    expect(chips().length).toBeGreaterThan(SYN_PRESETS.BA.length);
     chips()[0]?.click();
     expect(store.state.value.synth.BA.preset).toBe(SYN_PRESETS.BA[0]?.name);
     expect(chips()[0]?.getAttribute('aria-pressed')).toBe('true');
     expect(audio.auditionNote).toHaveBeenCalledWith('BA', 0, 2);
     store.update((s) => ({ ...s, part: 'LD' }));
-    expect(chips().map((b) => b.textContent)).toEqual(SYN_PRESETS.LD.map((p) => p.name));
+    expect(chips().map((b) => b.textContent)).toEqual(SYNTH_SOUNDS.LD.map((p) => p.name));
     c.scope.dispose();
   });
 
