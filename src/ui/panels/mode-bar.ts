@@ -1,5 +1,6 @@
 import { signal } from '../../store/signals.ts';
 import type { UiContext } from '../context.ts';
+import { sheetOpener } from '../controls/sheet.ts';
 import { tabs } from '../controls/tabs.ts';
 import { bind, h } from '../dom.ts';
 import { MODE_NAMES, type Mode, type Nav } from '../nav.ts';
@@ -17,28 +18,14 @@ export function modeBar(c: UiContext, nav: Nav): HTMLElement {
       nav.setMode(m);
     },
   });
-  const pattern = h('button', {
-    class: 'mode-pattern',
-    attrs: { type: 'button', 'aria-haspopup': 'dialog' },
-    on: {
-      click: () => {
-        nav.sheet.value = nav.sheet.peek() === 'pattern' ? null : 'pattern';
-      },
-    },
-  });
+  const pattern = h('button', { class: 'mode-pattern', attrs: { type: 'button' } });
+  sheetOpener(c.scope, nav, pattern, 'pattern');
   bind(
     c.scope,
     () => c.store.state.value.cur,
     (cur) => {
       pattern.textContent = `${cur} ▾`;
       pattern.setAttribute('aria-label', `Pattern wählen, aktuell ${cur}`);
-    },
-  );
-  bind(
-    c.scope,
-    () => nav.sheet.value === 'pattern',
-    (open) => {
-      pattern.setAttribute('aria-expanded', String(open));
     },
   );
   return h('div', { class: 'mode-bar' }, [modes, pattern]);

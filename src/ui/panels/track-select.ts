@@ -1,5 +1,6 @@
 import { CHANNEL_NAMES, CHANNELS } from '../../core/constants.ts';
 import type { UiContext } from '../context.ts';
+import { sheetOpener } from '../controls/sheet.ts';
 import { bind, h, listen } from '../dom.ts';
 import type { Nav, TrackId } from '../nav.ts';
 import { shiftTrack, trackTap, trackTitle } from '../track.ts';
@@ -59,25 +60,14 @@ export function trackBar(c: UiContext, nav: Nav): HTMLElement {
     });
   const title = h('button', {
     class: 'track-title',
-    attrs: { type: 'button', 'aria-label': 'Spur wählen', 'aria-haspopup': 'dialog' },
-    on: {
-      click: () => {
-        nav.sheet.value = nav.sheet.peek() === 'tracks' ? null : 'tracks';
-      },
-    },
+    attrs: { type: 'button', 'aria-label': 'Spur wählen' },
   });
+  sheetOpener(c.scope, nav, title, 'tracks');
   bind(
     c.scope,
     () => trackTitle(c.store.state.value, nav.track.value),
     (t) => {
       title.textContent = t;
-    },
-  );
-  bind(
-    c.scope,
-    () => nav.sheet.value === 'tracks',
-    (open) => {
-      title.setAttribute('aria-expanded', String(open));
     },
   );
   return h('div', { class: 'track-bar' }, [

@@ -1,5 +1,6 @@
 import type { ReadonlySignal } from '../../store/signals.ts';
 import { bind, h, listen, type Scope } from '../dom.ts';
+import type { Nav, SheetId } from '../nav.ts';
 import { chip } from './chip.ts';
 import { show } from './visible.ts';
 import './sheet.css';
@@ -9,6 +10,26 @@ export interface SheetOptions {
   open: ReadonlySignal<boolean>;
   close(): void;
   content: HTMLElement;
+}
+
+/** `button` öffnet und schließt die Fläche `id`; aria-expanded folgt ihr */
+export function sheetOpener(
+  scope: Scope,
+  nav: Pick<Nav, 'sheet'>,
+  button: HTMLButtonElement,
+  id: SheetId,
+): void {
+  button.setAttribute('aria-haspopup', 'dialog');
+  listen(scope, button, 'click', () => {
+    nav.sheet.value = nav.sheet.peek() === id ? null : id;
+  });
+  bind(
+    scope,
+    () => nav.sheet.value === id,
+    (open) => {
+      button.setAttribute('aria-expanded', String(open));
+    },
+  );
 }
 
 /**

@@ -1,6 +1,7 @@
 import { computed, type ReadonlySignal } from '../../store/signals.ts';
 import type { UiContext } from '../context.ts';
 import { chip } from '../controls/chip.ts';
+import { sheetOpener } from '../controls/sheet.ts';
 import { bind, h } from '../dom.ts';
 import type { Nav } from '../nav.ts';
 import { trackTitle } from '../track.ts';
@@ -33,32 +34,17 @@ export function display(
 ): HTMLElement {
   const { store, scope, readout } = c;
   const digits = h('span', { class: 'lcd-digits' });
-  const tempo = h(
-    'button',
-    {
-      class: 'lcd-tempo',
-      attrs: { type: 'button', 'aria-haspopup': 'dialog' },
-      on: {
-        click: () => {
-          nav.sheet.value = nav.sheet.peek() === 'tempo' ? null : 'tempo';
-        },
-      },
-    },
-    [digits, h('span', { class: 'lcd-unit', text: 'BPM' })],
-  );
+  const tempo = h('button', { class: 'lcd-tempo', attrs: { type: 'button' } }, [
+    digits,
+    h('span', { class: 'lcd-unit', text: 'BPM' }),
+  ]);
+  sheetOpener(scope, nav, tempo, 'tempo');
   bind(
     scope,
     () => store.state.value.tempo,
     (t) => {
       digits.textContent = String(t).padStart(3, '0');
       tempo.setAttribute('aria-label', `Tempo ${String(t)} BPM, Tempo, Swing und Master öffnen`);
-    },
-  );
-  bind(
-    scope,
-    () => nav.sheet.value === 'tempo',
-    (open) => {
-      tempo.setAttribute('aria-expanded', String(open));
     },
   );
   const pattern = h('div', { class: 'lcd-pattern' });

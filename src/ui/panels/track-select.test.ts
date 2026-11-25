@@ -221,6 +221,7 @@ describe('trackBar', () => {
   it('Titelknopf öffnet und schließt das Pad-Feld', () => {
     const { c, nav } = setup();
     const title = button(trackBar(c, nav), 'Spur wählen');
+    expect(title.getAttribute('aria-haspopup')).toBe('dialog');
     expect(title.getAttribute('aria-expanded')).toBe('false');
     title.click();
     expect(nav.sheet.value).toBe('tracks');
