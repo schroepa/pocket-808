@@ -60,6 +60,10 @@
     background: color-mix(in srgb, var(--acc) 14%, var(--well));
     box-shadow: var(--glow-acc);
   }
+  /* auf dem helleren Grund der offenen Tempo-Fläche voll deckend, sonst Kontrast < 4,5:1 */
+  .display .lcd-tempo[aria-expanded='true'] .lcd-unit {
+    opacity: 1;
+  }
   .display .lcd-digits {
     font-size: 34px;
     line-height: 1;
