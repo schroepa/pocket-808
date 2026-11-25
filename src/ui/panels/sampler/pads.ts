@@ -10,9 +10,14 @@ import './sampler.css';
 
 /**
  * Acht Pads: wählen und vorhören, Name bzw. „leer“, Inhaltspunkt (Legacy buildSmp/renderSmp).
- * `onPick` läuft nach jedem Tipp; aufgenommen wird der Schlag schon hier.
+ * `onPick` läuft nach jedem Tipp; aufgenommen wird der Schlag schon hier. Solange `active` falsch ist,
+ * ist kein Pad als gewählt markiert.
  */
-export function samplerPads(c: UiContext, onPick?: (pad: number) => void): HTMLElement {
+export function samplerPads(
+  c: UiContext,
+  onPick?: (pad: number) => void,
+  active: () => boolean = () => true,
+): HTMLElement {
   const { store, scope, samples } = c;
   const pads = Array.from({ length: PAD_COUNT }, (_, i) => {
     const small = h('small');
@@ -34,7 +39,7 @@ export function samplerPads(c: UiContext, onPick?: (pad: number) => void): HTMLE
     recordTap(c, b, () => padHit(c, i));
     bind(
       scope,
-      () => store.state.value.smp.sel === i,
+      () => active() && store.state.value.smp.sel === i,
       (on) => {
         b.classList.toggle('sel', on);
         b.setAttribute('aria-pressed', String(on));

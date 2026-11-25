@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, onTestFinished } from 'vitest';
 import { makeContext } from '../test-utils.ts';
 import { songPanel } from './song.ts';
 
@@ -126,5 +126,57 @@ describe('songPanel', () => {
     expect(chain.scrollTop).toBe(5 * 64 + 58 - 128);
     audio.playhead.value = { step: 0, songIndex: 0 };
     expect(chain.scrollTop).toBe(0);
+  });
+
+  it('Umbau beim Spielen: die Kette bleibt stehen, außer die gespielte Position wäre verdeckt', () => {
+    // jsdom rechnet kein Layout: Reihen zu 64 px; ein nicht eingehängter Block liegt bei 0
+    Object.defineProperty(HTMLElement.prototype, 'offsetTop', {
+      configurable: true,
+      get(this: HTMLElement) {
+        const box = this.parentElement;
+        if (!box?.classList.contains('chain')) return 0;
+        return Math.floor([...box.children].indexOf(this) / 6) * 64;
+      },
+    });
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get: () => 58,
+    });
+    onTestFinished(() => {
+      Reflect.deleteProperty(HTMLElement.prototype, 'offsetTop');
+      Reflect.deleteProperty(HTMLElement.prototype, 'offsetHeight');
+    });
+    const { el, btn, blocks, store, audio } = songSetup();
+    store.update((s) => ({
+      ...s,
+      song: Array.from({ length: 31 }, () => ({ p: 'A' as const, n: 1 })),
+    }));
+    const chain = el.querySelector<HTMLElement>('.chain');
+    if (!chain) throw new Error('Kette');
+    Object.defineProperty(chain, 'clientHeight', { value: 128 });
+    audio.playing.value = true;
+    store.setMode('song');
+    audio.playhead.value = { step: 0, songIndex: 20 };
+    expect(chain.scrollTop).toBe(3 * 64 + 58 - 128);
+
+    // gespielte Position (Reihe 3) ist sichtbar: jede Änderung lässt die Kette, wo sie ist
+    chain.scrollTop = 150;
+    blocks()[19]?.click();
+    for (const label of [
+      'Wiederholungen erhöhen',
+      'Wiederholungen verringern',
+      'Nach vorne schieben',
+      'Nach hinten schieben',
+      'Aktuelles Pattern an den Song anhängen',
+      'Position entfernen',
+    ]) {
+      btn(label).click();
+      expect(chain.scrollTop, label).toBe(150);
+    }
+
+    // weggescrollt: der Umbau holt die gespielte Position zurück
+    chain.scrollTop = 0;
+    btn('Aktuelles Pattern an den Song anhängen').click();
+    expect(chain.scrollTop).toBe(3 * 64 + 58 - 128);
   });
 });

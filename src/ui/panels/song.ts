@@ -74,12 +74,15 @@ export function songPanel(c: UiContext): HTMLElement {
             () => audio.playhead.value.songIndex === i,
             (on) => {
               b.classList.toggle('play', on);
-              if (on) keepInView(chain, b);
+              // beim Umbau hängt der Block noch nicht in der Kette (offsetTop 0)
+              if (on && b.parentNode === chain) keepInView(chain, b);
             },
           );
           return b;
         }),
       );
+      const playing = chain.querySelector<HTMLElement>('.blk.play');
+      if (playing) keepInView(chain, playing);
     },
   );
   const tool = (

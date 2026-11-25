@@ -43,9 +43,10 @@ export async function trackButton(page: Page, name: string): Promise<Locator> {
   if (!(await sheet.isVisible()))
     await page.getByRole('button', { name: 'Spur wählen', exact: true }).click();
   await expect(sheet).toBeVisible();
-  return name === 'Sampler'
-    ? sheet.locator('.pads .pad[aria-pressed=true]')
-    : sheet.getByRole('button', { name: label, exact: true });
+  if (name !== 'Sampler') return sheet.getByRole('button', { name: label, exact: true });
+  // Bei anderer Spur ist im Feld kein Pad markiert; das gewählte nennt die Reihe der Sampler-Seite
+  const pad = await page.locator('.smp-head .pad[aria-pressed=true]').getAttribute('aria-label');
+  return sheet.getByRole('button', { name: pad ?? '', exact: true });
 }
 
 export async function pickTrack(page: Page, name: string): Promise<void> {

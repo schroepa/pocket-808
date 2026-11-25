@@ -347,4 +347,26 @@ describe('trackPadsContent', () => {
     expect(cp.classList.contains('sel')).toBe(true);
     expect(cp.getAttribute('aria-pressed')).toBe('true');
   });
+
+  it('markiert ein Sampler-Pad nur bei gewählter Spur SM', () => {
+    const { c, nav, store } = setup();
+    const el = trackPadsContent(c, nav);
+    const marked = () => [...el.querySelectorAll('.sel')].map((b) => b.getAttribute('aria-label'));
+    const pressed = () =>
+      [...el.querySelectorAll('[aria-pressed="true"]')].map((b) => b.getAttribute('aria-label'));
+    const only = (name: string) => {
+      expect(marked()).toEqual([name]);
+      expect(pressed()).toEqual([name]);
+    };
+    only('Bass Drum wählen und anhören');
+    nav.selectTrack('BA');
+    only('Bass wählen und anhören');
+    nav.selectTrack('SM');
+    only('Pad 1');
+    store.update((s) => selectPad(s, 3));
+    only('Pad 4');
+    nav.selectTrack('SD');
+    only('Snare Drum wählen und anhören');
+    expect(pads(el).map((b) => b.getAttribute('aria-pressed'))).toEqual(Array(8).fill('false'));
+  });
 });

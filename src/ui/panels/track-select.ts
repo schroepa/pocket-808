@@ -100,10 +100,14 @@ export function trackPadsContent(c: UiContext, nav: Nav): HTMLElement {
     return b;
   });
   // samplerPads wählt, hört vor und nimmt selbst auf: hier nur noch die Spur wechseln
-  const sampler = samplerPads(c, () => {
-    nav.selectTrack('SM');
-    done();
-  });
+  const sampler = samplerPads(
+    c,
+    () => {
+      nav.selectTrack('SM');
+      done();
+    },
+    () => nav.track.value === 'SM',
+  );
   return h('div', { class: 'track-pads' }, [
     h('div', { class: 'track-grid', attrs: { role: 'group', 'aria-label': 'Spuren' } }, tracks),
     h('div', { class: 'cap-label', text: 'Sampler' }),
