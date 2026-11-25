@@ -6,7 +6,7 @@
 
 Aufmachen, auf *Start* tippen, und der Beat läuft. Pocket 808 braucht keine Installation, kein Konto und keinen Server. Alles, was du baust, bleibt in deinem Browser.
 
-> Diese README ist ein **lebendes Dokument**. Sie wird mit jeder Änderung am Projekt aktualisiert. Stand: 2026-11-25, Version 0.29.0. Die neue Oberfläche „Ein Gerät“ liegt auf dem Branch `oberflaeche-ein-geraet` und ist **noch nicht veröffentlicht**: Live ist weiterhin Version 0.28.0 mit der früheren Oberfläche.
+> Diese README ist ein **lebendes Dokument**. Sie wird mit jeder Änderung am Projekt aktualisiert. Stand: 2026-11-25, Version 0.29.0 mit der neuen Oberfläche „Ein Gerät“ (live).
 
 ---
 
@@ -294,8 +294,8 @@ Pocket 808 steht auf einem neuen technischen Fundament: TypeScript, getrennte Sc
 | 5c | Sampler in der neuen UI: Pads, Wellenform mit Griffen, Laden und Mikrofon-Aufnahme, Rückwärts, Steps | ✅ |
 | 5d | Mixer, FX, Song, Vorlagen in der neuen UI; Desktop-Pult mit stehender Kopfleiste | ✅ |
 | 6 | Umstellung: die neue App ist live, alte App und alte Tests entfernt | ✅ (auf dem iPhone abgenommen) |
-| Ausbau | Roadmap-Etappen 1–7, 8a, 8b, 9 und 10a (siehe unten) | ✅ live (0.28.0) |
-| Ein Gerät | Neue Oberfläche: fester Bildschirm, Modi und Seiten, Plattenkiste, drei Layouts (0.29.0) | gebaut und getestet auf dem Branch; noch nicht live, Abnahme auf dem iPhone offen |
+| Ausbau | Roadmap-Etappen 1–7, 8a, 8b, 9 und 10a (siehe unten) | ✅ live |
+| Ein Gerät | Neue Oberfläche: fester Bildschirm, Modi und Seiten, Plattenkiste, drei Layouts (0.29.0) | ✅ live; Abnahme auf dem iPhone offen |
 
 ---
 
@@ -357,6 +357,6 @@ Nach dem Fundament, in dieser Reihenfolge:
 
 9. ~~**Klang und Vorlagen:** Warm und Tape, 21 Vorlagen in fünf Stilen, Kits, mehr Synth-Sounds~~
 
-Dazu außer der Reihe: ~~**Oberfläche „Ein Gerät“:** fester Bildschirm statt langer Seite, Modi und Seiten, Plattenkiste~~ (0.29.0, noch nicht live)
+Dazu außer der Reihe: ~~**Oberfläche „Ein Gerät“:** fester Bildschirm statt langer Seite, Modi und Seiten, Plattenkiste~~ (0.29.0)
 
 Als Nächstes: Abnahme der neuen Oberfläche auf dem iPhone und Veröffentlichung, dann mehr Synth-Klang und Sounds zur Berliner Electro- und Techno-Szene. Außerdem Feinschliff der Vorlagen nach Gehör auf dem iPhone, weitere Stile (zum Beispiel Electro, Synthwave, UK Garage) und Vorhören einer Vorlage vor dem Laden.

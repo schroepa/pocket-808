@@ -1,6 +1,6 @@
 # Funktionsliste der Oberfläche („Ein Gerät“)
 
-Stand: 2026-11-25 (App 0.29.0, Branch `oberflaeche-ein-geraet`, noch nicht veröffentlicht). Ursprünglich aus der alten App abgeleitet (`build*`-Funktionen, Listener in `init`, Markup), seither nachgeführt; mit dem Umbau „Ein Gerät“ (`2026-11-25-ui-ein-geraet-design.md`) hat jede Zeile einen Ort in der neuen Oberfläche bekommen und wurde gegen die laufende App und die Tests geprüft. Jede Bedienhandlung steht in einer Zeile: Nichts davon darf verloren gehen, und jede Zeile verweist auf ihren Test. Gehört zu `2026-10-14-ui-layouts-design.md`.
+Stand: 2026-11-25 (App 0.29.0). Ursprünglich aus der alten App abgeleitet (`build*`-Funktionen, Listener in `init`, Markup), seither nachgeführt; mit dem Umbau „Ein Gerät“ (`2026-11-25-ui-ein-geraet-design.md`) hat jede Zeile einen Ort in der neuen Oberfläche bekommen und wurde gegen die laufende App und die Tests geprüft. Jede Bedienhandlung steht in einer Zeile: Nichts davon darf verloren gehen, und jede Zeile verweist auf ihren Test. Gehört zu `2026-10-14-ui-layouts-design.md`.
 
 Legende: ✅ umgesetzt und getestet
 
