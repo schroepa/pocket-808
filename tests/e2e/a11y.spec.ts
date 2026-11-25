@@ -5,6 +5,7 @@ import {
   closeSheet,
   eachView,
   layoutOf,
+  openAllTracks,
   openMode,
   openPattern,
   openRoll,
@@ -30,6 +31,10 @@ async function expectAccessible(page: Page, where = 'Seite') {
 test('keine schweren Verstöße (axe)', async ({ page }) => {
   await page.goto('/');
   await eachView(page, (view) => expectAccessible(page, view));
+  if ((await layoutOf(page)) === 'tablet') {
+    await openAllTracks(page);
+    await expectAccessible(page, 'Alle Spuren');
+  }
 });
 
 test('keine schweren Verstöße mit offenem Synth (axe)', async ({ page }) => {

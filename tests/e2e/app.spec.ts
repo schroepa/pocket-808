@@ -1,12 +1,16 @@
 import { expect, test } from './fixtures.ts';
 import {
   closeSheet,
+  eachView,
   expectPattern,
   expectTrack,
   horizontalOverflow,
+  layoutOf,
+  openAllTracks,
   openMode,
   openPage,
   openPattern,
+  openRoll,
   openTempo,
   pickTrack,
   playheads,
@@ -38,7 +42,38 @@ test('richtiges Layout und kein horizontaler Scroll', async ({ page }, info) => 
     'data-layout',
     EXPECTED[info.project.name] ?? '',
   );
-  expect(await horizontalOverflow(page)).toEqual([]);
+  const fits = async (where: string) => {
+    expect(await horizontalOverflow(page), where).toEqual([]);
+  };
+  await fits('Start');
+  if ((await layoutOf(page)) === 'tablet') {
+    await openAllTracks(page);
+    await fits('Alle Spuren');
+  }
+  // Spur: die Seiten jeder Spur-Art
+  for (const track of ['Bass Drum', 'Bass', 'Sampler']) {
+    await pickTrack(page, track);
+    await eachView(page, (view) => fits(`${track} ${view}`));
+  }
+  await pickTrack(page, 'Bass');
+  await openRoll(page);
+  await fits('Rolle');
+  for (const mode of ['Sound', 'Mixer', 'Song', 'Punch'] as const) {
+    await openMode(page, mode);
+    await eachView(page, (view) => fits(`${mode} ${view}`));
+  }
+  await openMode(page, 'Spur');
+  for (const open of [openPattern, openTempo]) {
+    const sheet = await open(page);
+    await fits((await sheet.getAttribute('aria-label')) ?? '');
+    await closeSheet(sheet);
+  }
+  // das Pad-Feld gibt es nur auf dem Telefon
+  if ((await layoutOf(page)) === 'mobile') {
+    await trackButton(page, 'Bass Drum');
+    await expect(page.getByRole('dialog', { name: 'Pad-Feld' })).toBeVisible();
+    await fits('Pad-Feld');
+  }
 });
 
 test('Step, Spur, Pattern und Tempo bleiben nach Neuladen erhalten', async ({ page }) => {

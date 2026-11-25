@@ -183,17 +183,40 @@ export async function rightOverhang(page: Page, selector: string): Promise<numbe
   return Math.max(...rights);
 }
 
-/** horizontaler Überlauf des Dokuments und der Bereiche des Geräts, die selbst scrollen könnten */
+/**
+ * Behälter, die selbst scrollen oder abschneiden: Das Dokument allein kann kaum überlaufen, weil die
+ * Hülle (`.shell`) abschneidet; die Plattenkiste scrollt in ihren Abschnitten.
+ */
+const CONTAINERS = [
+  '.shell',
+  '[data-area]',
+  '.sheet',
+  '[data-mode=sound]',
+  '.library-pages > section',
+].join();
+
+/** horizontaler Überlauf des Dokuments und der sichtbaren Behälter des Geräts */
 export async function horizontalOverflow(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
+  return page.evaluate((selector) => {
     const out: string[] = [];
     const doc = document.documentElement.scrollWidth - window.innerWidth;
     if (doc > 0) out.push(`Dokument ${doc}`);
-    for (const el of document.querySelectorAll<HTMLElement>('[data-area], .sheet')) {
+    for (const el of document.querySelectorAll<HTMLElement>(selector)) {
       if (el.getClientRects().length === 0) continue;
       const over = el.scrollWidth - el.clientWidth;
-      if (over > 0) out.push(`${el.dataset.area ?? el.getAttribute('aria-label') ?? ''} ${over}`);
+      const name = el.dataset.area ?? el.getAttribute('aria-label') ?? el.className;
+      if (over > 0) out.push(`${name} ${over}`);
     }
     return out;
-  });
+  }, CONTAINERS);
+}
+
+/** Tablet: unten „Alle Spuren“ statt der 16 Steps zeigen */
+export async function openAllTracks(page: Page): Promise<void> {
+  const tab = page
+    .getByRole('tablist', { name: 'Step-Bereich' })
+    .getByRole('tab', { name: 'Alle Spuren' });
+  await tab.click();
+  await expect(tab).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('.all-tracks')).toBeVisible();
 }
