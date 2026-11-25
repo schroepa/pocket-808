@@ -262,7 +262,7 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 |---|---|---|---|
 | Stil wählen (Basis, Lo-Fi, Hip-Hop, Trap, House, Techno) | zeigt dessen Vorlagen; Start bei „Basis“ bzw. beim Stil der geladenen Vorlage | ✅ | `song-patterns.test.ts`, `mix-song.spec.ts` |
 | Vorlage tippen (21 in fünf Stilen) | laden (mit Zurück) | ✅ | `song-patterns.test.ts`, `templates.test.ts`, `next-templates.test.ts`, `mix-song.spec.ts` |
-| Laden: Alles | Tempo, Swing, Tonart, Patterns A bis höchstens D, Kit, Sounds, Mixer, FX, Warm, Tape, Song; übrige Plätze und Sampler bleiben | ✅ | `templates.test.ts`, `song-patterns.test.ts` |
+| Laden: Alles | Tempo, Swing, Tonart, Patterns A bis höchstens D, Kit, Sounds, Mixer, FX, Warm, Tape, Song; wechselt auf Pattern A. In den ersetzten Patterns werden Sampler-Steps, Pad-Sub-Steps und Pad-Step-Optionen gelöscht (bei „Drums“ bleiben sie). Übrige Pattern-Plätze, Pads, Samples und Kanal Sampler bleiben | ✅ | `templates.test.ts`, `song-patterns.test.ts` |
 | Laden: Drums | nur Drum-Spuren dieser Patterns, Kit, Tempo, Swing | ✅ | `templates.test.ts`, `song-patterns.test.ts` |
 | Laden: Sound | nur Kit, Sounds, Mixer, FX, Warm, Tape | ✅ | `templates.test.ts`, `song-patterns.test.ts` |
 | Hinweiszeile | Basis: was ersetzt wird; geladene Vorlage: Beschreibung und BPM; sonst Anzahl und Wirkung (bei „Basis“ ohne Lade-Auswahl) | ✅ | `song-patterns.test.ts`, `mix-song.spec.ts` |
@@ -303,4 +303,5 @@ Legende: ✅ umgesetzt und getestet · ⏳ offen (Teilschritt in Klammern)
 | Doppeltipp auf einen Regler | Standardwert | ✅ | `knob.test.ts`, `controls-synth.test.ts` |
 | Pfeile, Pos1, Ende auf einem Regler | 2 % (mit Umschalt 10 %), Minimum, Maximum | ✅ | `knob.test.ts`, `controls-synth.test.ts` |
 | Pfeile auf einem Umschalter | Option wählen (ein Tab-Stopp) | ✅ | `controls.test.ts` |
+| Haltetasten (Stutter, Fill, Punch) | wirken, solange Zeiger, Enter oder Leertaste halten; Loslassen, Abbruch, Zeigerverlust, Fokusverlust, verstecktes Fenster und Abbau lösen immer | ✅ | `mixer.test.ts`, `transport.test.ts`, `punch.test.ts` |
 
