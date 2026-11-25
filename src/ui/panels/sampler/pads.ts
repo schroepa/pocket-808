@@ -5,7 +5,7 @@ import { must } from '../../../core/util.ts';
 import type { UiContext } from '../../context.ts';
 import { bind, h } from '../../dom.ts';
 import { recordTap } from '../../record.ts';
-import { hearPad } from './common.ts';
+import { hearPad, padHit } from './common.ts';
 import './sampler.css';
 
 /**
@@ -31,14 +31,7 @@ export function samplerPads(c: UiContext, onPick?: (pad: number) => void): HTMLE
       },
       [String(i + 1), small],
     );
-    recordTap(c, b, () =>
-      samples.pads.peek()[i]
-        ? {
-            make: (pos) => ({ kind: 'pad', pad: i, semis: 0, ...pos }),
-            label: `Pad ${String(i + 1)}`,
-          }
-        : null,
-    );
+    recordTap(c, b, () => padHit(c, i));
     bind(
       scope,
       () => store.state.value.smp.sel === i,

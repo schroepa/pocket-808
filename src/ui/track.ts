@@ -5,7 +5,7 @@ import { must } from '../core/util.ts';
 import type { UiContext } from './context.ts';
 import { listen } from './dom.ts';
 import type { Nav, TrackId } from './nav.ts';
-import { hearPad } from './panels/sampler/common.ts';
+import { hearPad, padHit } from './panels/sampler/common.ts';
 import { recordTap } from './record.ts';
 
 /* Was eine Spur beim Antippen tut, wie sie heißt und welche als nächste kommt. */
@@ -27,14 +27,7 @@ type Hit = ReturnType<Parameters<typeof recordTap>[2]>;
 /** Der Schlag, den ein Tipp auf die Spur aufnimmt (liest Zustand und Pad erst beim Tipp) */
 function trackHit(c: UiContext, id: TrackId): Hit {
   const s = c.store.state.peek();
-  if (id === 'SM') {
-    const pad = s.smp.sel;
-    if (!c.samples.pads.peek()[pad]) return null;
-    return {
-      make: (pos) => ({ kind: 'pad', pad, semis: 0, ...pos }),
-      label: `Pad ${String(pad + 1)}`,
-    };
-  }
+  if (id === 'SM') return padHit(c, s.smp.sel);
   if (id === 'BA' || id === 'LD') {
     return {
       make: (pos) => ({ kind: 'note', part: id, degree: 0, length: s.noteLen, ...pos }),
@@ -46,7 +39,8 @@ function trackHit(c: UiContext, id: TrackId): Hit {
 
 /**
  * `el` zur Spur-Taste machen: Ein Tipp wählt und spielt an; bei scharfer Aufnahme setzt schon das
- * Antippen den Schlag. Wer vorher das Pad wählt (eigene Listener davor), spielt und nimmt dieses auf.
+ * Antippen den Schlag. Wer für 'SM' ein bestimmtes Pad meint, muss es vor dem Aufruf von trackTap
+ * mit eigenen Listenern sowohl bei pointerdown (Aufnahme) als auch bei click (Anspielen) wählen.
  */
 export function trackTap(c: UiContext, nav: Nav, el: HTMLElement, id: TrackId): void {
   listen(c.scope, el, 'click', () => {
