@@ -6,9 +6,13 @@ import type { UiContext } from '../../context.ts';
 import { bind, h } from '../../dom.ts';
 import { recordTap } from '../../record.ts';
 import { hearPad } from './common.ts';
+import './sampler.css';
 
-/** Acht Pads: wählen und vorhören, Name bzw. „leer“, Inhaltspunkt (Legacy buildSmp/renderSmp) */
-export function samplerPads(c: UiContext): HTMLElement {
+/**
+ * Acht Pads: wählen und vorhören, Name bzw. „leer“, Inhaltspunkt (Legacy buildSmp/renderSmp).
+ * `onPick` läuft nach jedem Tipp; aufgenommen wird der Schlag schon hier.
+ */
+export function samplerPads(c: UiContext, onPick?: (pad: number) => void): HTMLElement {
   const { store, scope, samples } = c;
   const pads = Array.from({ length: PAD_COUNT }, (_, i) => {
     const small = h('small');
@@ -21,6 +25,7 @@ export function samplerPads(c: UiContext): HTMLElement {
           click: () => {
             store.update((s) => selectPad(s, i));
             hearPad(c, i);
+            onPick?.(i);
           },
         },
       },
