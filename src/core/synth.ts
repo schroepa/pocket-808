@@ -4,6 +4,8 @@ import type {
   ChannelId,
   NoteRow,
   Part,
+  PartFx,
+  PartFxKey,
   State,
   SynthKey,
   SynthPatch,
@@ -29,11 +31,30 @@ export const setWave = (s: State, part: Part, wave: number): State =>
 export const shiftOctave = (s: State, part: Part, d: number): State =>
   withPatch(s, part, (p) => ({ ...p, oct: clamp(p.oct + d, -2, 2) }));
 
+/** Drive und Chorus setzen: begrenzt auf 0..1, bei 0 verschwindet das Feld */
+const withFx = (patch: SynthPatch, fx: Readonly<PartFx>): SynthPatch => {
+  const p = { ...patch };
+  delete p.drive;
+  delete p.chorus;
+  const d = clamp(fx.drive ?? 0, 0, 1);
+  const c = clamp(fx.chorus ?? 0, 0, 1);
+  return { ...p, ...(d > 0 ? { drive: d } : {}), ...(c > 0 ? { chorus: c } : {}) };
+};
+
+export const setPartFx = (s: State, part: Part, key: PartFxKey, v: number): State =>
+  withPatch(s, part, (p) => ({ ...withFx(p, { ...p, [key]: v }), preset: null }));
+
+/** Preset laden: Klangwerte, Drive und Chorus (fehlende gehen auf 0); Arp, LFO und Oktave bleiben */
 export const applySynthPreset = (
   s: State,
   part: Part,
-  preset: { name: string; v: Readonly<SynthValues> },
-): State => withPatch(s, part, (p) => ({ ...p, ...preset.v, preset: preset.name }));
+  preset: { name: string; v: Readonly<SynthValues>; fx?: Readonly<PartFx> },
+): State =>
+  withPatch(s, part, (p) => ({
+    ...withFx(p, preset.fx ?? {}),
+    ...preset.v,
+    preset: preset.name,
+  }));
 
 export const toggleMute = (s: State, id: ChannelId): State => ({
   ...s,

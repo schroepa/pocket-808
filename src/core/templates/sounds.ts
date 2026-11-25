@@ -1,15 +1,18 @@
 import { SYN_PRESETS } from '../constants.ts';
-import type { Part, SynthValues } from '../types.ts';
+import type { Part, PartFx, SynthValues } from '../types.ts';
+import { must } from '../util.ts';
 
 /*
  * Synth-Sounds: die drei Werks-Presets je Stimme (SYN_PRESETS, unverändert) plus weitere, nach
  * Charakter abgestimmt. Reihenfolge der Werte wie in SYN_PRESETS.
  */
 
-interface Sound {
+export interface SynthSound {
   name: string;
   v: Readonly<SynthValues>;
+  fx?: Readonly<PartFx>;
 }
+type Sound = Pick<SynthSound, 'name' | 'v'>;
 
 const v = (
   wave: number,
@@ -99,7 +102,35 @@ const LEAD: readonly Sound[] = [
   },
 ];
 
-export const SYNTH_SOUNDS: Readonly<Record<Part, readonly Sound[]>> = {
-  BA: [...SYN_PRESETS.BA, ...BASS],
-  LD: [...SYN_PRESETS.LD, ...LEAD],
+/** Drive und Chorus je Sound, nach Charakter: Bässe vor allem Drive, Flächen und Leads Chorus */
+const FX: Readonly<Record<Part, Readonly<Record<string, Readonly<PartFx>>>>> = {
+  BA: {
+    Sub: { drive: 0.15 },
+    Acid: { drive: 0.5 },
+    Pluck: { drive: 0.25, chorus: 0.15 },
+    '808': { drive: 0.35 },
+    Reese: { drive: 0.3, chorus: 0.45 },
+    Deep: { drive: 0.2, chorus: 0.1 },
+    Rubber: { drive: 0.3 },
+    Mellow: { drive: 0.1, chorus: 0.25 },
+  },
+  LD: {
+    Saw: { drive: 0.15, chorus: 0.45 },
+    Pulse: { drive: 0.2, chorus: 0.3 },
+    Soft: { chorus: 0.5 },
+    Keys: { drive: 0.1, chorus: 0.4 },
+    Pad: { chorus: 0.8 },
+    Stab: { drive: 0.25, chorus: 0.4 },
+    Bell: { chorus: 0.35 },
+    Squelch: { drive: 0.4 },
+    Flute: { chorus: 0.25 },
+  },
+};
+
+const withFx = (part: Part, list: readonly Sound[]): readonly SynthSound[] =>
+  list.map((s) => ({ ...s, fx: must(FX[part][s.name], `Effekt ${s.name}`) }));
+
+export const SYNTH_SOUNDS: Readonly<Record<Part, readonly SynthSound[]>> = {
+  BA: withFx('BA', [...SYN_PRESETS.BA, ...BASS]),
+  LD: withFx('LD', [...SYN_PRESETS.LD, ...LEAD]),
 };

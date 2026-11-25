@@ -230,6 +230,11 @@ export function loadState(src: unknown, base: State): State {
       const l = p.lfo;
       if (isObj(l) && isNum(l.r) && isNum(l.d) && (l.t === 'cut' || l.t === 'pit'))
         t.lfo = { r: clamp(l.r, 0, 1), d: clamp(l.d, 0, 1), t: l.t };
+      // Etappe 10a: Drive und Chorus nur, wenn sie wirken
+      for (const k of ['drive', 'chorus'] as const) {
+        const v = p[k];
+        if (isNum(v) && v > 0) t[k] = clamp(v, 0, 1);
+      }
     }
   }
   // alter Synth-Stumm-Schalter wandert in den Mixer

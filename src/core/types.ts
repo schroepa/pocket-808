@@ -105,6 +105,9 @@ export interface LfoSettings {
   d: number;
   t: 'cut' | 'pit';
 }
+export type PartFxKey = 'drive' | 'chorus';
+/** Effekte je Part (Etappe 10a), 0..1; bei 0 fehlt das Feld */
+export type PartFx = Partial<Record<PartFxKey, number>>;
 export type SynthPatch = {
   oct: number;
   mute: boolean;
@@ -112,7 +115,8 @@ export type SynthPatch = {
   /** optional: fehlt, solange nicht gesetzt (alte Stände bleiben bytegleich) */
   arp?: ArpSettings;
   lfo?: LfoSettings;
-} & SynthValues;
+} & SynthValues &
+  PartFx;
 export interface Pad {
   name: string;
   start: number;

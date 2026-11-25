@@ -4,11 +4,14 @@ import { baseState } from './defaults.ts';
 import {
   applySynthPreset,
   noteAt,
+  setPartFx,
   setSynthValue,
   setWave,
   shiftOctave,
   toggleMute,
 } from './synth.ts';
+import { loadState, serialize } from './persist.ts';
+import { SYNTH_SOUNDS } from './templates/sounds.ts';
 import type { NoteRow } from './types.ts';
 import { must } from './util.ts';
 
@@ -68,5 +71,46 @@ describe('noteAt', () => {
   });
   it('leere Reihe', () => {
     expect(noteAt(row({}), 7)).toBeNull();
+  });
+});
+
+describe('Drive und Chorus', () => {
+  const sound = (name: string) =>
+    must(
+      SYNTH_SOUNDS.BA.find((x) => x.name === name),
+      name,
+    );
+  it('setPartFx setzt, begrenzt, löscht bei 0 und hebt die Preset-Markierung auf', () => {
+    const s = setPartFx(baseState(), 'BA', 'drive', 0.4);
+    expect(s.synth.BA.drive).toBe(0.4);
+    expect(s.synth.BA.preset).toBeNull();
+    expect(setPartFx(s, 'BA', 'chorus', 2).synth.BA.chorus).toBe(1);
+    expect('drive' in setPartFx(s, 'BA', 'drive', 0).synth.BA).toBe(false);
+    expect('drive' in setPartFx(s, 'BA', 'drive', -3).synth.BA).toBe(false);
+  });
+  it('ein Preset setzt beide Werte, fehlende verschwinden als Feld', () => {
+    const a = applySynthPreset(baseState(), 'BA', sound('Reese'));
+    expect(a.synth.BA).toMatchObject({ drive: 0.3, chorus: 0.45 });
+    const b = applySynthPreset(a, 'BA', sound('Sub'));
+    expect(b.synth.BA.drive).toBe(0.15);
+    expect('chorus' in b.synth.BA).toBe(false);
+  });
+  it('Speichern und Laden: nur gültige Werte, alte Stände bytegleich', () => {
+    const load = (v: unknown) => {
+      const raw = JSON.parse(JSON.stringify(serialize(baseState()))) as {
+        synth: { BA: Record<string, unknown> };
+      };
+      raw.synth.BA.drive = v;
+      raw.synth.BA.chorus = v;
+      return loadState(raw, baseState()).synth.BA;
+    };
+    expect(load(0.5)).toMatchObject({ drive: 0.5, chorus: 0.5 });
+    expect(load(7)).toMatchObject({ drive: 1, chorus: 1 });
+    for (const bad of ['x', 0, -1, null]) {
+      expect('drive' in load(bad)).toBe(false);
+      expect('chorus' in load(bad)).toBe(false);
+    }
+    const old = JSON.stringify(serialize(baseState()));
+    expect(JSON.stringify(serialize(loadState(JSON.parse(old), baseState())))).toBe(old);
   });
 });
