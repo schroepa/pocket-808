@@ -65,6 +65,18 @@
   }
   .mixer-work > section {
     min-width: 0;
+    container: mixpage / inline-size;
+  }
+  /* breite Seite FX: Reverb und DJ Filter links, Klang und Stutter rechts */
+  @container mixpage (min-width: 600px) {
+    .fx-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-rows: repeat(4, auto);
+      grid-auto-flow: column;
+      column-gap: 24px;
+      align-content: start;
+    }
   }
   .mixer-work .scenes {
     margin-top: 0;

@@ -109,6 +109,61 @@ describe('trackWork', () => {
     expect(head?.hidden).toBe(true);
   });
 
+  it('Sub oder Opt offen: Reiter und Pad-Reihe treten zurück, danach kommen sie wieder', () => {
+    const { c, nav, layout } = setup();
+    const el = trackWork(c, nav, layout);
+    document.body.append(el);
+    expect(el.dataset.field).toBeUndefined();
+    nav.drumOpt.value = { ...nav.drumOpt.peek(), on: true };
+    expect(el.dataset.field).toBe('');
+    nav.drumOpt.value = { ...nav.drumOpt.peek(), on: false };
+    expect(el.dataset.field).toBeUndefined();
+    nav.drumSub.value = { on: true, step: 0 };
+    expect(el.dataset.field).toBe('');
+    // gilt nur für die Spur, deren Feld offen ist
+    nav.selectTrack('SM');
+    expect(el.dataset.field).toBeUndefined();
+    nav.padSub.value = { on: true, step: 0 };
+    expect(el.dataset.field).toBe('');
+    nav.padSub.value = { on: false, step: 0 };
+    nav.selectTrack('BA');
+    expect(el.dataset.field).toBeUndefined();
+    el.remove();
+  });
+
+  it('der Fokus bleibt nie auf einem zurückgetretenen Reiter', () => {
+    const { c, nav, layout } = setup();
+    const el = trackWork(c, nav, layout);
+    document.body.append(el);
+    tab(el, 'Trig')?.focus();
+    expect(document.activeElement).toBe(tab(el, 'Trig'));
+    nav.drumOpt.value = { ...nav.drumOpt.peek(), on: true };
+    const opt = el.querySelector(
+      'section[data-kind=drum][data-page=trig] .chip[aria-pressed=true]',
+    );
+    expect(opt?.textContent).toBe('Opt');
+    expect(document.activeElement).toBe(opt);
+    // Pad gewählt per Tastatur: der Fokus geht an die gedrückte Taste des Samplers
+    nav.drumOpt.value = { ...nav.drumOpt.peek(), on: false };
+    nav.selectTrack('SM');
+    el.querySelector<HTMLElement>('.smp-head .pad')?.focus();
+    nav.padSub.value = { on: true, step: 0 };
+    const sub = el.querySelector('section[data-kind=smp][data-page=trig] .chip[aria-pressed=true]');
+    expect(sub?.textContent).toBe('Sub');
+    expect(document.activeElement).toBe(sub);
+    // ohne Fokus in Reitern oder Pads bleibt er, wo er ist
+    nav.padSub.value = { on: false, step: 0 };
+    tab(el, 'Klang')?.focus();
+    nav.selectPage('trig');
+    const clear = el.querySelector<HTMLElement>(
+      'section[data-kind=smp][data-page=trig] .chip:last-child',
+    );
+    clear?.focus();
+    nav.padOpt.value = { ...nav.padOpt.peek(), on: true };
+    expect(document.activeElement).toBe(clear);
+    el.remove();
+  });
+
   it('channelPage schreibt den Kanal der Spur, beim Sampler SM', () => {
     const { c, nav, store, layout } = setup();
     const el = trackWork(c, nav, layout);

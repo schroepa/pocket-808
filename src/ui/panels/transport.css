@@ -33,8 +33,9 @@
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-  /* schmales Telefon: Start/Stopp nur als Symbol (Beschriftung bleibt für Screenreader), damit Rec Platz hat */
-  @media (max-width: 420px) {
+  /* schmales Telefon: Start/Stopp nur als Symbol (Beschriftung bleibt für Screenreader), damit Rec Platz
+     hat; bis 442 px würde die Beschriftung mit Ersatzschrift sonst gekürzt (fit.spec) */
+  @media (max-width: 460px) {
     .play span {
       position: absolute;
       width: 1px;

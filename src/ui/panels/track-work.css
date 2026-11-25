@@ -15,4 +15,8 @@
     grid-template-columns: repeat(8, minmax(0, 1fr));
     margin-bottom: 0;
   }
+  /* Sub oder Opt offen (track-work.ts): Reiter und Pad-Reihe (samt ihrer Meldung) weichen dem Feld */
+  .track-work[data-field] > :is(.tabs, .smp-head) {
+    display: none;
+  }
 }

@@ -9,6 +9,7 @@ import {
   rightOverhang,
   targets,
   trackSteps,
+  work,
 } from './nav.ts';
 
 /** Kurzer 440-Hz-Ton als 16-Bit-WAV (0,2 s, 22,05 kHz) */
@@ -144,6 +145,11 @@ test('Chop wählen, Pitch am Step setzen, bleibt nach Neuladen; Tastatur mit gro
   await again.locator('[aria-label="Step-Optionen bearbeiten"]:visible').click();
   await (await trackSteps(page)).nth(2).click();
   await expect(again.locator('[aria-label^="Pitch zurücksetzen"]:visible')).toHaveText('+2 ST');
+  // solange Opt an ist, sind die Seitenreiter ausgeblendet: erst ausschalten
+  const opt = again.locator('[aria-label="Step-Optionen bearbeiten"]:visible');
+  await opt.click();
+  await expect(opt).toHaveAttribute('aria-pressed', 'false');
+  await expect(work(page).getByRole('tablist', { name: 'Seite' })).toBeVisible();
   if (info.project.name !== 'desktop') {
     for (const [name, selector] of [
       ['Tasten', '.smp-keys button'],

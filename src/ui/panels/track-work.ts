@@ -92,9 +92,32 @@ export function trackWork(c: UiContext, nav: Nav, layout: ReadonlySignal<Layout>
       nav.selectPage(p);
     },
   });
-  return h('div', { class: 'track-work' }, [
+  const el = h('div', { class: 'track-work' }, [
     smp.head,
     bar,
     h('div', { class: 'track-pages' }, sections),
   ]);
+  // Sub oder Opt offen: Reiter und Pad-Reihe treten zurück (data-field, track-work.css), damit das
+  // Feld Platz hat; ein Fokus darin geht an die gedrückte Taste Sub bzw. Opt
+  bind(
+    scope,
+    () => {
+      if (kind.value === 'drum') return nav.drumSub.value.on || nav.drumOpt.value.on;
+      return kind.value === 'smp' && (nav.padSub.value.on || nav.padOpt.value.on);
+    },
+    (field) => {
+      if (!field) {
+        delete el.dataset.field;
+        return;
+      }
+      const active = document.activeElement;
+      const lost = !!active && (bar.contains(active) || smp.head.contains(active));
+      el.dataset.field = '';
+      if (lost)
+        el.querySelector<HTMLElement>(
+          `section[data-kind=${kind.peek()}][data-page=trig] .chip[aria-pressed=true]`,
+        )?.focus();
+    },
+  );
+  return el;
 }

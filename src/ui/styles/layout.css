@@ -147,6 +147,10 @@
 :is([data-layout='tablet'], [data-layout='desktop']) .mixer-work > .tabs {
   flex-basis: 100%;
 }
+/* Kanäle doppelt so breit wie ihre Nachbarn: ab 620 px stehen alle 13 Züge in einer Reihe */
+:is([data-layout='tablet'], [data-layout='desktop']) .mixer-work > section[data-page='kanaele'] {
+  flex-grow: 2;
+}
 /* 14 Tasten zu je ≥ 44 px brauchen die ganze Breite: unter den übrigen Seiten der Ansicht */
 :is([data-layout='tablet'], [data-layout='desktop']) .track-pages > section[data-page='tasten'] {
   flex-basis: 100%;
@@ -175,6 +179,14 @@
 }
 [data-layout='desktop'] [data-area='transport'] {
   align-self: center;
+}
+/* Tablet und Desktop: Die Tempo-Fläche hat nur drei Regler und Tap; sie liegt kompakt oben links
+   unter dem Display statt über der ganzen Arbeitsfläche */
+:is([data-layout='tablet'], [data-layout='desktop']) .shell > .sheet[data-sheet='tempo'] {
+  align-self: start;
+  justify-self: start;
+  width: max-content;
+  max-width: 100%;
 }
 [data-layout='desktop'] .track-pages > section {
   flex-basis: 280px;
@@ -248,7 +260,7 @@ section[data-mode='spur']:has(section[data-page='noten']:not([hidden]) .roll) .t
 
 /* Telefon: dichtere Seiten, damit sie ab 390 × 660 ohne Scrollen passen (Ziele bleiben ≥ 44 px) */
 [data-layout='mobile'] .track-work {
-  gap: 6px;
+  gap: 4px;
 }
 [data-layout='mobile'] .sh {
   gap: 6px;
@@ -304,9 +316,107 @@ section[data-mode='spur']:has(section[data-page='noten']:not([hidden]) .roll) .t
   margin-bottom: 4px;
 }
 [data-layout='mobile'] :is(.opt-panel, .sub-ed) {
-  margin-top: 6px;
-  padding: 8px;
+  margin-top: 4px;
+  padding: 6px;
 }
 [data-layout='mobile'] :is(.opt-panel, .opt-ctl) {
   gap: 6px;
+}
+/* Seitenreiter in einer Zeile (bis zu sechs): schmalere Reiter statt einer zweiten Zeile */
+[data-layout='mobile'] .track-work > .tabs {
+  flex-wrap: nowrap;
+  gap: 2px;
+  padding: 2px;
+}
+[data-layout='mobile'] .track-work > .tabs button {
+  flex: 1 1 auto;
+  padding: 0 4px;
+  letter-spacing: 0.04em;
+}
+/* Seite Noten in zwei Zeilen über der Rolle: Tonart, Skala, Länge, Leeren · Takthälfte, Werkzeug.
+   Zwölf gleiche Spalten, die Gruppen bekommen so viele, wie ihre Ziele (≥ 44 px) brauchen. */
+[data-layout='mobile'] .synth-notes {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-areas:
+    'key key scale scale scale len len len len len clear clear'
+    'half half half half tools tools tools tools tools tools tools tools'
+    'roll roll roll roll roll roll roll roll roll roll roll roll';
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 4px;
+}
+[data-layout='mobile'] .synth-notes .roll-head > .chips:nth-child(2) {
+  justify-content: stretch;
+}
+[data-layout='mobile'] .synth-notes .chips {
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+[data-layout='mobile'] .synth-notes .chip {
+  flex: 1 1 auto;
+  padding: 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+[data-layout='mobile'] .synth-notes .fld select {
+  padding: 0 22px 0 8px;
+  background-position: right 7px center;
+}
+/* Sub-Steps (dichtes Raster) in zwei Reihen zu acht */
+[data-layout='mobile'] .sub-grid {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 3px;
+  margin: 6px 0;
+}
+/* Seite Noten: Rolle etwas dichter, damit sie bei 390 × 660 ohne Scrollen passt */
+[data-layout='mobile'] [data-slot='roll'] .roll {
+  padding: 2px 4px;
+}
+[data-layout='mobile'] .roll .rr.hd {
+  line-height: 12px;
+}
+/* Step-Optionen: Die Auswahl zeigt die Bedingung, ihre Überschrift bleibt nur für Screenreader */
+[data-layout='mobile'] .opt-ctl .fld span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+/* Sampler Klang: Laden, Rec, Rev, Leeren, Bounce in einer Zeile */
+[data-layout='mobile'] .smp-tools {
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+[data-layout='mobile'] .smp-tools .chip {
+  flex: 1 1 auto;
+  padding: 0 6px;
+  letter-spacing: 0.06em;
+}
+
+/* Sub oder Opt offen (data-field, track-work.ts): Das Feld bekommt die Höhe der Arbeitsfläche und
+   scrollt nur, wenn es trotz allem nicht hineinpasst (Sampler-Opt am kleinsten Telefon) */
+section[data-mode='spur'] > .track-work[data-field] {
+  height: 100%;
+  grid-template-rows: minmax(0, 1fr);
+}
+.track-work[data-field] > .track-pages {
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+}
+.track-work[data-field] section[data-page='trig'] {
+  height: 100%;
+  min-height: 0;
+}
+.track-work[data-field] .trig-page {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+}
+.track-work[data-field] .trig-page > :is(.opt-panel, .sub-ed) {
+  align-self: start;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }

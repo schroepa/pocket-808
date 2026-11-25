@@ -43,10 +43,14 @@ export function synthSoundList(
   return list;
 }
 
-/** „Stimme leeren“: Noten des gewählten Parts löschen, mit Zurück (Legacy synTools) */
+/**
+ * „Stimme leeren“: Noten des gewählten Parts löschen, mit Zurück (Legacy synTools). Sichtbar kurz
+ * „Leeren“ wie auf Trig, damit die Seite Noten auf dem Telefon in zwei Zeilen passt.
+ */
 export function clearVoiceChip(c: UiContext): HTMLElement {
   return chip(c.scope, {
-    label: 'Stimme leeren',
+    label: 'Leeren',
+    ariaLabel: 'Stimme leeren',
     onClick: () => {
       c.store.clearNotes();
     },

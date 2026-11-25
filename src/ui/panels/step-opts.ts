@@ -166,7 +166,7 @@ export function stepOptsPanel(
       );
     },
   );
-  const pitchRow = h('div', { class: 'opt-row opt-pitch' }, [
+  const pitchRow = h('div', { class: 'opt-pitch' }, [
     h('div', { class: 'cap-label', text: 'Pitch' }),
     chip(scope, {
       label: '−',
@@ -207,6 +207,7 @@ export function stepOptsPanel(
     class: 'opt-off',
     text: 'Step ist aus – im Opt-Modus antippen schaltet ihn ein.',
   });
+  // drei Zeilen: Velocity, Schnellwahl, Chance · Bedingung, Pitch, Zurücksetzen · Locks
   const controls = h('div', { class: 'opt-ctl' }, [
     h('div', { class: 'opt-row' }, [
       knob(scope, {
@@ -233,8 +234,6 @@ export function stepOptsPanel(
           }),
         ),
       ),
-    ]),
-    h('div', { class: 'opt-row' }, [
       knob(scope, {
         label: 'Chance',
         value: computed(() => opt.value.p),
@@ -246,6 +245,8 @@ export function stepOptsPanel(
         readout: c.readout,
         tag,
       }),
+    ]),
+    h('div', { class: 'opt-row' }, [
       selectField(scope, {
         label: 'Bedingung',
         options: STEP_CONDS.map((x) => x.label),
@@ -254,9 +255,14 @@ export function stepOptsPanel(
           write({ c: STEP_CONDS[i]?.value ?? 'all' });
         },
       }),
+      pitchRow,
+      chip(scope, {
+        label: 'Zurücksetzen',
+        onClick: () => {
+          store.resetStepOpt(o.key.peek(), o.step.peek());
+        },
+      }),
     ]),
-    pitchRow,
-    h('div', { class: 'cap-label', text: 'Lock' }),
     h('div', { class: 'opt-row opt-locks' }, [
       lockKnob('t', 'Tune', (v) => (padKey.value ? semis(v) : fmtTune(v))),
       lockKnob('d', 'Decay', pct),
@@ -266,14 +272,6 @@ export function stepOptsPanel(
         disabled: computed(() => !hasLock(opt.value)),
         onClick: () => {
           store.resetStepLocks(o.key.peek(), o.step.peek());
-        },
-      }),
-    ]),
-    h('div', { class: 'opt-row opt-end' }, [
-      chip(scope, {
-        label: 'Zurücksetzen',
-        onClick: () => {
-          store.resetStepOpt(o.key.peek(), o.step.peek());
         },
       }),
     ]),

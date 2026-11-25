@@ -443,7 +443,9 @@ describe('Synth-Sounds und Stimme leeren', () => {
     const { c, store } = makeContext();
     store.placeNote(0, 0);
     const el = clearVoiceChip(c);
-    expect(el.textContent).toBe('Stimme leeren');
+    // kurz sichtbar wie „Leeren“ auf Trig, der Name nennt, was geleert wird
+    expect(el.textContent).toBe('Leeren');
+    expect(el.getAttribute('aria-label')).toBe('Stimme leeren');
     (el as HTMLButtonElement).click();
     const s = store.state.value;
     expect(s.patterns[s.cur].notes[s.part].every((n) => n === null)).toBe(true);
@@ -566,7 +568,7 @@ describe('Synth-Seiten', () => {
     expect(slot.childNodes).toHaveLength(0);
     expect(el.querySelector('.pc')).toBeNull();
     [...el.querySelectorAll<HTMLButtonElement>('.chip')]
-      .find((b) => b.textContent === 'Stimme leeren')
+      .find((b) => b.getAttribute('aria-label') === 'Stimme leeren')
       ?.click();
     const s = store.state.value;
     expect(s.patterns[s.cur].notes[s.part].every((n) => n === null)).toBe(true);
