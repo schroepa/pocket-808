@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { baseState } from './defaults.ts';
 import {
   clearNotes,
+  clearPadTrack,
   clearPattern,
   clearTrack,
   copyPattern,
@@ -16,6 +17,7 @@ import {
   toggleSampleStep,
   toggleSubStep,
 } from './pattern.ts';
+import { setStepOpt } from './stepopts.ts';
 import { deepFreeze } from './test-utils.ts';
 import type { State } from './types.ts';
 import { restoreSnapshot, snapshot } from './undo.ts';
@@ -133,6 +135,37 @@ describe('Pattern als Ganzes', () => {
     expect(patternHasContent(toggleSampleStep(b, 0, 0).patterns.A)).toBe(true);
     expect(patternHasContent(placeNote(b, 0, 0).patterns.A)).toBe(true);
     expect(patternHasContent(setSubSteps(b, 'P0', 0, roll()).patterns.A)).toBe(true);
+  });
+});
+
+describe('clearPadTrack', () => {
+  it('clearPadTrack leert nur dieses Pad: Steps, Sub-Steps und Step-Optionen', () => {
+    let s = toggleSampleStep(fresh(), 2, 0);
+    s = setSubSteps(deepFreeze(s), 'P2', 4, roll());
+    s = setStepOpt(deepFreeze(s), 'P2', 0, { v: 0.5 });
+    s = toggleSampleStep(deepFreeze(s), 3, 1);
+    s = setSubSteps(deepFreeze(s), 'P3', 5, roll());
+    s = setStepOpt(deepFreeze(s), 'P3', 1, { v: 0.7 });
+    s = toggleDrumStep(deepFreeze(s), 'BD', 0);
+    const before = deepFreeze({ ...s, preset: 'House' });
+    const t = clearPadTrack(before, 2);
+    const p = t.patterns.A;
+    expect(p.smp[2]?.some(Boolean)).toBe(false);
+    expect(Object.keys(p.sub)).toEqual(['P3']);
+    expect(p.opt).toEqual({ P3: { 1: { v: 0.7 } } });
+    expect(p.smp[3]).toBe(before.patterns.A.smp[3]);
+    expect(p.BD).toBe(before.patterns.A.BD);
+    expect(t.patterns.B).toBe(before.patterns.B);
+    // wie die anderen Sampler-Änderungen lässt es die Preset-Markierung stehen
+    expect(t.preset).toBe('House');
+  });
+  it('auch ohne gesetzte Hauptsteps; leeres Pad ändert nichts', () => {
+    const s = deepFreeze(setSubSteps(fresh(), 'P1', 3, roll()));
+    const t = clearPadTrack(s, 1);
+    expect(t.patterns.A.sub).toEqual({});
+    expect(t.patterns.A.smp).toBe(s.patterns.A.smp);
+    expect(clearPadTrack(s, 0)).toBe(s);
+    expect(() => clearPadTrack(s, 8)).toThrow('Sampler-Reihe 8');
   });
 });
 

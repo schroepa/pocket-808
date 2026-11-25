@@ -1,16 +1,46 @@
 @layer components {
+  .ed-head {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .ed-head h2 {
+    font: 700 22px/1 var(--font-display);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
   .ed-head h2 small {
     margin-left: 8px;
     font: 500 13px var(--font-display);
     letter-spacing: 0.16em;
     color: var(--ink-dim);
   }
-  .chain {
+  /* füllt die Arbeitsfläche: Kopf und Werkzeuge bleiben stehen, nur eine lange Kette scrollt */
+  .song {
     display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+  /* position: Bezug für das Mitscrollen (song.ts); der Innenabstand lässt dem Glow Platz */
+  .chain {
+    position: relative;
+    display: flex;
+    flex: 0 1 auto;
     flex-wrap: wrap;
+    align-content: flex-start;
     gap: 6px;
-    min-height: 58px;
+    min-height: 70px;
     margin-bottom: 12px;
+    padding: 6px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .song > .song-tools {
+    flex: none;
   }
   .chain-empty {
     align-self: center;
@@ -47,30 +77,5 @@
   }
   .blk.play small {
     color: var(--chassis);
-  }
-  .patterns .chips {
-    margin: 8px 0 14px;
-  }
-  .tpl-hint {
-    margin: 0 0 12px;
-    font-size: 13px;
-    line-height: 1.4;
-    color: var(--ink-dim);
-    min-height: 2.8em;
-  }
-  .tpl-scope {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-  .tpl-scope[hidden] {
-    display: none;
-  }
-  .tpl-scope-label {
-    font: 600 12px var(--font-display);
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--ink-dim);
   }
 }

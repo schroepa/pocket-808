@@ -1,0 +1,85 @@
+@layer components {
+  /* welche der beiden Formen sichtbar ist, bestimmt die Shell (mobile: Leiste, sonst Tasten) */
+  .track-bar {
+    display: grid;
+    grid-template-columns: var(--touch) minmax(0, 1fr) var(--touch);
+    gap: 4px;
+  }
+  /* 13 Tasten in einer Reihe; ist sie schmaler als 13 Touch-Ziele, bricht sie um statt zu stauchen */
+  .track-keys {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(var(--touch), 1fr));
+    gap: 4px;
+  }
+  :is(.track-step, .track-title, .track-key, .track-pad) {
+    position: relative;
+    min-width: 0;
+    min-height: var(--touch);
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius);
+    background: var(--cell);
+    font: 700 16px var(--font-display);
+    letter-spacing: 0.06em;
+  }
+  :is(.track-step, .track-title):active {
+    background: color-mix(in srgb, var(--ink) 16%, var(--cell));
+  }
+  .track-title {
+    overflow: hidden;
+    padding: 0 8px;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .track-title[aria-expanded='true'] {
+    z-index: 1;
+    background: var(--cream);
+    color: var(--chassis);
+    box-shadow: var(--glow-cream);
+  }
+  /* eigenes Sample */
+  :is(.track-key, .track-pad).cust {
+    box-shadow: inset 0 -2px 0 var(--acc);
+  }
+  :is(.track-key, .track-pad).sel {
+    z-index: 1;
+    background: var(--cream);
+    color: var(--chassis);
+    box-shadow: var(--glow-cream);
+  }
+  :is(.track-key, .track-pad).sel.cust {
+    box-shadow:
+      inset 0 -2px 0 var(--acc),
+      var(--glow-cream);
+  }
+  .track-pads {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .track-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .track-pad {
+    display: grid;
+    place-content: center;
+    gap: 3px;
+    height: 60px;
+    font-size: 18px;
+  }
+  .track-pad small {
+    font: 11px/1.1 var(--font-lcd);
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--ink) 72%, var(--cell));
+  }
+  .track-pad.sel small {
+    color: var(--chassis);
+  }
+  .track-pads .pads {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-bottom: 0;
+  }
+}

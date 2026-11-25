@@ -6,12 +6,9 @@ import { knob } from '../../controls/knob.ts';
 import { h } from '../../dom.ts';
 import { hearPad, padState } from './common.ts';
 
-const KNOBS = [
-  ['att', 'Attack'],
-  ['dec', 'Decay'],
-  ['tune', 'Tune'],
-  ['lvl', 'Level'],
-] as const;
+const LABELS = { att: 'Attack', dec: 'Decay', tune: 'Tune', lvl: 'Level' } as const;
+type PadKnob = keyof typeof LABELS;
+const ORDER: readonly PadKnob[] = ['att', 'dec', 'tune', 'lvl'];
 
 const fmtTune = (v: number): string => {
   const n = Math.round((v - 0.5) * 24);
@@ -19,15 +16,15 @@ const fmtTune = (v: number): string => {
 };
 
 /** Attack, Decay, Tune (±12 Halbtöne), Level des gewählten Pads (Legacy smpKnobs) */
-export function samplerKnobs(c: UiContext): HTMLElement {
+export function samplerKnobs(c: UiContext, order: readonly PadKnob[] = ORDER): HTMLElement {
   const { store, scope, readout } = c;
   const { sel, pad } = padState(c);
   return h(
     'div',
     { class: 'knob-grid' },
-    KNOBS.map(([k, label]) =>
+    order.map((k) =>
       knob(scope, {
-        label,
+        label: LABELS[k],
         value: computed(() => pad.value[k]),
         write: (v) => {
           const i = sel.peek();

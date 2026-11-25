@@ -65,7 +65,8 @@
     border-radius: 6px;
     background: var(--cell);
     font: 12px var(--font-lcd);
-    color: var(--ink-dim);
+    /* Kontrast ≥ 4,5:1 auf beiden Zellfarben (axe); --ink-dim allein reicht dort nicht */
+    color: color-mix(in srgb, var(--ink-dim) 70%, var(--ink));
   }
   .sb.q {
     background: #23232d;

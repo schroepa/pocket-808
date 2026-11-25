@@ -11,6 +11,9 @@
     align-items: center;
     justify-content: center;
     gap: 10px;
+    /* Start/Stopp bleibt auch mit breiten Ersatzschriften im Fenster; zur Not kürzt die Beschriftung */
+    min-width: var(--touch);
+    overflow: hidden;
     min-height: 52px;
     border: 0;
     border-radius: 14px;
@@ -21,8 +24,18 @@
     text-transform: uppercase;
     box-shadow: var(--glow-cream);
   }
-  /* schmales Telefon: Start/Stopp nur als Symbol (Beschriftung bleibt für Screenreader), damit Rec Platz hat */
-  @media (max-width: 420px) {
+  .play svg {
+    flex: none;
+  }
+  .play span {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  /* schmales Telefon: Start/Stopp nur als Symbol (Beschriftung bleibt für Screenreader), damit Rec Platz
+     hat; bis 442 px würde die Beschriftung mit Ersatzschrift sonst gekürzt (fit.spec) */
+  @media (max-width: 460px) {
     .play span {
       position: absolute;
       width: 1px;
@@ -80,6 +93,30 @@
     background: var(--acc);
     color: var(--chassis);
     box-shadow: var(--glow-acc);
+  }
+}
+
+/* Telefon quer: Der Transport hat nur die halbe Breite, am kleinsten Gerät gut 300 px */
+@layer components {
+  @media (orientation: landscape) {
+    [data-layout='mobile'] .transport {
+      gap: 6px;
+    }
+    [data-layout='mobile'] :is(.fill-btn, .rec-btn) {
+      padding: 0 6px;
+    }
+    [data-layout='mobile'] .transport .seg button {
+      padding: 0 8px;
+    }
+    [data-layout='mobile'] .play {
+      gap: 0;
+    }
+    [data-layout='mobile'] .play span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      clip-path: inset(50%);
+    }
   }
 }
 

@@ -1,6 +1,4 @@
-import { SMP_RATE } from './constants.ts';
 import type { Pad, State } from './types.ts';
-import { must } from './util.ts';
 
 /*
  * Sampler-Bedienung als reine Funktionen (Legacy buildSmp, selPad, setSample, clearSample, drawWave):
@@ -60,11 +58,4 @@ export function waveColumns(pcm: Float32Array, width: number): { min: number; ma
     }
     return { min, max };
   });
-}
-
-/** Zusammenfassung im Gerätekopf (Legacy renderSum, Sampler-Teil) */
-export function padSummary(s: State, pcm: Float32Array | null): string {
-  const p = must(s.smp.pads[s.smp.sel], 'Pad');
-  const len = pcm ? ` · ${(pcm.length / SMP_RATE).toFixed(1)} s` : '';
-  return `Pad ${s.smp.sel + 1} · ${p.name || 'leer'}${len}`;
 }

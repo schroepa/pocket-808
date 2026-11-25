@@ -1,16 +1,20 @@
-import { ROWS, SCALES } from '../../../core/constants.ts';
+import { NOTE_NAMES, ROWS, SCALES } from '../../../core/constants.ts';
 import { degreeName } from '../../../core/music.ts';
 import { CHORD_LABELS, CHORD_MARKS } from '../../../core/notes.ts';
 import { currentPattern } from '../../../core/pattern.ts';
 import { noteAt } from '../../../core/synth.ts';
 import type { ChordKind } from '../../../core/types.ts';
 import { must } from '../../../core/util.ts';
-import { computed, signal } from '../../../store/signals.ts';
+import { computed, type ReadonlySignal } from '../../../store/signals.ts';
 import type { UiContext } from '../../context.ts';
 import { chip } from '../../controls/chip.ts';
 import { markColumn } from '../../controls/marker.ts';
+import { selectField } from '../../controls/select.ts';
 import { bind, h } from '../../dom.ts';
+import type { Nav, RollTool } from '../../nav.ts';
 import { recordTap } from '../../record.ts';
+import { clearVoiceChip } from './presets.ts';
+import './modules.css';
 import './roll.css';
 
 const LENGTHS = [
@@ -20,25 +24,21 @@ const LENGTHS = [
 ] as const;
 
 /** Werkzeug für Tipps in der Roll (Etappe 6a); bleibt nur in der Oberfläche */
-type Tool = 'note' | 'a' | 's' | 'ch';
-const TOOLS: readonly (readonly [Tool, string])[] = [
+const TOOLS: readonly (readonly [RollTool, string])[] = [
   ['note', 'Note'],
   ['a', 'Akzent'],
   ['s', 'Slide'],
   ['ch', 'Akkord'],
 ];
 
-/** Piano-Roll des gewählten Parts: eine Takthälfte (8 Steps) × 12 Stufen (Legacy renderRoll). */
-export function pianoRoll(c: UiContext): HTMLElement {
-  const { store, scope, audio, readout } = c;
-  const page = signal(0);
-  const tool = signal<Tool>('note');
-  const playStep = computed(() => audio.playhead.value.step);
-  const tonality = store.select(
-    (s) => ({ key: s.key, scale: s.scale }),
-    (a, b) => a.key === b.key && a.scale === b.scale,
-  );
-  const scaleLen = computed(() => must(SCALES[tonality.value.scale], 'Skala').s.length);
+const playStepOf = (c: UiContext): ReadonlySignal<number> =>
+  computed(() => c.audio.playhead.value.step);
+
+/** Takthälfte (mit Lauflicht), Notenlänge und Werkzeug der Piano-Roll */
+export function rollControls(c: UiContext, roll: Nav['roll']): HTMLElement {
+  const { store, scope } = c;
+  const { page, tool } = roll;
+  const playStep = playStepOf(c);
 
   const pages = ['1–8', '9–16'].map((t, i) => {
     const b = chip(scope, {
@@ -79,6 +79,23 @@ export function pianoRoll(c: UiContext): HTMLElement {
       },
     }),
   );
+  return h('div', { class: 'roll-head' }, [
+    h('div', { class: 'chips', attrs: { role: 'group', 'aria-label': 'Takthälfte' } }, pages),
+    h('div', { class: 'chips', attrs: { role: 'group', 'aria-label': 'Notenlänge' } }, lengths),
+    h('div', { class: 'chips tools', attrs: { role: 'group', 'aria-label': 'Werkzeug' } }, tools),
+  ]);
+}
+
+/** Raster des gewählten Parts: eine Takthälfte (8 Steps) × 12 Stufen mit Tonnamen und Lauflicht */
+export function rollGrid(c: UiContext, roll: Nav['roll']): HTMLElement {
+  const { store, scope, audio, readout } = c;
+  const { page, tool } = roll;
+  const playStep = playStepOf(c);
+  const tonality = store.select(
+    (s) => ({ key: s.key, scale: s.scale }),
+    (a, b) => a.key === b.key && a.scale === b.scale,
+  );
+  const scaleLen = computed(() => must(SCALES[tonality.value.scale], 'Skala').s.length);
 
   const headCells = Array.from({ length: 8 }, (_, col) => {
     const sp = h('span');
@@ -203,15 +220,44 @@ export function pianoRoll(c: UiContext): HTMLElement {
     }),
     (col) => must(columns[col], 'Spalte'),
   );
-  return h('div', { class: 'roll-wrap' }, [
-    h('div', { class: 'roll-head' }, [
-      h('div', { class: 'chips', attrs: { role: 'group', 'aria-label': 'Takthälfte' } }, pages),
-      h('div', { class: 'chips', attrs: { role: 'group', 'aria-label': 'Notenlänge' } }, lengths),
-      h('div', { class: 'chips tools', attrs: { role: 'group', 'aria-label': 'Werkzeug' } }, tools),
-    ]),
-    h('div', { class: 'roll' }, [
-      h('div', { class: 'rr hd', attrs: { 'aria-hidden': 'true' } }, [h('span'), ...headCells]),
-      ...rows,
-    ]),
+  return h('div', { class: 'roll' }, [
+    h('div', { class: 'rr hd', attrs: { 'aria-hidden': 'true' } }, [h('span'), ...headCells]),
+    ...rows,
+  ]);
+}
+
+/** Tonart und Skala */
+function synthKeyRow(c: UiContext): HTMLElement {
+  const { store, scope } = c;
+  return h('div', { class: 'syn-row' }, [
+    selectField(scope, {
+      label: 'Tonart',
+      options: NOTE_NAMES,
+      value: store.select((s) => s.key),
+      write: (k) => {
+        store.update((s) => ({ ...s, key: k }));
+      },
+    }),
+    selectField(scope, {
+      label: 'Skala',
+      options: SCALES.map((x) => x.name),
+      value: store.select((s) => s.scale),
+      write: (i) => {
+        store.update((s) => ({ ...s, scale: i }));
+      },
+    }),
+  ]);
+}
+
+/**
+ * Seite Noten: Tonart, Skala, Bedienung der Roll und „Stimme leeren“. Das Raster setzt der Rahmen in
+ * den leeren Platz (auf dem Desktop steht es stattdessen im unteren Bereich).
+ */
+export function synthNotesPage(c: UiContext, roll: Nav['roll']): HTMLElement {
+  return h('div', { class: 'synth-notes' }, [
+    synthKeyRow(c),
+    rollControls(c, roll),
+    h('div', { class: 'chips syn-tools' }, [clearVoiceChip(c)]),
+    h('div', { attrs: { 'data-slot': 'roll' } }),
   ]);
 }

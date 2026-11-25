@@ -1,16 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PAD_DEFAULT } from '../../../core/constants.ts';
 import { currentPattern } from '../../../core/pattern.ts';
-import { padSummary } from '../../../core/sampler.ts';
 import { must } from '../../../core/util.ts';
+import { signal } from '../../../store/signals.ts';
+import { show } from '../../controls/visible.ts';
+import type { Layout } from '../../layout.ts';
+import { createNav } from '../../nav.ts';
 import { makeContext, pointer } from '../../test-utils.ts';
-import { samplerDevice } from './device.ts';
 import { samplerChop } from './chop.ts';
 import { samplerKeyboard } from './keyboard.ts';
 import { samplerKnobs } from './knobs.ts';
 import { createMessage } from './message.ts';
 import { samplerPads } from './pads.ts';
-import { samplerSteps } from './steps.ts';
+import { samplerPages } from './pages.ts';
 import { samplerTools } from './tools.ts';
 import { drawWave, samplerWave } from './wave.ts';
 
@@ -397,46 +399,6 @@ describe('samplerKnobs', () => {
   });
 });
 
-describe('samplerSteps', () => {
-  it('Steps schalten, Vorhören nur beim Einschalten im Stand, Lauflicht', () => {
-    const { c, store, audio } = makeContext();
-    c.samples.setPad(0, pcm);
-    const el = samplerSteps(c);
-    const steps = [...el.querySelectorAll<HTMLButtonElement>('.ss')];
-    expect(steps).toHaveLength(16);
-    expect(steps[4]?.classList.contains('q')).toBe(true);
-    steps[2]?.click();
-    expect(store.state.value.patterns.A.smp[0]?.[2]).toBe(1);
-    expect(steps[2]?.getAttribute('aria-pressed')).toBe('true');
-    expect(audio.auditionPad).toHaveBeenCalledTimes(1);
-    steps[2]?.click();
-    audio.playing.value = true;
-    steps[3]?.click();
-    expect(audio.auditionPad).toHaveBeenCalledTimes(1);
-    audio.playhead.value = { step: 3, songIndex: -1 };
-    expect(steps[3]?.classList.contains('now')).toBe(true);
-  });
-  it('Sub-Modus mit Sub-Editor für das gewählte Pad', () => {
-    const { c, store } = makeContext();
-    store.update((s) => ({ ...s, smp: { ...s.smp, sel: 2 } }));
-    const el = samplerSteps(c);
-    const sub = el.querySelector<HTMLButtonElement>('[aria-label="Sub-Steps bearbeiten"]');
-    const ed = el.querySelector<HTMLElement>('.sub-ed');
-    expect(ed?.hidden).toBe(true);
-    sub?.click();
-    expect(ed?.hidden).toBe(false);
-    el.querySelectorAll<HTMLButtonElement>('.ss')[5]?.click();
-    expect(el.querySelectorAll('.ss')[5]?.classList.contains('subsel')).toBe(true);
-    expect(store.state.value.patterns.A.smp[2]?.[5]).toBe(0);
-    expect(ed?.querySelector('.cap-label')?.textContent).toBe('Pad 3 · Step 6 · 16 Sub-Steps');
-    ed?.querySelectorAll<HTMLButtonElement>('.sb')[0]?.click();
-    expect(store.state.value.patterns.A.sub.P2?.[5]?.[0]).toBe(1);
-    expect(el.querySelectorAll('.ss')[5]?.classList.contains('sub')).toBe(true);
-    sub?.click();
-    expect(ed?.hidden).toBe(true);
-  });
-});
-
 describe('samplerChop', () => {
   const radio = (el: HTMLElement, label: string) =>
     [...el.querySelectorAll<HTMLButtonElement>('[role=radio]')].find(
@@ -516,25 +478,76 @@ describe('samplerKeyboard', () => {
   });
 });
 
-describe('samplerDevice', () => {
-  it('Zusammenfassung und Teile', () => {
-    const { c, store } = makeContext();
-    const d = samplerDevice(c);
-    expect(d.id).toBe('smp');
-    expect(d.summary.value).toBe(padSummary(store.state.value, null));
-    c.samples.setPad(0, pcm);
-    expect(d.summary.value).toBe(padSummary(store.state.value, pcm));
-    const body = d.body(c.scope);
-    for (const s of [
-      '.pads',
-      'canvas',
-      '.smp-tools',
-      '.smp-chop',
-      '.smp-keys',
-      '[role=status]',
-      '.ss',
-    ]) {
-      expect(body.querySelector(s)).not.toBeNull();
+describe('samplerPages', () => {
+  function setup() {
+    const ctx = makeContext();
+    const nav = createNav(ctx.c.scope, ctx.c.store, signal<Layout>('mobile'));
+    const pages = samplerPages(ctx.c, nav);
+    const button = (root: Element, name: string) =>
+      must(
+        [...root.querySelectorAll<HTMLButtonElement>('button')].find(
+          (b) => b.getAttribute('aria-label') === name || b.textContent === name,
+        ),
+        name,
+      );
+    return { ...ctx, nav, pages, button };
+  }
+  const labels = (el: Element, selector: string) =>
+    [...el.querySelectorAll(selector)].map((e) => e.getAttribute('aria-label'));
+
+  it('jede Seite hat genau ihre Teile', () => {
+    const { pages } = setup();
+    const { head, trig, klang, chop, tasten } = pages;
+    expect(head.querySelectorAll('.pad')).toHaveLength(8);
+    expect(head.querySelector('[role=status]')).not.toBeNull();
+    expect(klang.querySelector('canvas')).not.toBeNull();
+    expect([...klang.querySelectorAll('.smp-tools > button')].map((b) => b.textContent)).toEqual([
+      'Laden',
+      'Rec',
+      'Rev',
+      'Leeren',
+      'Bounce',
+    ]);
+    expect(labels(klang, '[role=slider]')).toEqual(['Tune', 'Attack', 'Decay', 'Level']);
+    expect(klang.querySelector('.pad, [role=status], [role=radiogroup], .key')).toBeNull();
+    expect(labels(chop, '[role=radiogroup]')).toEqual(['Chop']);
+    expect(chop.querySelector('[aria-label="Slices auf die Steps verteilen"]')).not.toBeNull();
+    expect(tasten.querySelectorAll('.key')).toHaveLength(12);
+    expect(labels(trig, ':scope > .chips > button')).toEqual([
+      'Sub-Steps bearbeiten',
+      'Step-Optionen bearbeiten',
+      'Spur leeren',
+    ]);
+  });
+
+  it('Trig nutzt die Modi der Navigation', () => {
+    const { pages, nav, button } = setup();
+    button(pages.trig, 'Sub-Steps bearbeiten').click();
+    expect(nav.padSub.value.on).toBe(true);
+    button(pages.trig, 'Step-Optionen bearbeiten').click();
+    expect(nav.padOpt.value.on).toBe(true);
+    expect(nav.padSub.value.on).toBe(false);
+  });
+
+  it('Chop-Meldung steht in head, nicht in der ausgeblendeten Wellenform-Seite', () => {
+    const { pages, button } = setup();
+    show(pages.klang, false);
+    button(pages.chop, 'Slices auf die Steps verteilen').click();
+    const status = must(
+      pages.head.querySelector<HTMLElement>('[role=status]') ?? undefined,
+      'Meldung',
+    );
+    expect(status.textContent).toBe('Erst Chop wählen');
+    expect(status.closest('[hidden]')).toBeNull();
+    for (const page of [pages.klang, pages.chop]) {
+      expect(page.querySelector('[role=status]')).toBeNull();
     }
+  });
+
+  it('Meldungen der Werkzeuge landen ebenfalls in head', async () => {
+    const { pages, button } = setup();
+    button(pages.klang, 'Laden').click();
+    await flush();
+    expect(pages.head.querySelector('[role=status]')?.textContent).toBe('Pad 1 geladen');
   });
 });

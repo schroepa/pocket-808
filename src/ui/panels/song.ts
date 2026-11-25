@@ -6,6 +6,13 @@ import { chip } from '../controls/chip.ts';
 import { bind, createScope, h } from '../dom.ts';
 import './song.css';
 
+/** Block in der scrollenden Kette sichtbar halten (die Kette ist offsetParent, song.css) */
+function keepInView(box: HTMLElement, el: HTMLElement): void {
+  if (el.offsetTop < box.scrollTop) box.scrollTop = el.offsetTop;
+  else if (el.offsetTop + el.offsetHeight > box.scrollTop + box.clientHeight)
+    box.scrollTop = el.offsetTop + el.offsetHeight - box.clientHeight;
+}
+
 /** Song-Kette mit Werkzeugen (Legacy buildSong, renderChain, bump, moveBlk, delBlk) */
 export function songPanel(c: UiContext): HTMLElement {
   const { store, scope, audio } = c;
@@ -67,11 +74,15 @@ export function songPanel(c: UiContext): HTMLElement {
             () => audio.playhead.value.songIndex === i,
             (on) => {
               b.classList.toggle('play', on);
+              // beim Umbau hängt der Block noch nicht in der Kette (offsetTop 0)
+              if (on && b.parentNode === chain) keepInView(chain, b);
             },
           );
           return b;
         }),
       );
+      const playing = chain.querySelector<HTMLElement>('.blk.play');
+      if (playing) keepInView(chain, playing);
     },
   );
   const tool = (
@@ -134,22 +145,18 @@ export function songPanel(c: UiContext): HTMLElement {
       },
     ),
   ]);
-  return h(
-    'section',
-    { class: 'panel song', attrs: { 'aria-label': 'Song', 'data-area': 'song' } },
-    [
-      h('div', { class: 'ed-head' }, [
-        h('h2', {}, ['Song', h('small', { text: 'Reihenfolge' })]),
-        chip(scope, {
-          label: 'Leeren',
-          onClick: () => {
-            store.clearSong();
-            selected.value = -1;
-          },
-        }),
-      ]),
-      chain,
-      tools,
-    ],
-  );
+  return h('div', { class: 'panel song' }, [
+    h('div', { class: 'ed-head' }, [
+      h('h2', {}, ['Song', h('small', { text: 'Reihenfolge' })]),
+      chip(scope, {
+        label: 'Leeren',
+        onClick: () => {
+          store.clearSong();
+          selected.value = -1;
+        },
+      }),
+    ]),
+    chain,
+    tools,
+  ]);
 }

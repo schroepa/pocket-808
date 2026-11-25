@@ -3,6 +3,7 @@ import { grabHandle, movePadHandle, waveColumns } from '../../../core/sampler.ts
 import type { UiContext } from '../../context.ts';
 import { bind, h, listen } from '../../dom.ts';
 import { hearPad, padState } from './common.ts';
+import './sampler.css';
 
 /** Was drawWave vom 2D-Kontext braucht (testbar ohne Canvas) */
 export interface WaveCanvas {

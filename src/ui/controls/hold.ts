@@ -1,9 +1,20 @@
 import { h, listen, type Scope } from '../dom.ts';
 
+/** eigenes Ereignis an der Taste: sofort loslassen */
+const RELEASE = 'holdrelease';
+
+/** Löst alle gehaltenen Tasten unter root (auch root selbst), z. B. bevor ein Bereich verschwindet. */
+export function releaseHolds(root: Element): void {
+  const own = root.matches('[data-hold]') ? [root] : [];
+  for (const b of [...own, ...root.querySelectorAll('[data-hold]')]) {
+    b.dispatchEvent(new Event(RELEASE));
+  }
+}
+
 /**
  * Taste zum Halten (Stutter, Fill): Zeiger runter oder Enter/Leertaste schaltet ein. Loslassen, Abbruch,
- * Zeigerverlust, Fokusverlust, ein verstecktes Fenster und der Abbau schalten immer aus: Es darf nie
- * etwas hängen bleiben. Aktiv: Klasse on und aria-pressed.
+ * Zeigerverlust, Fokusverlust, ein verstecktes Fenster, releaseHolds und der Abbau schalten immer aus:
+ * Es darf nie etwas hängen bleiben. Aktiv: Klasse on und aria-pressed.
  */
 export function holdButton(
   scope: Scope,
@@ -12,7 +23,7 @@ export function holdButton(
   const b = h('button', {
     class: o.class,
     text: o.text,
-    attrs: { type: 'button', 'aria-label': o.ariaLabel, 'aria-pressed': 'false' },
+    attrs: { type: 'button', 'aria-label': o.ariaLabel, 'aria-pressed': 'false', 'data-hold': '' },
   });
   const set = (v: boolean): void => {
     if (b.classList.contains('on') === v) return;
@@ -39,11 +50,16 @@ export function holdButton(
   listen(scope, b, 'keydown', (e) => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
     e.preventDefault();
-    set(true);
+    // Wiederholungen einer liegenden Taste schalten nach releaseHolds nicht erneut ein
+    if (!e.repeat) set(true);
   });
   listen(scope, b, 'keyup', off);
   // keyup kann woanders landen (Tab, App-Wechsel, Gerät zugeklappt)
   listen(scope, b, 'blur', off);
+  b.addEventListener(RELEASE, off);
+  scope.add(() => {
+    b.removeEventListener(RELEASE, off);
+  });
   const doc = b.ownerDocument;
   const onHidden = (): void => {
     if (doc.visibilityState === 'hidden') off();

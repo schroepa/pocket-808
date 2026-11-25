@@ -7,6 +7,7 @@ import { must } from '../../../core/util.ts';
 import { bind, h } from '../../dom.ts';
 import { hearPad, padState } from './common.ts';
 import type { Message } from './message.ts';
+import './sampler.css';
 
 /** Laden, Aufnehmen, Rückwärts, Leeren (Legacy smpTools, decodeInto, recToggle, clearSample) */
 export function samplerTools(c: UiContext, msg: Message): HTMLElement {

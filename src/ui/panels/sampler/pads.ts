@@ -5,10 +5,19 @@ import { must } from '../../../core/util.ts';
 import type { UiContext } from '../../context.ts';
 import { bind, h } from '../../dom.ts';
 import { recordTap } from '../../record.ts';
-import { hearPad } from './common.ts';
+import { hearPad, padHit } from './common.ts';
+import './sampler.css';
 
-/** Acht Pads: wählen und vorhören, Name bzw. „leer“, Inhaltspunkt (Legacy buildSmp/renderSmp) */
-export function samplerPads(c: UiContext): HTMLElement {
+/**
+ * Acht Pads: wählen und vorhören, Name bzw. „leer“, Inhaltspunkt (Legacy buildSmp/renderSmp).
+ * `onPick` läuft nach jedem Tipp; aufgenommen wird der Schlag schon hier. Solange `active` falsch ist,
+ * ist kein Pad als gewählt markiert.
+ */
+export function samplerPads(
+  c: UiContext,
+  onPick?: (pad: number) => void,
+  active: () => boolean = () => true,
+): HTMLElement {
   const { store, scope, samples } = c;
   const pads = Array.from({ length: PAD_COUNT }, (_, i) => {
     const small = h('small');
@@ -21,22 +30,16 @@ export function samplerPads(c: UiContext): HTMLElement {
           click: () => {
             store.update((s) => selectPad(s, i));
             hearPad(c, i);
+            onPick?.(i);
           },
         },
       },
       [String(i + 1), small],
     );
-    recordTap(c, b, () =>
-      samples.pads.peek()[i]
-        ? {
-            make: (pos) => ({ kind: 'pad', pad: i, semis: 0, ...pos }),
-            label: `Pad ${String(i + 1)}`,
-          }
-        : null,
-    );
+    recordTap(c, b, () => padHit(c, i));
     bind(
       scope,
-      () => store.state.value.smp.sel === i,
+      () => active() && store.state.value.smp.sel === i,
       (on) => {
         b.classList.toggle('sel', on);
         b.setAttribute('aria-pressed', String(on));

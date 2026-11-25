@@ -1,81 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { mixDefaults } from '../../../core/defaults.ts';
+import { signal } from '../../../store/signals.ts';
+import type { Layout } from '../../layout.ts';
 import { makeContext, pointer } from '../../test-utils.ts';
-import { fxDevice, mixerDevice } from './device.ts';
-import { fxSummary, mixSummary } from './format.ts';
 import { fxPanel } from './fx.ts';
-import { mixerPanel } from './mixer.ts';
+import { channelStrips, mixerWork, sceneRow } from './mixer.ts';
 
 const key = (el: Element | null | undefined, k: string) => {
   el?.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
 };
-
-describe('mixerPanel', () => {
-  it('13 Kanalzüge; M und S schalten mit aria-pressed', () => {
-    const { c, store } = makeContext();
-    const el = mixerPanel(c);
-    expect(el.querySelectorAll('.mx')).toHaveLength(13);
-    const m = el.querySelector<HTMLButtonElement>('[aria-label="Snare Drum stumm"]');
-    m?.click();
-    expect(store.state.value.mix.SD.m).toBe(true);
-    expect(m?.getAttribute('aria-pressed')).toBe('true');
-    const s = el.querySelector<HTMLButtonElement>('[aria-label="Lead solo"]');
-    s?.click();
-    expect(store.state.value.mix.LD.s).toBe(true);
-    expect(s?.getAttribute('aria-pressed')).toBe('true');
-  });
-
-  it('Fader: Wert, Meldung, Antippen wählt den Kanal, Doppelklick 80', () => {
-    const { c, store } = makeContext();
-    const el = mixerPanel(c);
-    const f = el.querySelector<HTMLInputElement>('[aria-label="Lautstärke Cowbell"]');
-    if (!f) throw new Error('Fader fehlt');
-    f.dispatchEvent(pointer('pointerdown'));
-    expect(el.querySelector('.mx.sel .nm')?.textContent).toBe('CB');
-    expect(el.querySelector('.mix-sel')?.textContent).toBe('Kanal: Cowbell');
-    f.value = '30';
-    f.dispatchEvent(new Event('input'));
-    expect(store.state.value.mix.CB.v).toBe(0.3);
-    expect(c.readout.text.value).toBe('Cowbell Fader 30');
-    f.dispatchEvent(new MouseEvent('dblclick'));
-    expect(store.state.value.mix.CB.v).toBe(0.8);
-    expect(f.value).toBe('80');
-  });
-
-  it('Name wählt den Kanal; Pan und Reverb des gewählten Kanals', () => {
-    const { c, store } = makeContext();
-    const el = mixerPanel(c);
-    el.querySelector<HTMLButtonElement>('[aria-label="Kanal Sampler wählen"]')?.click();
-    expect(el.querySelector('.mx.sel .nm')?.textContent).toBe('Smp');
-    key(el.querySelector('[role=slider][aria-label="Pan"]'), 'Home');
-    expect(store.state.value.mix.SM.p).toBe(0);
-    expect(c.readout.text.value).toBe('SAMPLER Pan L 100');
-    const rev = el.querySelector('[role=slider][aria-label="Reverb"]');
-    key(rev, 'End');
-    expect(store.state.value.mix.SM.r).toBe(1);
-    expect(c.readout.text.value).toBe('SAMPLER Reverb 100%');
-    for (let i = 0; i < 2; i++) {
-      rev?.dispatchEvent(pointer('pointerdown'));
-      rev?.dispatchEvent(pointer('pointerup'));
-    }
-    expect(store.state.value.mix.SM.r).toBe(mixDefaults().SM.r);
-    const pan = el.querySelector('[role=slider][aria-label="Pan"]');
-    for (let i = 0; i < 2; i++) {
-      pan?.dispatchEvent(pointer('pointerdown'));
-      pan?.dispatchEvent(pointer('pointerup'));
-    }
-    expect(store.state.value.mix.SM.p).toBe(0.5);
-  });
-
-  it('Fader folgt dem Zustand (z. B. nach Zurück)', () => {
-    const { c, store } = makeContext();
-    const el = mixerPanel(c);
-    store.update((s) => ({ ...s, mix: { ...s.mix, BD: { ...s.mix.BD, v: 0.42 } } }));
-    expect(el.querySelector<HTMLInputElement>('[aria-label="Lautstärke Bass Drum"]')?.value).toBe(
-      '42',
-    );
-  });
-});
 
 describe('fxPanel', () => {
   it('Reverb- und DJ-Regler mit Texten', () => {
@@ -161,23 +94,10 @@ describe('fxPanel', () => {
   });
 });
 
-describe('Geräte Mixer und FX', () => {
-  it('Zusammenfassungen und Körper', () => {
-    const { c, store } = makeContext();
-    const mix = mixerDevice(c);
-    const fx = fxDevice(c);
-    expect([mix.id, fx.id]).toEqual(['mix', 'fx']);
-    expect(mix.summary.value).toBe(mixSummary(store.state.value.mix));
-    expect(fx.summary.value).toBe(fxSummary(store.state.value.fx));
-    expect(mix.body(c.scope).querySelectorAll('.mx')).toHaveLength(13);
-    expect(fx.body(c.scope).querySelectorAll('.stp')).toHaveLength(4);
-  });
-});
-
 describe('Szenen im Mixer', () => {
   it('leer sichern, belegt abrufen, Sichern-Modus überschreibt, Markierung und Zurück', () => {
     const { c, store } = makeContext();
-    const el = mixerPanel(c);
+    const el = sceneRow(c);
     const scene = (n: number) =>
       el.querySelector<HTMLButtonElement>(`[aria-label="Szene ${String(n)}"]`);
     const saveMode = [...el.querySelectorAll<HTMLButtonElement>('button')].find(
@@ -230,5 +150,154 @@ describe('Klang im FX-Feld', () => {
       tape?.dispatchEvent(pointer('pointerup'));
     }
     expect('tape' in store.state.value).toBe(false);
+  });
+});
+
+describe('Kanäle', () => {
+  const setup = () => {
+    const ctx = makeContext();
+    const el = channelStrips(ctx.c);
+    const q = (label: string) => el.querySelector<HTMLElement>(`[aria-label="${label}"]`);
+    return { ...ctx, el, q };
+  };
+
+  it('13 Züge mit Namensknopf und senkrechtem Regler', () => {
+    const { el } = setup();
+    const strips = [...el.querySelectorAll('.ch-strip')];
+    expect(strips).toHaveLength(13);
+    expect(strips.at(0)?.querySelector('button')?.getAttribute('aria-label')).toBe(
+      'Kanal Bass Drum wählen',
+    );
+    expect(strips.at(-1)?.querySelector('button')?.textContent).toBe('Smp');
+    expect(strips.at(-1)?.querySelector('[role=slider]')?.getAttribute('aria-label')).toBe(
+      'Lautstärke Sampler',
+    );
+    // M und S nur einmal, für den gewählten Kanal; kein Level doppelt
+    expect(el.querySelectorAll('.mb')).toHaveLength(2);
+    expect(el.querySelector('[role=slider][aria-label="Level"]')).toBeNull();
+  });
+
+  it('Fader schreibt, wählt den Kanal, Doppeltipp 80, folgt dem Zustand', () => {
+    const { c, store, q } = setup();
+    const f = q('Lautstärke Cowbell');
+    key(f, 'Home');
+    expect(store.state.value.mix.CB.v).toBe(0);
+    expect(c.readout.text.value).toBe('Lautstärke Cowbell 0');
+    expect(q('Kanal Cowbell wählen')?.getAttribute('aria-pressed')).toBe('true');
+    expect(q('Kanal Bass Drum wählen')?.getAttribute('aria-pressed')).toBe('false');
+    for (let i = 0; i < 2; i++) {
+      f?.dispatchEvent(pointer('pointerdown'));
+      f?.dispatchEvent(pointer('pointerup'));
+    }
+    expect(store.state.value.mix.CB.v).toBe(0.8);
+    store.update((s) => ({ ...s, mix: { ...s.mix, CB: { ...s.mix.CB, v: 0.42 } } }));
+    expect(f?.getAttribute('aria-valuenow')).toBe('42');
+    q('Lautstärke Lead')?.dispatchEvent(pointer('pointerdown'));
+    expect(q('Kanal Lead wählen')?.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('Zug zeigt Stumm und Solo, M/S/Pan/Reverb wirken auf den gewählten Kanal', () => {
+    const { store, q } = setup();
+    const strip = q('Kanal Snare Drum wählen')?.closest('.ch-strip');
+    q('Kanal Snare Drum wählen')?.click();
+    expect(strip?.classList.contains('sel')).toBe(true);
+    q('Snare Drum stumm')?.click();
+    q('Snare Drum solo')?.click();
+    expect(store.state.value.mix.SD).toMatchObject({ m: true, s: true });
+    expect(strip?.classList.contains('muted')).toBe(true);
+    expect(strip?.classList.contains('solo')).toBe(true);
+    key(q('Pan'), 'Home');
+    key(q('Reverb'), 'End');
+    expect(store.state.value.mix.SD).toMatchObject({ p: 0, r: 1 });
+    q('Snare Drum stumm')?.click();
+    q('Snare Drum solo')?.click();
+    expect(strip?.classList.contains('muted')).toBe(false);
+    expect(strip?.classList.contains('solo')).toBe(false);
+  });
+
+  it('Name wählt den Kanal; Pan und Reverb melden ihn, Doppeltipp = Werkseinstellung', () => {
+    const { c, store, q } = setup();
+    q('Kanal Sampler wählen')?.click();
+    expect(q('Kanal Sampler wählen')?.getAttribute('aria-pressed')).toBe('true');
+    key(q('Pan'), 'Home');
+    expect(store.state.value.mix.SM.p).toBe(0);
+    expect(c.readout.text.value).toBe('SAMPLER Pan L 100');
+    key(q('Reverb'), 'End');
+    expect(store.state.value.mix.SM.r).toBe(1);
+    expect(c.readout.text.value).toBe('SAMPLER Reverb 100%');
+    for (const l of ['Reverb', 'Pan']) {
+      for (let i = 0; i < 2; i++) {
+        q(l)?.dispatchEvent(pointer('pointerdown'));
+        q(l)?.dispatchEvent(pointer('pointerup'));
+      }
+    }
+    expect(store.state.value.mix.SM.r).toBe(mixDefaults().SM.r);
+    expect(store.state.value.mix.SM.p).toBe(0.5);
+  });
+});
+
+describe('mixerWork', () => {
+  const setup = (at: Layout = 'mobile') => {
+    const ctx = makeContext();
+    const layout = signal<Layout>(at);
+    const el = mixerWork(ctx.c, layout);
+    const visible = () =>
+      [...el.querySelectorAll<HTMLElement>('section')]
+        .filter((s) => !s.hidden)
+        .map((s) => s.getAttribute('aria-label'));
+    const tabs = () => [...el.querySelectorAll<HTMLButtonElement>('[role=tab]')];
+    const tab = (name: string) => tabs().find((t) => t.textContent === name);
+    return { ...ctx, el, layout, visible, tabs, tab };
+  };
+
+  it('mobile eine Seite, tablet zwei Ansichten, desktop alles ohne Reiter', () => {
+    const { el, layout, visible, tabs, tab } = setup();
+    const list = el.querySelector<HTMLElement>('[role=tablist]');
+    expect(list?.getAttribute('aria-label')).toBe('Mixer');
+    expect(tabs().map((t) => t.textContent)).toEqual(['Kanäle', 'Szenen', 'FX']);
+    expect(visible()).toEqual(['Kanäle']);
+    tab('Szenen')?.click();
+    expect(visible()).toEqual(['Szenen']);
+    layout.value = 'tablet';
+    expect(tabs().map((t) => t.textContent)).toEqual(['Kanäle · Szenen', 'FX']);
+    expect(visible()).toEqual(['Kanäle', 'Szenen']);
+    tab('FX')?.click();
+    expect(visible()).toEqual(['FX']);
+    layout.value = 'desktop';
+    expect(list?.hidden).toBe(true);
+    expect(visible()).toEqual(['Kanäle', 'Szenen', 'FX']);
+    layout.value = 'mobile';
+    expect(visible()).toEqual(['FX']);
+    expect(el.querySelectorAll('.ch-strip')).toHaveLength(13);
+    expect(el.querySelectorAll('.scene')).toHaveLength(8);
+    expect(el.querySelectorAll('.stp')).toHaveLength(4);
+  });
+
+  it('Seitenwechsel weg von FX löst Stutter', () => {
+    const { el, audio, layout, tab } = setup();
+    tab('FX')?.click();
+    const b = el.querySelector<HTMLButtonElement>('[aria-label="Stutter 1/8 halten"]');
+    b?.dispatchEvent(pointer('pointerdown'));
+    expect(audio.stutterOn).toHaveBeenCalledTimes(1);
+    tab('Kanäle')?.click();
+    expect(audio.stutterOff).toHaveBeenCalledTimes(1);
+    expect(b?.getAttribute('aria-pressed')).toBe('false');
+    // ebenso beim Drehen: gehalten auf dem Desktop, schmal steht wieder die Seite Kanäle da
+    layout.value = 'desktop';
+    b?.dispatchEvent(pointer('pointerdown'));
+    expect(audio.stutterOn).toHaveBeenCalledTimes(2);
+    expect(audio.stutterOff).toHaveBeenCalledTimes(1);
+    layout.value = 'mobile';
+    expect(audio.stutterOff).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('sceneRow', () => {
+  it('steht für sich: acht Szenen und Sichern', () => {
+    const { c, store } = makeContext();
+    const el = sceneRow(c);
+    expect(el.querySelectorAll('.scene')).toHaveLength(8);
+    el.querySelector<HTMLButtonElement>('[aria-label="Szene 3"]')?.click();
+    expect(store.state.value.scenes?.[2]).toBeTruthy();
   });
 });

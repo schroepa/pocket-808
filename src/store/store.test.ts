@@ -2,6 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { PRESETS, VOICE_IDS } from '../core/constants.ts';
 import { baseState } from '../core/defaults.ts';
 import { initialState } from '../core/initial.ts';
+import { setSynthValue } from '../core/synth.ts';
+import { SYNTH_SOUNDS } from '../core/templates/index.ts';
+import { must } from '../core/util.ts';
 import { computed, effect } from './signals.ts';
 import { createStore, UNDO_DEPTH, UNDO_SAMPLE_STEPS } from './store.ts';
 
@@ -69,6 +72,17 @@ describe('Undo und Zwischenablage', () => {
     expect(store.canUndo.value).toBe(false);
     store.undo();
     expect(store.state.value.patterns.A).toBe(before.patterns.A);
+  });
+
+  it('clearPadTrack leert die Pad-Spur mit Zurück', () => {
+    const store = createStore(baseState());
+    store.toggleSampleStep(2, 4);
+    const before = store.state.value.patterns.A;
+    store.clearPadTrack(2);
+    expect(store.state.value.patterns.A.smp[2]?.[4]).toBe(0);
+    expect(store.canUndo.value).toBe(true);
+    store.undo();
+    expect(store.state.value.patterns.A).toBe(before);
   });
 
   it('mehrstufig: jeder Schritt zurück, in umgekehrter Reihenfolge, danach leer', () => {
@@ -354,6 +368,46 @@ describe('ganzen Zustand ersetzen (Projekt öffnen)', () => {
     store.undo();
     expect(revert).not.toHaveBeenCalled();
     expect(store.state.value.tempo).toBe(99);
+  });
+});
+
+describe('Synth-Sound im Store', () => {
+  const sound = (part: 'BA' | 'LD', i: number) => must(SYNTH_SOUNDS[part][i], 'Preset');
+
+  it('laden mit Zurück: nur der Patch des Parts, spätere Änderungen bleiben', () => {
+    const store = createStore(baseState());
+    const before = store.state.value;
+    store.loadSynthPreset('LD', sound('LD', 1));
+    expect(store.state.value.synth.LD.preset).toBe(sound('LD', 1).name);
+    store.toggleStep('CB', 7);
+    store.update((s) => setSynthValue(s, 'BA', 'cut', 0.11));
+    const bass = store.state.value.synth.BA;
+    store.undo();
+    expect(store.state.value.synth.LD).toBe(before.synth.LD);
+    expect(store.state.value.synth.BA).toBe(bass);
+    expect(store.state.value.patterns.A.CB[7]).toBe(1);
+    expect(store.canUndo.value).toBe(false);
+  });
+
+  it('unverändert geladen: gleicher Zustand, kein Zurück-Schritt', () => {
+    const store = createStore(baseState());
+    store.loadSynthPreset('BA', sound('BA', 1));
+    const loaded = store.state.value;
+    store.loadSynthPreset('BA', sound('BA', 1));
+    expect(store.state.value).toBe(loaded);
+    store.undo();
+    expect(store.canUndo.value).toBe(false);
+  });
+
+  it('nach einer Reglerdrehung lädt dasselbe Preset wieder, mit Zurück auf die Drehung', () => {
+    const store = createStore(baseState());
+    store.loadSynthPreset('BA', sound('BA', 1));
+    store.update((s) => setSynthValue(s, 'BA', 'cut', 0.99));
+    const turned = store.state.value.synth.BA;
+    store.loadSynthPreset('BA', sound('BA', 1));
+    expect(store.state.value.synth.BA.preset).toBe(sound('BA', 1).name);
+    store.undo();
+    expect(store.state.value.synth.BA).toBe(turned);
   });
 });
 

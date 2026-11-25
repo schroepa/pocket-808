@@ -1,11 +1,14 @@
 import { SYNTH_SOUNDS } from '../../../core/templates/index.ts';
-import { applySynthPreset } from '../../../core/synth.ts';
+import type { Part } from '../../../core/types.ts';
 import type { UiContext } from '../../context.ts';
 import { chip } from '../../controls/chip.ts';
 import { bind, createScope, h } from '../../dom.ts';
 
-/** Presets des gewählten Parts und „Stimme leeren“ (Legacy synPresets, synTools). */
-export function synthPresets(c: UiContext): HTMLElement {
+/** Preset-Chips des gewählten Parts (Legacy synPresets); onPick nach dem Laden und Vorhören */
+export function synthSoundList(
+  c: UiContext,
+  onPick?: (part: Part, name: string) => void,
+): HTMLElement {
   const { store, scope, audio } = c;
   const list = h('div', {
     class: 'chips syn-presets',
@@ -28,23 +31,28 @@ export function synthPresets(c: UiContext): HTMLElement {
             label: p.name,
             active: store.select((s) => s.synth[part].preset === p.name),
             onClick: () => {
-              store.update((s) => applySynthPreset(s, part, p));
+              store.loadSynthPreset(part, p);
               audio.auditionNote(part, 0, 2);
+              onPick?.(part, p.name);
             },
           }),
         ),
       );
     },
   );
-  return h('div', { class: 'syn-foot' }, [
-    list,
-    h('div', { class: 'chips syn-tools' }, [
-      chip(scope, {
-        label: 'Stimme leeren',
-        onClick: () => {
-          store.clearNotes();
-        },
-      }),
-    ]),
-  ]);
+  return list;
+}
+
+/**
+ * „Stimme leeren“: Noten des gewählten Parts löschen, mit Zurück (Legacy synTools). Sichtbar kurz
+ * „Leeren“ wie auf Trig, damit die Seite Noten auf dem Telefon in zwei Zeilen passt.
+ */
+export function clearVoiceChip(c: UiContext): HTMLElement {
+  return chip(c.scope, {
+    label: 'Leeren',
+    ariaLabel: 'Stimme leeren',
+    onClick: () => {
+      c.store.clearNotes();
+    },
+  });
 }

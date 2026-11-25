@@ -1,10 +1,7 @@
 @layer components {
-  .sampler-body {
-    container: sampler / inline-size;
-  }
   .pads {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
     margin-bottom: 12px;
   }
@@ -94,6 +91,22 @@
     text-transform: uppercase;
     color: var(--acc);
   }
+  /* Meldung über der Namenszeile der Pads: verschiebt nichts, fängt keine Tipps ab, die Nummern
+     bleiben lesbar */
+  .smp-head {
+    position: relative;
+  }
+  .smp-head .smp-msg {
+    z-index: 2;
+    inset: auto 0 0;
+    overflow: hidden;
+    padding: 2px 8px 1px;
+    font-size: 11px;
+    line-height: 14px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    pointer-events: none;
+  }
   .smp-tools {
     margin-bottom: 12px;
   }
@@ -130,61 +143,6 @@
   .smp-keys .key:active {
     background: var(--acc);
     color: var(--chassis);
-  }
-  .row-split {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 8px;
-  }
-  .smp-steps {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 8px 5px;
-  }
-  @container sampler (min-width: 640px) {
-    .smp-steps {
-      grid-template-columns: repeat(16, 1fr);
-    }
-  }
-  .ss {
-    position: relative;
-    height: var(--touch);
-    min-height: 44px;
-    padding: 0;
-    border: 0;
-    border-radius: 6px;
-    background: color-mix(in srgb, var(--acc) 12%, var(--cell));
-    font: 12px var(--font-lcd);
-    color: var(--ink);
-  }
-  .ss.q {
-    background: color-mix(in srgb, var(--acc) 22%, var(--cell));
-  }
-  .ss.on {
-    z-index: 1;
-    background: var(--acc);
-    color: var(--chassis);
-    box-shadow: 0 0 16px rgba(211, 146, 90, 0.42);
-  }
-  .ss.sub::after {
-    content: '';
-    position: absolute;
-    top: 6px;
-    left: 50%;
-    width: 14px;
-    height: 3px;
-    margin-left: -7px;
-    background: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.55) 0 2px, transparent 2px 4px);
-  }
-  .ss.now {
-    filter: brightness(1.7);
-  }
-  .ss.subsel {
-    z-index: 1;
-    filter: brightness(1.3);
-    box-shadow: 0 0 16px rgba(212, 212, 220, 0.5);
   }
 }
 @layer components {

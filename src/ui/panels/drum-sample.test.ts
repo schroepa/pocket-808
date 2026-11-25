@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { signal } from '../../store/signals.ts';
+import type { Layout } from '../layout.ts';
+import { createNav } from '../nav.ts';
 import { makeContext } from '../test-utils.ts';
 import { drumSampleRow } from './drum-sample.ts';
-import { stepEditor } from './step-editor.ts';
+import { drumSoundPage } from './drum-pages.ts';
 import { selectedVoice } from './voice.ts';
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
@@ -79,10 +82,11 @@ describe('drumSampleRow', () => {
     expect(c.readout.text.value).toBe('NICHT LESBAR');
   });
 
-  it('steht im Step-Editor', () => {
+  it('steht auf der Drum-Seite Klang', () => {
     const { c } = makeContext();
+    const nav = createNav(c.scope, c.store, signal<Layout>('mobile'));
     expect(
-      stepEditor(c).querySelector('[aria-label="Eigenes Sample für diese Spur laden"]'),
+      drumSoundPage(c, nav).querySelector('[aria-label="Eigenes Sample für diese Spur laden"]'),
     ).not.toBeNull();
   });
 });

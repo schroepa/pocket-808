@@ -10,6 +10,7 @@ import { segment } from '../../controls/segment.ts';
 import { h } from '../../dom.ts';
 import { padState } from './common.ts';
 import type { Message } from './message.ts';
+import './sampler.css';
 
 /** Chop: Pad in 2, 4 oder 8 Slices teilen und die Slices auf die gesetzten Steps verteilen */
 export function samplerChop(c: UiContext, msg: Message): HTMLElement {

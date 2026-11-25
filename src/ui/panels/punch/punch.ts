@@ -1,8 +1,5 @@
-import { computed, signal } from '../../../store/signals.ts';
-import type { PunchKind } from '../../context.ts';
-import type { UiContext } from '../../context.ts';
+import type { PunchKind, UiContext } from '../../context.ts';
 import { holdButton } from '../../controls/hold.ts';
-import type { Device } from '../../devices.ts';
 import { h } from '../../dom.ts';
 import './punch.css';
 
@@ -18,39 +15,23 @@ export const PUNCH_PADS: readonly { kind: PunchKind; label: string }[] = [
   { kind: 'echo', label: 'Echo' },
 ];
 
-/** Gerät „Punch“: Effekte wirken, solange die Taste gehalten wird; mehrere gleichzeitig möglich. */
-export function punchDevice(c: UiContext): Device {
-  const held = signal<readonly PunchKind[]>([]);
-  return {
-    id: 'punch',
-    name: 'Punch',
-    summary: computed(() => {
-      const on = held.value;
-      return on.length
-        ? PUNCH_PADS.filter((p) => on.includes(p.kind))
-            .map((p) => p.label)
-            .join(' · ')
-        : '8 Effekte · halten';
-    }),
-    body: (scope) =>
-      h(
-        'div',
-        { class: 'punch-grid', attrs: { role: 'group', 'aria-label': 'Punch-Effekte' } },
-        PUNCH_PADS.map((p) =>
-          holdButton(scope, {
-            class: 'punch-pad',
-            text: p.label,
-            ariaLabel: `${p.label} halten`,
-            on: () => {
-              held.value = [...held.peek(), p.kind];
-              c.audio.punchOn(p.kind);
-            },
-            off: () => {
-              held.value = held.peek().filter((k) => k !== p.kind);
-              c.audio.punchOff(p.kind);
-            },
-          }),
-        ),
-      ),
-  };
+/** Die acht Haltetasten: Effekte wirken, solange die Taste gehalten wird; mehrere gleichzeitig möglich. */
+export function punchGrid(c: UiContext): HTMLElement {
+  return h(
+    'div',
+    { class: 'punch-grid', attrs: { role: 'group', 'aria-label': 'Punch-Effekte' } },
+    PUNCH_PADS.map((p) =>
+      holdButton(c.scope, {
+        class: 'punch-pad',
+        text: p.label,
+        ariaLabel: `${p.label} halten`,
+        on: () => {
+          c.audio.punchOn(p.kind);
+        },
+        off: () => {
+          c.audio.punchOff(p.kind);
+        },
+      }),
+    ),
+  );
 }

@@ -1,11 +1,8 @@
-import { VOICES } from '../core/constants.ts';
-import { must } from '../core/util.ts';
 import type { Timer } from '../store/persist.ts';
 import { computed, signal, type ReadonlySignal } from '../store/signals.ts';
-import type { Store } from '../store/store.ts';
 import type { Scope } from './dom.ts';
 
-/** LCD-Unterzeile: Grundzeile (gewählte Stimme) oder kurz eine Meldung (Legacy readout). */
+/** LCD-Unterzeile: Grundzeile (gewählte Spur, displayLine) oder kurz eine Meldung (Legacy readout). */
 export interface Readout {
   readonly text: ReadonlySignal<string>;
   flash(text: string): void;
@@ -33,12 +30,4 @@ export function createReadout(
       }, ms);
     },
   };
-}
-
-export function voiceLine(store: Store, available: boolean): ReadonlySignal<string> {
-  if (!available) return signal('Kein Audio in diesem Browser');
-  return store.select((s) => {
-    const v = must(VOICES[s.sel], 'Stimme');
-    return `${v.id} · ${v.name}`;
-  });
 }

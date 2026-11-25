@@ -1,0 +1,24 @@
+@layer components {
+  /* Containername wie im Sub-Editor: Er richtet seine Spalten nach der Breite der Seite */
+  .trig-page {
+    container: editor / inline-size;
+  }
+  .drum-sound .drum-knobs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+  }
+  .drum-sound .smp-row {
+    justify-content: center;
+    margin-top: 12px;
+  }
+  .drum-smp-name {
+    margin-top: 8px;
+    text-align: center;
+    font: 13px var(--font-lcd);
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--ink) 72%, var(--panel));
+  }
+}

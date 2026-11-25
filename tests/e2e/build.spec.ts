@@ -1,9 +1,11 @@
 import { readFileSync, statSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
-// Größe mit Vorlagen und Klangcharakter (182 373 B, davon rund 17 kB Vorlagen-Daten) plus 10 % Puffer;
-// nach Etappe 8b waren es 153 840 B, nach 6a 140 455 B, nach Etappe 2 114 712 B, nach 5a 70 855 B
-const BUDGET_BYTES = 200_000;
+// Größe nach der Oberfläche „Ein Gerät“ (206 761 B: neuer Rahmen mit Display, Modi, Seiten, Flächen,
+// Plattenkiste und Alle Spuren) plus 10 % Puffer; vorher mit Vorlagen und Klangcharakter 182 373 B
+// (davon rund 17 kB Vorlagen-Daten), nach Etappe 8b 153 840 B, nach 6a 140 455 B, nach Etappe 2
+// 114 712 B, nach 5a 70 855 B
+const BUDGET_BYTES = 227_500;
 const DIST = new URL('../../dist/index.html', import.meta.url);
 
 test.describe('gebaute dist/index.html', () => {

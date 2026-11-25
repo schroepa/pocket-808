@@ -1,10 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { setChop } from '../../core/chop.ts';
 import { currentPattern } from '../../core/pattern.ts';
-import { samplerSteps } from './sampler/steps.ts';
+import { signal } from '../../store/signals.ts';
+import type { UiContext } from '../context.ts';
+import { h } from '../dom.ts';
+import type { Layout } from '../layout.ts';
+import { createNav } from '../nav.ts';
 import { makeContext, pointer } from '../test-utils.ts';
-import { stepEditor } from './step-editor.ts';
-import { tracks } from './tracks.ts';
+import { allTracks } from './all-tracks.ts';
+import { drumTrigPage, padTrigPage } from './drum-pages.ts';
+import { drumSteps, padSteps } from './step-area.ts';
+
+/** Steps und Seite Trig mit derselben Navigation, wie im Gerät */
+function trigEditor(c: UiContext): HTMLElement {
+  const nav = createNav(c.scope, c.store, signal<Layout>('mobile'));
+  return h('div', {}, [drumSteps(c, nav), drumTrigPage(c, nav)]);
+}
+function padTrigEditor(c: UiContext): HTMLElement {
+  const nav = createNav(c.scope, c.store, signal<Layout>('mobile'));
+  nav.selectTrack('SM');
+  return h('div', {}, [padSteps(c, nav), padTrigPage(c, nav)]);
+}
 
 const key = (el: Element | null | undefined, k: string) => {
   el?.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
@@ -13,15 +29,15 @@ const chipBtn = (el: HTMLElement, label: string) =>
   [...el.querySelectorAll<HTMLButtonElement>('button')].find(
     (b) => b.textContent === label || b.getAttribute('aria-label') === label,
   );
-const steps = (el: HTMLElement) => [...el.querySelectorAll<HTMLButtonElement>('.steps .step')];
+const steps = (el: HTMLElement) => [...el.querySelectorAll<HTMLButtonElement>('.drum-steps .step')];
 const reset = (el: HTMLElement) =>
   el.querySelector<HTMLButtonElement>('[aria-label^="Pitch zurücksetzen"]');
 const panel = (el: HTMLElement) => el.querySelector<HTMLElement>('.opt-panel');
 
-describe('Step-Optionen im Step-Editor', () => {
+describe('Step-Optionen auf der Seite Trig', () => {
   it('Opt-Modus: Panel erscheint, Tipp auf einen ausgeschalteten Step schaltet ihn ein und wählt ihn', () => {
     const { c, store, audio } = makeContext();
-    const el = stepEditor(c);
+    const el = trigEditor(c);
     const opt = chipBtn(el, 'Step-Optionen bearbeiten');
     expect(panel(el)?.hidden).toBe(true);
     opt?.click();
@@ -42,7 +58,7 @@ describe('Step-Optionen im Step-Editor', () => {
 
   it('Velocity per Knob und Schnellwahl, Chance, Bedingung, Zurücksetzen (mit Zurück)', () => {
     const { c, store } = makeContext();
-    const el = stepEditor(c);
+    const el = trigEditor(c);
     chipBtn(el, 'Step-Optionen bearbeiten')?.click();
     steps(el)[0]?.click();
     const p = panel(el);
@@ -78,7 +94,7 @@ describe('Step-Optionen im Step-Editor', () => {
 
   it('Opt und Sub schließen sich aus; ausgeschalteter gewählter Step blendet die Regler aus', () => {
     const { c, store } = makeContext();
-    const el = stepEditor(c);
+    const el = trigEditor(c);
     const opt = chipBtn(el, 'Step-Optionen bearbeiten');
     const sub = chipBtn(el, 'Sub-Steps bearbeiten');
     opt?.click();
@@ -97,10 +113,10 @@ describe('Step-Optionen im Step-Editor', () => {
   });
 });
 
-describe('Step-Optionen: Anzeige in Spuren und Sampler', () => {
+describe('Step-Optionen: Anzeige in „Alle Spuren“ und am Sampler', () => {
   it('Spurzellen zeigen Velocity und Marke', () => {
     const { c, store } = makeContext();
-    const el = tracks(c);
+    const el = allTracks(c, createNav(c.scope, c.store, signal<Layout>('desktop')));
     store.toggleStep('BD', 1);
     store.setStepOpt('BD', 1, { v: 0.5, c: '2:4' });
     const cell = el.querySelector<HTMLElement>('[aria-label="Bass Drum Step 2"]');
@@ -110,7 +126,7 @@ describe('Step-Optionen: Anzeige in Spuren und Sampler', () => {
 
   it('Sampler-Steps: Opt-Modus mit Schlüssel P<Pad>', () => {
     const { c, store, audio } = makeContext();
-    const el = samplerSteps(c);
+    const el = padTrigEditor(c);
     const opt = chipBtn(el, 'Step-Optionen bearbeiten');
     opt?.click();
     const b = el.querySelectorAll<HTMLButtonElement>('.ss');
@@ -137,12 +153,12 @@ describe('Step-Optionen: Anzeige in Spuren und Sampler', () => {
 describe('Pitch und Slice im Opt-Feld (Pads)', () => {
   it('Pitch in Halbtönen mit − / + und Zurücksetzen, Slice-Auswahl, Marke am Step; nicht bei Drums', () => {
     const { c, store } = makeContext();
-    const drums = stepEditor(c);
+    const drums = trigEditor(c);
     chipBtn(drums, 'Step-Optionen bearbeiten')?.click();
     steps(drums)[0]?.click();
     expect(drums.querySelector<HTMLElement>('.opt-pitch')?.hidden).toBe(true);
 
-    const el = samplerSteps(c);
+    const el = padTrigEditor(c);
     chipBtn(el, 'Step-Optionen bearbeiten')?.click();
     const btn = el.querySelectorAll<HTMLButtonElement>('.ss')[3];
     btn?.click();
@@ -161,9 +177,12 @@ describe('Pitch und Slice im Opt-Feld (Pads)', () => {
     expect(reset(p)?.textContent).toBe('-1 ST');
     reset(p)?.click();
     expect(opt()).toBeUndefined();
-    const slice = p.querySelector<HTMLSelectElement>('.opt-pitch select');
+    // Slice steht neben der Bedingung (eine Zeile mit Chop), nicht in der Pitch-Gruppe
+    const slice = p.querySelector<HTMLSelectElement>('.opt-slice select');
     if (!slice) throw new Error('Slice');
     const field = slice.closest<HTMLElement>('.fld');
+    expect(field?.previousElementSibling?.classList.contains('opt-cond')).toBe(true);
+    expect(p.querySelector('.opt-pitch select')).toBeNull();
     expect(field?.hidden).toBe(true); // ohne Chop keine Slice-Auswahl
     expect(reset(p)?.getAttribute('aria-label')).toBe('Pitch zurücksetzen (0 Halbtöne)');
     store.update((s) => setChop(s, 0, 4));
@@ -181,7 +200,7 @@ describe('Pitch und Slice im Opt-Feld (Pads)', () => {
 describe('Parameter-Locks im Opt-Feld', () => {
   it('Drums: Tune und Decay zeigen den Spurwert, Drehen lockt, „Locks lösen“ mit Zurück', () => {
     const { c, store } = makeContext();
-    const el = stepEditor(c);
+    const el = trigEditor(c);
     chipBtn(el, 'Step-Optionen bearbeiten')?.click();
     steps(el)[0]?.click();
     const p = panel(el);
@@ -207,7 +226,7 @@ describe('Parameter-Locks im Opt-Feld', () => {
 
   it('Pads: zusätzlich Start; Velocity bleibt beim Lösen der Locks', () => {
     const { c, store } = makeContext();
-    const el = samplerSteps(c);
+    const el = padTrigEditor(c);
     chipBtn(el, 'Step-Optionen bearbeiten')?.click();
     el.querySelectorAll<HTMLButtonElement>('.ss')[2]?.click();
     const p = panel(el);

@@ -13,6 +13,7 @@ import { segment } from '../../controls/segment.ts';
 import { slider } from '../../controls/slider.ts';
 import { bind, h } from '../../dom.ts';
 import { fmtTime, partName } from './format.ts';
+import '../../controls/octave.css';
 import './modules.css';
 
 const DEFAULTS = synthDefaults();
@@ -25,8 +26,8 @@ const ADSR = [
   ['r', 'R', 'Release', (v: number) => fmtTime(releaseTime(v))],
 ] as const;
 
-/** Die SH-101-Module des gewählten Parts, dazu Effekt, Arp und LFO (Legacy buildSynth, Abschnitt „Sound“). */
-export function synthModules(c: UiContext): HTMLElement {
+/** Was alle Module brauchen: Patch des gewählten Parts, Vorhören und die Regler darauf */
+function patchKit(c: UiContext) {
   const { store, scope, audio, readout } = c;
   const part = store.select((s) => s.part);
   const patch = store.select((s) => s.synth[s.part]);
@@ -50,36 +51,18 @@ export function synthModules(c: UiContext): HTMLElement {
       tag,
       onEnd: hear,
     });
-  const env = (pre: 'f' | 'a', name: string) => {
-    const view = envelopeView(
-      scope,
-      computed(() => {
-        const p = patch.value;
-        return pre === 'f'
-          ? ([attackTime(p.fa), decayTime(p.fd), p.fs, releaseTime(p.fr)] as const)
-          : ([attackTime(p.aa), decayTime(p.ad), p.as, releaseTime(p.ar)] as const);
-      }),
-    );
-    const sliders = ADSR.map(([end, label, full, format]) => {
-      const k = `${pre}${end}` as SynthKey;
-      return slider(scope, {
-        label,
-        aria: `${name} ${full}`,
-        value: value(k),
-        write: write(k),
-        def: def(k),
-        format,
-        readout,
-        tag,
-        onEnd: hear,
-      });
-    });
-    return h('div', { class: 'shm env' }, [
-      h('h4', { text: `${name}-Env` }),
-      view,
-      h('div', { class: 'shs' }, sliders),
-    ]);
-  };
+  return { patch, tag, hear, value, write, def, kn };
+}
+type PatchKit = ReturnType<typeof patchKit>;
+
+/** ein Modul über die volle Breite: Überschrift und Inhalt; `pair` passt auch halb breit */
+const module = (title: string, children: readonly HTMLElement[], pair = false): HTMLElement =>
+  h('div', { class: pair ? 'shm w2 pair' : 'shm w2' }, [h('h4', { text: title }), ...children]);
+const knobRow = (knobs: readonly HTMLElement[]): HTMLElement => h('div', { class: 'shk' }, knobs);
+
+function oscModule(c: UiContext, k: PatchKit): HTMLElement {
+  const { store, scope } = c;
+  const { patch, hear, kn } = k;
   const oct = h('span', { class: 'oct' });
   bind(
     scope,
@@ -92,6 +75,93 @@ export function synthModules(c: UiContext): HTMLElement {
     store.update((s) => shiftOctave(s, s.part, d));
     hear();
   };
+  return module('Oszillator', [
+    h('div', { class: 'syn-row mid' }, [
+      segment(scope, {
+        label: 'Wellenform',
+        options: WAVES.map(([name], i) => ({ value: String(i), label: name })),
+        value: computed(() => String(patch.value.wave)),
+        write: (w) => {
+          store.update((s) => setWave(s, s.part, Number(w)));
+          hear();
+        },
+      }),
+    ]),
+    // Oktave neben Detune und Sub: spart auf dem Telefon eine Zeile
+    knobRow([
+      h('div', { class: 'oct-grp' }, [
+        chip(scope, { label: '−', ariaLabel: 'Oktave tiefer', onClick: shift(-1) }),
+        oct,
+        chip(scope, { label: '+', ariaLabel: 'Oktave höher', onClick: shift(1) }),
+      ]),
+      kn('det', 'Detune'),
+      kn('sub', 'Sub'),
+    ]),
+  ]);
+}
+
+const filterModule = (k: PatchKit): HTMLElement =>
+  module('Filter', [knobRow([k.kn('cut', 'Cutoff'), k.kn('res', 'Reso'), k.kn('env', 'Env')])]);
+
+const outModule = (k: PatchKit): HTMLElement =>
+  module('Out', [knobRow([k.kn('dly', 'Delay'), k.kn('lvl', 'Level')])], true);
+
+/** Hüllkurve mit Anzeige und vier Schiebereglern */
+function envModule(c: UiContext, k: PatchKit, pre: 'f' | 'a', name: string): HTMLElement {
+  const { scope, readout } = c;
+  const { patch, tag, hear, value, write, def } = k;
+  const view = envelopeView(
+    scope,
+    computed(() => {
+      const p = patch.value;
+      return pre === 'f'
+        ? ([attackTime(p.fa), decayTime(p.fd), p.fs, releaseTime(p.fr)] as const)
+        : ([attackTime(p.aa), decayTime(p.ad), p.as, releaseTime(p.ar)] as const);
+    }),
+  );
+  const sliders = ADSR.map(([end, label, full, format]) => {
+    const key = `${pre}${end}` as SynthKey;
+    return slider(scope, {
+      label,
+      aria: `${name} ${full}`,
+      value: value(key),
+      write: write(key),
+      def: def(key),
+      format,
+      readout,
+      tag,
+      onEnd: hear,
+    });
+  });
+  return h('div', { class: 'shm env' }, [
+    h('h4', { text: `${name}-Env` }),
+    view,
+    h('div', { class: 'shs' }, sliders),
+  ]);
+}
+
+function fxModule(c: UiContext, k: PatchKit): HTMLElement {
+  const { store, scope, readout } = c;
+  const { patch, tag, hear } = k;
+  const fxKnob = (k: PartFxKey, label: string) =>
+    knob(scope, {
+      label,
+      value: computed(() => patch.value[k] ?? 0),
+      write: (v) => {
+        store.update((s) => setPartFx(s, s.part, k, v));
+      },
+      def: () => 0,
+      format: pct,
+      readout,
+      tag,
+      onEnd: hear,
+    });
+  return module('Effekt', [knobRow([fxKnob('drive', 'Drive'), fxKnob('chorus', 'Chorus')])], true);
+}
+
+function arpModule(c: UiContext, k: PatchKit): HTMLElement {
+  const { store, scope } = c;
+  const { patch } = k;
   // Arp: Rate und Oktaven lassen sich auch im Aus vorwählen (gelten beim Einschalten)
   const arpPick = signal<{ r: 1 | 2; o: 1 | 2 }>({ r: 1, o: 1 });
   const arpNow = computed(() => patch.value.arp ?? { m: 'off' as const, ...arpPick.value });
@@ -114,6 +184,42 @@ export function synthModules(c: UiContext): HTMLElement {
         writeArp(apply(v));
       },
     });
+  return module('Arp', [
+    arpSeg(
+      'Arp',
+      [
+        { value: 'off', label: 'Aus' },
+        ...ARP_MODES.map((m) => ({ value: m, label: ARP_LABELS[m] })),
+      ],
+      (a) => a.m as ArpMode | 'off',
+      (m) => ({ ...arpNow.peek(), m }),
+    ),
+    h('div', { class: 'syn-row' }, [
+      arpSeg(
+        'Arp-Rate',
+        [
+          { value: '1', label: '1/16' },
+          { value: '2', label: '1/32' },
+        ],
+        (a) => String(a.r) as '1' | '2',
+        (r) => ({ ...arpNow.peek(), r: r === '2' ? 2 : 1 }),
+      ),
+      arpSeg(
+        'Arp-Oktaven',
+        [
+          { value: '1', label: '1 Okt' },
+          { value: '2', label: '2 Okt' },
+        ],
+        (a) => String(a.o) as '1' | '2',
+        (o) => ({ ...arpNow.peek(), o: o === '2' ? 2 : 1 }),
+      ),
+    ]),
+  ]);
+}
+
+function lfoModule(c: UiContext, k: PatchKit): HTMLElement {
+  const { store, scope, readout } = c;
+  const { patch, tag } = k;
   const lfo = computed(() => patch.value.lfo ?? { r: 0.5, d: 0, t: 'cut' as const });
   const lfoKnob = (k: 'r' | 'd', label: string, format: (v: number) => string, d: number) =>
     knob(scope, {
@@ -127,92 +233,11 @@ export function synthModules(c: UiContext): HTMLElement {
       readout,
       tag,
     });
-  const fxKnob = (k: PartFxKey, label: string) =>
-    knob(scope, {
-      label,
-      value: computed(() => patch.value[k] ?? 0),
-      write: (v) => {
-        store.update((s) => setPartFx(s, s.part, k, v));
-      },
-      def: () => 0,
-      format: pct,
-      readout,
-      tag,
-      onEnd: hear,
-    });
-  return h('div', { class: 'sh' }, [
-    h('div', { class: 'shm w2' }, [
-      h('h4', { text: 'Oszillator' }),
-      h('div', { class: 'syn-row mid' }, [
-        segment(scope, {
-          label: 'Wellenform',
-          options: WAVES.map(([name], i) => ({ value: String(i), label: name })),
-          value: computed(() => String(patch.value.wave)),
-          write: (w) => {
-            store.update((s) => setWave(s, s.part, Number(w)));
-            hear();
-          },
-        }),
-        h('div', { class: 'oct-grp' }, [
-          chip(scope, { label: '−', ariaLabel: 'Oktave tiefer', onClick: shift(-1) }),
-          oct,
-          chip(scope, { label: '+', ariaLabel: 'Oktave höher', onClick: shift(1) }),
-        ]),
-      ]),
-      h('div', { class: 'shk' }, [kn('det', 'Detune'), kn('sub', 'Sub')]),
-    ]),
-    h('div', { class: 'shm w2' }, [
-      h('h4', { text: 'Filter' }),
-      h('div', { class: 'shk' }, [kn('cut', 'Cutoff'), kn('res', 'Reso'), kn('env', 'Env')]),
-    ]),
-    env('f', 'Filter'),
-    env('a', 'Amp'),
-    h('div', { class: 'shm w2' }, [
-      h('h4', { text: 'Out' }),
-      h('div', { class: 'shk' }, [kn('dly', 'Delay'), kn('lvl', 'Level')]),
-    ]),
-    h('div', { class: 'shm w2' }, [
-      h('h4', { text: 'Effekt' }),
-      h('div', { class: 'shk' }, [fxKnob('drive', 'Drive'), fxKnob('chorus', 'Chorus')]),
-    ]),
-    h('div', { class: 'shm w2' }, [
-      h('h4', { text: 'Arp' }),
-      arpSeg(
-        'Arp',
-        [
-          { value: 'off', label: 'Aus' },
-          ...ARP_MODES.map((m) => ({ value: m, label: ARP_LABELS[m] })),
-        ],
-        (a) => a.m as ArpMode | 'off',
-        (m) => ({ ...arpNow.peek(), m }),
-      ),
-      h('div', { class: 'syn-row' }, [
-        arpSeg(
-          'Arp-Rate',
-          [
-            { value: '1', label: '1/16' },
-            { value: '2', label: '1/32' },
-          ],
-          (a) => String(a.r) as '1' | '2',
-          (r) => ({ ...arpNow.peek(), r: r === '2' ? 2 : 1 }),
-        ),
-        arpSeg(
-          'Arp-Oktaven',
-          [
-            { value: '1', label: '1 Okt' },
-            { value: '2', label: '2 Okt' },
-          ],
-          (a) => String(a.o) as '1' | '2',
-          (o) => ({ ...arpNow.peek(), o: o === '2' ? 2 : 1 }),
-        ),
-      ]),
-    ]),
-    h('div', { class: 'shm w2' }, [
-      h('h4', { text: 'LFO' }),
-      h('div', { class: 'shk' }, [
-        lfoKnob('r', 'Rate', (v) => `${lfoHz(v).toFixed(2)} Hz`, 0.5),
-        lfoKnob('d', 'Depth', (v) => String(Math.round(v * 100)), 0),
-      ]),
+  // Ziel neben den beiden Reglern: das Modul bleibt eine Zeile hoch
+  return module('LFO', [
+    knobRow([
+      lfoKnob('r', 'Rate', (v) => `${lfoHz(v).toFixed(2)} Hz`, 0.5),
+      lfoKnob('d', 'Depth', (v) => String(Math.round(v * 100)), 0),
       segment(scope, {
         label: 'LFO-Ziel',
         options: [
@@ -226,4 +251,27 @@ export function synthModules(c: UiContext): HTMLElement {
       }),
     ]),
   ]);
+}
+
+/* Die Seiten des Geräts: dieselben Module, auf Reiter verteilt */
+const page = (modules: readonly HTMLElement[]): HTMLElement =>
+  h('div', { class: 'synth-page' }, [h('div', { class: 'sh' }, modules)]);
+
+export function synthSoundPage(c: UiContext): HTMLElement {
+  const k = patchKit(c);
+  return page([oscModule(c, k), fxModule(c, k), outModule(k)]);
+}
+
+export function synthFilterPage(c: UiContext): HTMLElement {
+  const k = patchKit(c);
+  return page([filterModule(k), envModule(c, k, 'f', 'Filter')]);
+}
+
+export function synthAmpPage(c: UiContext): HTMLElement {
+  return page([envModule(c, patchKit(c), 'a', 'Amp')]);
+}
+
+export function synthMotionPage(c: UiContext): HTMLElement {
+  const k = patchKit(c);
+  return page([lfoModule(c, k), arpModule(c, k)]);
 }

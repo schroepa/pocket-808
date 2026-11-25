@@ -107,6 +107,26 @@ describe('createEngine', () => {
     engine.dispose();
   });
 
+  it('tick und nearestStep rechnen die Ausgabelatenz ein', () => {
+    const timer = manualTimer();
+    let now = 0;
+    const engine = createEngine({
+      store: createStore(baseState()),
+      createContext: () => Object.assign(fakeContext(), { outputLatency: 0.2 }) as never,
+      timer,
+      clock: () => now,
+      prerender: false,
+    });
+    engine.start();
+    now = 0.3;
+    timer.fire(); // geplant: Step 0 bei 0,08 s, Step 1 bei etwa 0,26 s
+    // hörbar ist erst der Zeitpunkt 0,1 s
+    expect(engine.nearestStep()?.step).toBe(0);
+    engine.tick();
+    expect(engine.playhead.value.step).toBe(0);
+    engine.dispose();
+  });
+
   it('onGesture und resume beim Start, nur einmal', () => {
     const store = createStore(baseState());
     const onGesture = vi.fn();

@@ -1,8 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { SubKey } from '../../core/types.ts';
 import { signal } from '../../store/signals.ts';
+import { h } from '../dom.ts';
+import type { Layout } from '../layout.ts';
+import { createNav } from '../nav.ts';
 import { makeContext } from '../test-utils.ts';
-import { stepEditor } from './step-editor.ts';
+import { drumTrigPage } from './drum-pages.ts';
+import { drumSteps } from './step-area.ts';
 import { subEditor } from './sub-editor.ts';
 
 function setup() {
@@ -70,18 +74,19 @@ describe('subEditor', () => {
   });
 });
 
-describe('Sub-Editor im Step-Editor', () => {
+describe('Sub-Editor auf der Seite Trig', () => {
   it('nur im Sub-Modus sichtbar; bearbeitet die gewählte Spur am gewählten Step', () => {
     const { c, store, audio } = makeContext();
-    const el = stepEditor(c);
+    const nav = createNav(c.scope, store, signal<Layout>('mobile'));
+    const el = h('div', {}, [drumSteps(c, nav), drumTrigPage(c, nav)]);
     const ed = el.querySelector<HTMLElement>('.sub-ed');
     expect(ed?.hidden).toBe(true);
     el.querySelector<HTMLButtonElement>('[aria-label="Sub-Steps bearbeiten"]')?.click();
     expect(ed?.hidden).toBe(false);
-    el.querySelectorAll<HTMLButtonElement>('.steps .step')[2]?.click();
+    el.querySelectorAll<HTMLButtonElement>('.drum-steps .step')[2]?.click();
     ed?.querySelectorAll<HTMLButtonElement>('.sb')[1]?.click();
     expect(store.state.value.patterns.A.sub.BD?.[2]?.[1]).toBe(1);
     expect(audio.audition).toHaveBeenCalledWith('BD');
-    expect(el.querySelectorAll('.steps .step')[2]?.classList.contains('sub')).toBe(true);
+    expect(el.querySelectorAll('.drum-steps .step')[2]?.classList.contains('sub')).toBe(true);
   });
 });

@@ -1,6 +1,7 @@
 import { deepFreeze } from '../core/freeze.ts';
 import {
   clearNotes,
+  clearPadTrack,
   clearPattern,
   clearTrack,
   copyPattern,
@@ -27,8 +28,9 @@ import {
 } from '../core/song.ts';
 import { recallScene, saveScene } from '../core/scenes.ts';
 import { setStepOpt, type StepOptPatch } from '../core/stepopts.ts';
+import { applySynthPreset, type SynthPreset } from '../core/synth.ts';
 import { vary } from '../core/vary.ts';
-import type { Pattern, Preset, Slot, State, SubKey, VoiceId } from '../core/types.ts';
+import type { Part, Pattern, Preset, Slot, State, SubKey, VoiceId } from '../core/types.ts';
 import { restoreSnapshot, snapshot } from '../core/undo.ts';
 import { batch, computed, signal, type Equals, type ReadonlySignal } from './signals.ts';
 
@@ -61,6 +63,8 @@ export interface Store {
   distributeSlices(pad: number): void;
   clearNotes(): void;
   clearTrack(): void;
+  /** Spur eines Pads im aktuellen Pattern leeren */
+  clearPadTrack(pad: number): void;
   clearPattern(): void;
   loadPreset(preset: Preset): void;
   selectSlot(slot: Slot): void;
@@ -78,6 +82,8 @@ export interface Store {
   /** Mixer als Szene i sichern (ohne Zurück) bzw. abrufen (mit Zurück, ganzer Mixer) */
   saveScene(i: number): void;
   recallScene(i: number): void;
+  /** Synth-Preset laden (mit Zurück, nur der Patch dieses Parts); unverändert ohne Schritt */
+  loadSynthPreset(part: Part, preset: SynthPreset): void;
   /** ganzen Zustand (Projekt öffnen); Zurück stellt ihn wieder her und ruft revert */
   replaceState(next: State, revert?: () => void): void;
   appendToSong(): void;
@@ -207,6 +213,9 @@ export function createStore(
     clearTrack: () => {
       withUndo(clearTrack);
     },
+    clearPadTrack: (pad) => {
+      withUndo((s) => clearPadTrack(s, pad));
+    },
     clearPattern: () => {
       withUndo(clearPattern);
     },
@@ -254,6 +263,18 @@ export function createStore(
       batch(() => {
         // Zurück betrifft nur den Mixer; spätere Änderungen an Steps usw. bleiben
         pushUndo({ restore: (s) => ({ ...s, mix: prev.mix }) });
+        update(() => next);
+      });
+    },
+    loadSynthPreset: (part, preset) => {
+      const prev = state.peek();
+      const next = applySynthPreset(prev, part, preset);
+      if (next === prev) return;
+      batch(() => {
+        // Zurück betrifft nur diesen Patch; spätere Änderungen anderswo bleiben
+        pushUndo({
+          restore: (s) => ({ ...s, synth: { ...s.synth, [part]: prev.synth[part] } }),
+        });
         update(() => next);
       });
     },

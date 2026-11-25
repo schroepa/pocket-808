@@ -1,62 +1,40 @@
 import { describe, expect, it, vi } from 'vitest';
-import { NOTE_NAMES, SCALES, SYN_PRESETS } from '../../../core/constants.ts';
+import { SYN_PRESETS } from '../../../core/constants.ts';
 import { SYNTH_SOUNDS } from '../../../core/templates/index.ts';
-import { setArp } from '../../../core/arp.ts';
 import { applySynthPreset } from '../../../core/synth.ts';
-import { baseState, synthDefaults } from '../../../core/defaults.ts';
-import type { State } from '../../../core/types.ts';
+import { synthDefaults } from '../../../core/defaults.ts';
 import { must } from '../../../core/util.ts';
+import { signal } from '../../../store/signals.ts';
+import { show } from '../../controls/visible.ts';
+import type { RollTool } from '../../nav.ts';
 import { makeContext, pointer } from '../../test-utils.ts';
-import { fmtTime, partName, synthSummary } from './format.ts';
-import { synthDevice } from './device.ts';
-import { synthHead } from './head.ts';
-import { synthModules } from './modules.ts';
-import { synthPresets } from './presets.ts';
-import { pianoRoll } from './roll.ts';
+import { h } from '../../dom.ts';
+import type { UiContext } from '../../context.ts';
+import { fmtTime } from './format.ts';
+import { synthAmpPage, synthFilterPage, synthMotionPage, synthSoundPage } from './modules.ts';
+import { clearVoiceChip, synthSoundList } from './presets.ts';
+import { rollControls, rollGrid, synthNotesPage } from './roll.ts';
+
+/** Bedienung und Raster der Rolle mit gemeinsamem Zustand, wie im Gerät */
+function pianoRoll(c: UiContext): HTMLElement {
+  const roll = { page: signal(0), tool: signal<RollTool>('note') };
+  return h('div', {}, [rollControls(c, roll), rollGrid(c, roll)]);
+}
+/** alle Klang-Seiten zusammen: jedes Modul genau einmal */
+const synthModules = (c: UiContext): HTMLElement =>
+  h('div', {}, [synthSoundPage(c), synthFilterPage(c), synthAmpPage(c), synthMotionPage(c)]);
 
 describe('format', () => {
   it('fmtTime wie Legacy', () => {
     expect(fmtTime(0.25)).toBe('250 ms');
     expect(fmtTime(1.2)).toBe('1.20 s');
   });
-  it('synthSummary: Part, Tonart, Skala, Notenzahl, stumm', () => {
-    const s = baseState();
-    const n = s.patterns[s.cur].notes[s.part].filter(Boolean).length;
-    const tonart = `${must(NOTE_NAMES[s.key], 'Tonart')} ${must(SCALES[s.scale], 'Skala').name}`;
-    expect(synthSummary(s)).toBe(
-      `${partName(s.part)} · ${tonart} · ${n} ${n === 1 ? 'Note' : 'Noten'}`,
-    );
-    const ld: State = {
-      ...s,
-      part: 'LD',
-      key: 9,
-      scale: 1,
-      patterns: {
-        ...s.patterns,
-        [s.cur]: {
-          ...s.patterns[s.cur],
-          notes: {
-            ...s.patterns[s.cur].notes,
-            LD: Array.from({ length: 16 }, (_, i) => (i === 0 ? { d: 0, l: 1 } : null)),
-          },
-        },
-      },
-      mix: { ...s.mix, LD: { ...s.mix.LD, m: true } },
-    };
-    expect(synthSummary(ld)).toBe('Lead · A Dur · 1 Note · stumm');
-  });
 });
 
-describe('synthHead', () => {
-  it('Bass/Lead, Stumm, Tonart und Skala schreiben in den Store', () => {
+describe('Tonart und Skala', () => {
+  it('schreiben in den Store (Seite Noten)', () => {
     const { c, store } = makeContext();
-    const el = synthHead(c);
-    el.querySelectorAll<HTMLButtonElement>('[role=radio]')[1]?.click();
-    expect(store.state.value.part).toBe('LD');
-    const mute = el.querySelector<HTMLButtonElement>('[aria-label="Stimme stumm"]');
-    mute?.click();
-    expect(store.state.value.mix.LD.m).toBe(true);
-    expect(mute?.getAttribute('aria-pressed')).toBe('true');
+    const el = synthNotesPage(c, { page: signal(0), tool: signal<RollTool>('note') });
     const [key, scale] = [...el.querySelectorAll('select')];
     if (!key || !scale) throw new Error('Auswahl fehlt');
     key.value = '9';
@@ -394,13 +372,6 @@ describe('Arp und LFO', () => {
       expect(store.state.value.synth[part].lfo?.[label === 'Depth' ? 'd' : 'r']).toBe(def);
     }
   });
-
-  it('Zusammenfassung nennt den Arp', () => {
-    const s = baseState();
-    expect(synthSummary(s)).not.toMatch(/Arp/);
-    const on = setArp(s, s.part, { m: 'up', r: 1, o: 1 });
-    expect(synthSummary(on)).toMatch(/ · Arp$/);
-  });
 });
 
 describe('Effekt: Drive und Chorus', () => {
@@ -451,12 +422,12 @@ describe('Effekt: Drive und Chorus', () => {
   });
 });
 
-describe('synthPresets', () => {
+describe('Synth-Sounds und Stimme leeren', () => {
   it('zeigt die Presets des Parts, lädt und markiert; Wechsel des Parts baut neu', () => {
     const { c, store, audio } = makeContext();
     store.update((s) => ({ ...s, part: 'BA' }));
-    const el = synthPresets(c);
-    const chips = () => [...el.querySelectorAll<HTMLButtonElement>('.syn-presets .chip')];
+    const el = synthSoundList(c);
+    const chips = () => [...el.querySelectorAll<HTMLButtonElement>('.chip')];
     expect(chips().map((b) => b.textContent)).toEqual(SYNTH_SOUNDS.BA.map((p) => p.name));
     expect(chips().length).toBeGreaterThan(SYN_PRESETS.BA.length);
     chips()[0]?.click();
@@ -471,28 +442,146 @@ describe('synthPresets', () => {
   it('„Stimme leeren“ leert die Noten des Parts mit Zurück', () => {
     const { c, store } = makeContext();
     store.placeNote(0, 0);
-    const el = synthPresets(c);
-    [...el.querySelectorAll<HTMLButtonElement>('.chip')]
-      .find((b) => b.textContent === 'Stimme leeren')
-      ?.click();
+    const el = clearVoiceChip(c);
+    // kurz sichtbar wie „Leeren“ auf Trig, der Name nennt, was geleert wird
+    expect(el.textContent).toBe('Leeren');
+    expect(el.getAttribute('aria-label')).toBe('Stimme leeren');
+    (el as HTMLButtonElement).click();
     const s = store.state.value;
     expect(s.patterns[s.cur].notes[s.part].every((n) => n === null)).toBe(true);
     expect(store.canUndo.value).toBe(true);
   });
 });
 
-describe('synthDevice', () => {
-  it('Zusammenfassung folgt dem Zustand; Körper enthält alle Teile', () => {
-    const { c, store } = makeContext();
-    const d = synthDevice(c);
-    expect(d.id).toBe('synth');
-    expect(d.name).toBe('Synth');
-    expect(d.summary.value).toBe(synthSummary(store.state.value));
-    store.update((s) => ({ ...s, key: (s.key + 1) % 12 }));
-    expect(d.summary.value).toBe(synthSummary(store.state.value));
-    const body = d.body(c.scope);
-    for (const sel of ['.syn-head', '.roll', '.sh', '.syn-presets']) {
-      expect(body.querySelector(sel)).not.toBeNull();
+const rollState = () => ({ page: signal(0), tool: signal<RollTool>('note') });
+const labels = (el: Element, selector: string) =>
+  [...el.querySelectorAll(selector)].map((e) => e.getAttribute('aria-label'));
+const ADSR = ['Attack', 'Decay', 'Sustain', 'Release'];
+
+describe('Synth-Seiten', () => {
+  it('jede Synth-Seite hat genau ihre Regler', () => {
+    const { c } = makeContext();
+    const pages = [
+      {
+        el: synthSoundPage(c),
+        sliders: ['Detune', 'Sub', 'Drive', 'Chorus', 'Delay', 'Level'],
+        groups: ['Wellenform'],
+        buttons: ['Oktave tiefer', 'Oktave höher'],
+      },
+      {
+        el: synthFilterPage(c),
+        sliders: ['Cutoff', 'Reso', 'Env', ...ADSR.map((n) => `Filter ${n}`)],
+        groups: [],
+        buttons: [],
+      },
+      { el: synthAmpPage(c), sliders: ADSR.map((n) => `Amp ${n}`), groups: [], buttons: [] },
+      {
+        el: synthMotionPage(c),
+        sliders: ['Rate', 'Depth'],
+        groups: ['LFO-Ziel', 'Arp', 'Arp-Rate', 'Arp-Oktaven'],
+        buttons: [],
+      },
+    ];
+    for (const page of pages) {
+      expect(labels(page.el, '[role=slider]')).toEqual(page.sliders);
+      expect(labels(page.el, '[role=radiogroup]')).toEqual(page.groups);
+      expect(labels(page.el, 'button[aria-label]')).toEqual(page.buttons);
     }
+    expect(pages.map((p) => p.el.querySelectorAll('.env-svg').length)).toEqual([0, 1, 1, 0]);
+  });
+
+  it('Regler einer Seite schreiben den gewählten Part', () => {
+    const { c, store } = makeContext();
+    store.update((s) => ({ ...s, part: 'LD' }));
+    const el = synthAmpPage(c);
+    el.querySelector('[aria-label="Amp Release"]')?.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'End' }),
+    );
+    expect(store.state.value.synth.LD.ar).toBe(1);
+  });
+
+  it('Arp-Rate bleibt vorgewählt, nachdem die Seite ausgeblendet war', () => {
+    const { c, store } = makeContext();
+    const el = synthMotionPage(c);
+    const radio = (group: string, label: string) =>
+      [...el.querySelectorAll<HTMLButtonElement>(`[aria-label="${group}"] [role=radio]`)].find(
+        (b) => b.textContent === label,
+      );
+    radio('Arp-Rate', '1/32')?.click();
+    show(el, false);
+    store.update((s) => ({ ...s, part: s.part === 'BA' ? 'LD' : 'BA' }));
+    show(el, true);
+    expect(radio('Arp-Rate', '1/32')?.getAttribute('aria-checked')).toBe('true');
+    radio('Arp', 'Auf')?.click();
+    const s = store.state.value;
+    expect(s.synth[s.part].arp?.r).toBe(2);
+  });
+
+  it('rollControls und rollGrid teilen Takthälfte und Werkzeug', () => {
+    const { c, store } = makeContext();
+    store.update((s) => ({ ...s, part: 'BA', noteLen: 1 }));
+    store.clearNotes();
+    const roll = rollState();
+    const controls = rollControls(c, roll);
+    const grid = rollGrid(c, roll);
+    const button = (label: string) =>
+      must(
+        controls.querySelector<HTMLButtonElement>(`[aria-label="${label}"]`) ?? undefined,
+        label,
+      );
+    const cell = () =>
+      must(grid.querySelector<HTMLButtonElement>('.rr:not(.hd) .pc') ?? undefined, 'Zelle');
+    expect(controls.querySelector('.pc')).toBeNull();
+    expect(grid.querySelector('.chip')).toBeNull();
+    button('Steps 9–16').click();
+    expect(roll.page.value).toBe(1);
+    expect(grid.querySelector('.rr.hd')?.textContent).toBe('910111213141516');
+    cell().click();
+    const note = () => store.state.value.patterns[store.state.value.cur].notes.BA[8];
+    expect(note()).toEqual({ d: 11, l: 1 });
+    button('Werkzeug Akzent').click();
+    expect(roll.tool.value).toBe('a');
+    cell().click();
+    expect(note()).toEqual({ d: 11, l: 1, a: true });
+    // von außen gesetzt (Nav.openNotes): beide folgen
+    roll.page.value = 0;
+    roll.tool.value = 'note';
+    expect(button('Steps 1–8').getAttribute('aria-pressed')).toBe('true');
+    expect(button('Werkzeug Note').getAttribute('aria-pressed')).toBe('true');
+    expect(grid.querySelector('.rr.hd')?.textContent).toBe('12345678');
+  });
+
+  it('synthNotesPage: Tonart, Skala, Bedienung, „Stimme leeren“ und leerer Platz für die Rolle', () => {
+    const { c, store } = makeContext();
+    store.placeNote(0, 0);
+    const roll = rollState();
+    const el = synthNotesPage(c, roll);
+    expect([...el.querySelectorAll('.fld span')].map((e) => e.textContent)).toEqual([
+      'Tonart',
+      'Skala',
+    ]);
+    expect(labels(el, '[role=group]')).toEqual(['Takthälfte', 'Notenlänge', 'Werkzeug']);
+    expect(el.querySelector('[role=radiogroup]')).toBeNull();
+    el.querySelector<HTMLButtonElement>('[aria-label="Steps 9–16"]')?.click();
+    expect(roll.page.value).toBe(1);
+    const slot = must(el.querySelector('[data-slot=roll]') ?? undefined, 'Platz');
+    expect(slot.childNodes).toHaveLength(0);
+    expect(el.querySelector('.pc')).toBeNull();
+    [...el.querySelectorAll<HTMLButtonElement>('.chip')]
+      .find((b) => b.getAttribute('aria-label') === 'Stimme leeren')
+      ?.click();
+    const s = store.state.value;
+    expect(s.patterns[s.cur].notes[s.part].every((n) => n === null)).toBe(true);
+  });
+
+  it('synthSoundList: nur die Presets des Parts, ohne „Stimme leeren“', () => {
+    const { c, store } = makeContext();
+    store.update((s) => ({ ...s, part: 'LD' }));
+    const el = synthSoundList(c);
+    expect(el.getAttribute('aria-label')).toBe('Presets');
+    expect([...el.querySelectorAll('button')].map((b) => b.textContent)).toEqual(
+      SYNTH_SOUNDS.LD.map((p) => p.name),
+    );
+    c.scope.dispose();
   });
 });

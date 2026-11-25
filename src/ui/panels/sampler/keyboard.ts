@@ -5,6 +5,8 @@ import { chip } from '../../controls/chip.ts';
 import { bind, h } from '../../dom.ts';
 import { recordTap } from '../../record.ts';
 import { padState } from './common.ts';
+import '../../controls/octave.css';
+import './sampler.css';
 
 /** Tasten einer Oktave: Halbton über C, Name, schwarz? */
 const KEYS: readonly (readonly [number, string, boolean])[] = [

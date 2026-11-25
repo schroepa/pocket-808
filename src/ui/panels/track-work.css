@@ -1,0 +1,22 @@
+@layer components {
+  /* Spalten für breite Layouts setzt layout.css */
+  .track-work,
+  .track-pages {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 8px;
+  }
+  .track-pages > section {
+    min-width: 0;
+  }
+  /* die Pad-Reihe: acht Pads nebeneinander */
+  .track-work .smp-head .pads {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    margin-bottom: 0;
+  }
+  /* Sub oder Opt offen (track-work.ts): Reiter und Pad-Reihe (samt ihrer Meldung) weichen dem Feld */
+  .track-work[data-field] > :is(.tabs, .smp-head) {
+    display: none;
+  }
+}
