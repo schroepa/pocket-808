@@ -169,6 +169,25 @@ describe('trackTap', () => {
     expect(currentPattern(ctx.store.state.value).smp[4]?.[7]).toBe(1);
     expect(currentPattern(ctx.store.state.value).smp[0]?.[7]).toBe(0);
   });
+
+  it('mit genanntem Pad: pointerdown nimmt es auf, erst click wählt es und spielt es an', () => {
+    const ctx = setup();
+    ctx.c.samples.setPad(0, pcm);
+    ctx.c.samples.setPad(4, pcm);
+    const row = document.createElement('button');
+    trackTap(ctx.c, ctx.nav, row, 'SM', 4);
+    arm(ctx, 7);
+    down(row);
+    expect(currentPattern(ctx.store.state.value).smp[4]?.[7]).toBe(1);
+    expect(currentPattern(ctx.store.state.value).smp[0]?.[7]).toBe(0);
+    expect(ctx.store.state.value.smp.sel).toBe(0);
+    expect(ctx.nav.track.value).toBe('BD');
+    release(row);
+    expect(ctx.store.state.value.smp.sel).toBe(4);
+    expect(ctx.nav.track.value).toBe('SM');
+    expect(ctx.audio.auditionPad).toHaveBeenCalledWith(4);
+    expect(ctx.audio.nearestStep).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('shiftTrack', () => {

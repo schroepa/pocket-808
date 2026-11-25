@@ -314,18 +314,52 @@ describe('allTracks: Beschriftung', () => {
     expect(audio.auditionPad).toHaveBeenCalledWith(4);
   });
 
-  it('Pad: bei Rec nimmt pointerdown dieses Pad auf, nicht das vorher gewählte', () => {
+  it('Pad: bei Rec nimmt pointerdown dieses Pad auf, ohne Auswahl oder Zeilen zu ändern', () => {
     const ctx = setup();
     ctx.c.samples.setPad(0, pcm);
     ctx.c.samples.setPad(4, pcm);
+    // gewähltes, leeres Pad 2: seine Zeile gibt es nur wegen der Auswahl
+    ctx.store.update((s) => selectPad(s, 1));
     arm(ctx, 7);
+    const rows = padRows(ctx.el);
     const lab = button(ctx.el, 'Zeile Pad 5');
     down(lab);
     expect(currentPattern(ctx.store.state.value).smp[4]?.[7]).toBe(1);
-    expect(currentPattern(ctx.store.state.value).smp[0]?.[7]).toBe(0);
+    expect(currentPattern(ctx.store.state.value).smp[1]?.[7]).toBe(0);
+    expect(ctx.store.state.value.smp.sel).toBe(1);
+    expect(ctx.nav.track.value).toBe('BD');
+    expect(padRows(ctx.el)).toEqual(rows);
+    expect(ctx.audio.auditionPad).not.toHaveBeenCalled();
     up(lab);
     release(lab);
     expect(ctx.audio.nearestStep).toHaveBeenCalledTimes(1);
+    expect(ctx.store.state.value.smp.sel).toBe(4);
+    expect(ctx.nav.track.value).toBe('SM');
+    expect(ctx.audio.auditionPad).toHaveBeenCalledTimes(1);
+    expect(ctx.audio.auditionPad).toHaveBeenCalledWith(4);
+  });
+
+  it('Pad: ein Druck ohne click (Wischen, daneben losgelassen) ändert Auswahl und Zeilen nicht', () => {
+    const { c, el, nav, store, audio } = setup();
+    document.body.append(el);
+    c.samples.setPad(4, pcm);
+    const lab = button(el, 'Zeile Pad 5');
+    for (const end of ['pointerup', 'pointercancel']) {
+      down(lab);
+      lab.dispatchEvent(pointer(end));
+      expect(padRows(el)).toEqual(['Zeile Pad 1', 'Zeile Pad 5']);
+      expect(store.state.value.smp.sel).toBe(0);
+      expect(nav.track.value).toBe('BD');
+    }
+    expect(audio.auditionPad).not.toHaveBeenCalled();
+    // der nächste Tipp wählt; erst jetzt geht die Zeile des leeren Pads
+    down(lab);
+    up(lab);
+    expect(padRows(el)).toEqual(['Zeile Pad 1', 'Zeile Pad 5']);
+    release(lab);
+    expect(padRows(el)).toEqual(['Zeile Pad 5']);
+    expect(selected(el)).toEqual(['Zeile Pad 5']);
+    el.remove();
   });
 
   it('Pad: ohne Zeiger (Tastatur) nimmt click dieses Pad auf', () => {
@@ -336,6 +370,9 @@ describe('allTracks: Beschriftung', () => {
     button(ctx.el, 'Zeile Pad 5').click();
     expect(currentPattern(ctx.store.state.value).smp[4]?.[2]).toBe(1);
     expect(currentPattern(ctx.store.state.value).smp[0]?.[2]).toBe(0);
+    expect(ctx.audio.nearestStep).toHaveBeenCalledTimes(1);
+    expect(ctx.audio.auditionPad).toHaveBeenCalledWith(4);
+    expect(ctx.store.state.value.smp.sel).toBe(4);
   });
 
   it('leeres Pad nimmt nichts auf', () => {
@@ -351,53 +388,5 @@ describe('allTracks: Beschriftung', () => {
     expect(currentPattern(ctx.store.state.value)).toBe(before);
     expect(ctx.audio.nearestStep).not.toHaveBeenCalled();
     expect(ctx.audio.auditionPad).not.toHaveBeenCalled();
-  });
-
-  it.each<[string, (lab: Element) => void]>([
-    [
-      'losgelassen und geklickt',
-      (lab) => {
-        up(lab);
-        release(lab);
-      },
-    ],
-    [
-      'daneben losgelassen',
-      () => {
-        up(document.body);
-      },
-    ],
-    [
-      'abgebrochen',
-      (lab) => {
-        lab.dispatchEvent(pointer('pointercancel'));
-      },
-    ],
-  ])(
-    'solange der Zeiger drückt, rückt keine Zeile: leeres altes Pad geht erst danach (%s)',
-    (_name, end) => {
-      const { c, el } = setup();
-      document.body.append(el);
-      c.samples.setPad(4, pcm);
-      const lab = button(el, 'Zeile Pad 5');
-      down(lab);
-      expect(padRows(el)).toEqual(['Zeile Pad 1', 'Zeile Pad 5']);
-      end(lab);
-      expect(padRows(el)).toEqual(['Zeile Pad 5']);
-      el.remove();
-    },
-  );
-
-  it('Loslassen auf der Beschriftung allein räumt noch nicht auf (der click folgt)', () => {
-    const { c, el } = setup();
-    document.body.append(el);
-    c.samples.setPad(4, pcm);
-    const lab = button(el, 'Zeile Pad 5');
-    down(lab);
-    up(lab);
-    expect(padRows(el)).toEqual(['Zeile Pad 1', 'Zeile Pad 5']);
-    release(lab);
-    expect(padRows(el)).toEqual(['Zeile Pad 5']);
-    el.remove();
   });
 });

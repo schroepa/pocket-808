@@ -1,5 +1,6 @@
 import { CHANNEL_NAMES, CHANNELS } from '../core/constants.ts';
 import { degreeName } from '../core/music.ts';
+import { selectPad } from '../core/sampler.ts';
 import type { State } from '../core/types.ts';
 import { must } from '../core/util.ts';
 import type { UiContext } from './context.ts';
@@ -24,10 +25,10 @@ function hearTrack(c: UiContext, id: TrackId): void {
 
 type Hit = ReturnType<Parameters<typeof recordTap>[2]>;
 
-/** Der Schlag, den ein Tipp auf die Spur aufnimmt (liest Zustand und Pad erst beim Tipp) */
-function trackHit(c: UiContext, id: TrackId): Hit {
+/** Der Schlag, den ein Tipp auf die Spur aufnimmt (liest Zustand und gewähltes Pad erst beim Tipp) */
+function trackHit(c: UiContext, id: TrackId, pad?: number): Hit {
   const s = c.store.state.peek();
-  if (id === 'SM') return padHit(c, s.smp.sel);
+  if (id === 'SM') return padHit(c, pad ?? s.smp.sel);
   if (id === 'BA' || id === 'LD') {
     return {
       make: (pos) => ({ kind: 'note', part: id, degree: 0, length: s.noteLen, ...pos }),
@@ -39,15 +40,16 @@ function trackHit(c: UiContext, id: TrackId): Hit {
 
 /**
  * `el` zur Spur-Taste machen: Ein Tipp wählt und spielt an; bei scharfer Aufnahme setzt schon das
- * Antippen den Schlag. Wer für 'SM' ein bestimmtes Pad meint, muss es vor dem Aufruf von trackTap
- * mit eigenen Listenern sowohl bei pointerdown (Aufnahme) als auch bei click (Anspielen) wählen.
+ * Antippen den Schlag. `pad` (nur für 'SM') meint ein bestimmtes statt des gewählten Pads: Es wird
+ * direkt aufgenommen, aber erst beim click gewählt, damit sich beim Drücken nichts verschiebt.
  */
-export function trackTap(c: UiContext, nav: Nav, el: HTMLElement, id: TrackId): void {
+export function trackTap(c: UiContext, nav: Nav, el: HTMLElement, id: TrackId, pad?: number): void {
   listen(c.scope, el, 'click', () => {
+    if (pad !== undefined) c.store.update((s) => selectPad(s, pad));
     nav.selectTrack(id);
     hearTrack(c, id);
   });
-  recordTap(c, el, () => trackHit(c, id));
+  recordTap(c, el, () => trackHit(c, id, pad));
 }
 
 /** vorige bzw. nächste Spur in der Reihenfolge der Kanäle; an den Enden bleibt die Wahl */

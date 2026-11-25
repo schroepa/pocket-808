@@ -3,10 +3,10 @@ import { currentPattern } from '../../core/pattern.ts';
 import { selectPad } from '../../core/sampler.ts';
 import { stepIsOn } from '../../core/stepopts.ts';
 import type { Part, VoiceId } from '../../core/types.ts';
-import { computed, signal } from '../../store/signals.ts';
+import { computed } from '../../store/signals.ts';
 import type { UiContext } from '../context.ts';
 import { stepButton } from '../controls/step-button.ts';
-import { bind, createScope, h, listen, type Scope } from '../dom.ts';
+import { bind, createScope, h, type Scope } from '../dom.ts';
 import type { Nav } from '../nav.ts';
 import { trackTap } from '../track.ts';
 import {
@@ -123,10 +123,7 @@ function padRow(c: UiContext, nav: Nav, pad: number): HTMLElement {
   });
   markSteps(c, cells, nav.padSub, nav.padOpt, selected);
   const lab = label(`P${String(pad + 1)}`, name);
-  // vor trackTap: Anspielen und Aufnahme meinen das gewählte Pad, also zuerst dieses wählen
-  listen(scope, lab, 'pointerdown', pick);
-  listen(scope, lab, 'click', pick);
-  trackTap(c, nav, lab, 'SM');
+  trackTap(c, nav, lab, 'SM', pad);
   return row(c, lab, cells, selected);
 }
 
@@ -135,9 +132,6 @@ function padRow(c: UiContext, nav: Nav, pad: number): HTMLElement {
  * was dazukommt oder wegfällt, wird gebaut bzw. abgeräumt; bestehende Zeilen bleiben stehen.
  */
 function padRows(c: UiContext, nav: Nav, root: HTMLElement): void {
-  // Solange eine Pad-Beschriftung gedrückt ist, bleibt die Zeile des vorher gewählten Pads stehen:
-  // Sonst rückte die gedrückte Taste unter dem Zeiger weg, und der click käme nicht an.
-  const held = signal<number | null>(null);
   const listed = computed(() => {
     const s = c.store.state.value;
     const p = currentPattern(s);
@@ -145,7 +139,6 @@ function padRows(c: UiContext, nav: Nav, root: HTMLElement): void {
     return PADS.filter(
       (i) =>
         i === s.smp.sel ||
-        i === held.value ||
         !!samples[i] ||
         sixteen((step) => stepIsOn(p, padKeyOf(i), step)).includes(true),
     ).join();
@@ -162,7 +155,7 @@ function padRows(c: UiContext, nav: Nav, root: HTMLElement): void {
         r.el.remove();
         rows.delete(i);
       }
-      // von hinten einfügen, damit bestehende Zeilen nicht bewegt werden (Fokus, laufender Tipp)
+      // von hinten einfügen, damit bestehende Zeilen nicht bewegt werden (Fokus)
       let next: HTMLElement | null = null;
       for (const i of want.reverse()) {
         let r = rows.get(i);
@@ -178,29 +171,6 @@ function padRows(c: UiContext, nav: Nav, root: HTMLElement): void {
   );
   c.scope.add(() => {
     for (const r of rows.values()) r.scope.dispose();
-  });
-
-  const onLabel = (e: Event): boolean =>
-    e.target instanceof Element && e.target.closest('.at-lab') !== null;
-  const release = (): void => {
-    held.value = null;
-  };
-  listen(
-    c.scope,
-    root,
-    'pointerdown',
-    (e) => {
-      // Capture: läuft, bevor die Beschriftung das neue Pad wählt
-      if (onLabel(e)) held.value = c.store.state.peek().smp.sel;
-    },
-    { capture: true },
-  );
-  // nach den Listenern der angetippten Taste
-  listen(c.scope, root, 'click', release);
-  // ohne click: abgebrochen oder neben den Beschriftungen losgelassen
-  listen(c.scope, root.ownerDocument, 'pointercancel', release);
-  listen(c.scope, root.ownerDocument, 'pointerup', (e) => {
-    if (!onLabel(e)) release();
   });
 }
 
