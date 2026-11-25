@@ -1,0 +1,95 @@
+/* „Alle Spuren“: dichtes Raster, Ausnahme von den großen Touch-Zielen */
+@layer components {
+  .all-tracks {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3px;
+  }
+  .at-row {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 8px;
+    align-items: center;
+  }
+  :is(.at-lab, .at-cell) {
+    position: relative;
+    height: 26px;
+    padding: 0;
+    border: 0;
+  }
+  .at-lab {
+    border-radius: 6px;
+    background: var(--cell);
+    font: 700 14px var(--font-display);
+    letter-spacing: 0.06em;
+  }
+  .at-row.sel .at-lab {
+    z-index: 1;
+    background: var(--cream);
+    color: var(--chassis);
+    box-shadow: var(--glow-cream);
+  }
+  .at-cells {
+    display: grid;
+    grid-template-columns: repeat(16, minmax(0, 1fr));
+    gap: 3px;
+  }
+  /* Abstand zwischen den Vierergruppen */
+  .at-cell:nth-child(4n + 5) {
+    margin-left: 4px;
+  }
+  .at-cell {
+    border-radius: 4px;
+    background: transparent;
+  }
+  .at-cell::after {
+    content: '';
+    position: absolute;
+    inset: 6px 1px;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--acc) 11%, var(--cell));
+  }
+  .at-cell.tail::after {
+    background: color-mix(in srgb, var(--acc) 42%, var(--well));
+  }
+  .at-cell.on {
+    z-index: 1;
+  }
+  /* Velocity als Helligkeit */
+  .at-cell.on::after {
+    background-color: color-mix(in srgb, var(--acc) calc(30% + 70% * var(--vel, 1)), var(--cell));
+    box-shadow: 0 0 8px color-mix(in srgb, var(--acc) 28%, transparent);
+  }
+  /* Marke für Chance, Bedingung, Locks */
+  .at-cell.opt::after {
+    background-image: radial-gradient(
+      circle at calc(100% - 4px) 50%,
+      var(--cream) 0 2px,
+      transparent 2.5px
+    );
+  }
+  .at-cell.sub::before {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    bottom: 1px;
+    left: 50%;
+    width: 14px;
+    height: 3px;
+    margin-left: -7px;
+    background: repeating-linear-gradient(90deg, var(--cream) 0 2px, transparent 2px 4px);
+  }
+  /* Lauflicht: nur der Hintergrund, ohne filter (viele Zellen) */
+  .at-cell.now {
+    background: color-mix(in srgb, var(--cream) 10%, transparent);
+  }
+  .at-cell.subsel {
+    z-index: 1;
+  }
+  .at-cell.subsel::after {
+    box-shadow: 0 0 12px color-mix(in srgb, var(--cream) 70%, transparent);
+  }
+  [data-layout='tablet'] :is(.at-lab, .at-cell) {
+    height: 32px;
+  }
+}
