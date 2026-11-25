@@ -6,7 +6,7 @@
 
 Aufmachen, auf *Start* tippen, und der Beat läuft. Pocket 808 braucht keine Installation, kein Konto und keinen Server. Alles, was du baust, bleibt in deinem Browser.
 
-> Diese README ist ein **lebendes Dokument**. Sie wird mit jeder Änderung am Projekt aktualisiert. Stand: 2026-10-19, Version 0.26.0.
+> Diese README ist ein **lebendes Dokument**. Sie wird mit jeder Änderung am Projekt aktualisiert. Stand: 2026-11-25, Version 0.27.0.
 
 ---
 
@@ -53,7 +53,18 @@ Aufmachen, auf *Start* tippen, und der Beat läuft. Pocket 808 braucht keine Ins
   - Das LCD zeigt beim Spielen ein **Oszilloskop** des Master-Ausgangs und die 16 Steps mit Lauflicht, wie beim OP-1. Gezeichnet wird nur während der Wiedergabe; bei „weniger Bewegung“ bleibt die Linie ruhig.
   - **Würfeln** erzeugt eine Variation des Patterns: Ghost-Hats, eine Extra-Kick, ein Snare-Ghost, eine Open Hat am Ende oder eine Hat weniger. Gefällt sie nicht, holt *Zurück* das Original.
   - **Szenen** wie beim OP-XY: acht Speicher für Pegel, Mute und Solo aller Kanäle. Ein Tipp sichert, der nächste ruft ab, live während des Spielens.
-- **Vom Loop zum Song:** Acht Pattern-Plätze (A–H) lassen sich zu einer Song-Kette mit Wiederholungen verbinden. Dazu kommen vier Vorlagen (House, Electro, Hip-Hop, Trap), Kopieren, Einfügen und Zurück.
+- **21 Vorlagen als komplette Starter:** Fünf Stile mit je vier bis fünf Vorlagen, Lo-Fi als Schwerpunkt:
+  - **Lo-Fi:** Dusty Tape, Rainy Day, Late Night Study, Jazzy Hop, Sleepy Halftime
+  - **Hip-Hop:** Classic Boom Bap, Golden Era, G-Funk, Dirty South
+  - **Trap:** Atlanta Trap, Dark Trap, UK Drill, Melodic Trap
+  - **House:** Classic House, Deep House, Chicago Jack, Tech House
+  - **Techno:** Peak Techno, Acid Techno, Minimal, Detroit
+  - Eine Vorlage lädt in einem Tipp Tempo, Swing, Tonart, drei Patterns (Groove, Variation, Break) mit Ghost Notes, Rolls, Zufall und Bedingungen, Bass- und Lead-Noten mit Akzent, Slide und Akkorden, dazu Kit, Sounds, Mixer, FX, Klangcharakter und eine Song-Kette.
+  - Mit *Laden* wählst du, was ersetzt wird: **Alles**, nur die **Drums** oder nur der **Sound**. *Zurück* nimmt das Laden wieder zurück. Die Pattern-Plätze D–H und der Sampler bleiben unberührt.
+  - Unter **Basis** liegen weiter die vier einfachen Drum-Muster (House, Electro, Hip-Hop, Trap).
+- **Sechs Drum-Kits** (Classic, Boom, Tight, Lo-Fi, Hard, Trap) stellen Level, Tune und Decay aller Stimmen auf einmal, und je Stimme gibt es jetzt **acht bis neun Synth-Sounds** statt drei (zum Beispiel 808, Reese und Mellow im Bass, Keys, Pad, Stab und Bell im Lead).
+- **Warm und Tape:** Im FX-Gerät schaltet **Warm** den analogen Klang ein: 24-dB-Filter und Sättigung im Synth, leichtes Driften je Note, Hats und Becken über zwei Bandpässe wie in der 808, kein Drum-Treffer gleicht exakt dem anderen. **Tape** dreht eine Bandmaschine dazu: Sättigung, leichtes Eiern der Tonhöhe, weiche Höhen und leises Rauschen mit Knacksern, das nur beim Spielen läuft. Ohne beides klingt alles wie bisher, und der A/B-Vergleich ist ein Tipp.
+- **Vom Loop zum Song:** Acht Pattern-Plätze (A–H) lassen sich zu einer Song-Kette mit Wiederholungen verbinden. Dazu kommen Kopieren, Einfügen und Zurück.
 - **Live-Aufnahme:** *Rec* schaltet die Aufnahme scharf. Beim Start zählt ein Takt aus vier Klicks vor, dann spielst du ein: Spurnamen für Drums, die Pads und die Tastatur im Sampler (mit Tonhöhe), die Tonnamen der Piano-Roll für Noten. Jeder Schlag rastet auf den nächsten Step. Aufgenommen wird nur hinzugefügt, nie gelöscht, im Song-Modus ins gerade laufende Pattern. Ein ganzer Take ist ein einziger Zurück-Schritt.
 - **Mehrstufiges Zurück** (bis zu 20 Schritte) und **Tap-Tempo**: Der Knopf *Tap* neben den Reglern (am Rechner die Taste T) liest das Tempo aus deinen Tipps ab, aus dem Mittel der letzten sechs Abstände, im Bereich 60–200 BPM.
 - **Merkt sich alles:** Jede Änderung wird automatisch gespeichert, auch deine Samples.
@@ -200,7 +211,8 @@ So sieht es auf den einzelnen Geräten aus:
   - Synth, Sampler, Mixer und FX sitzen in einem Geräte-Halter: auf dem iPhone als Akkordeon, auf dem Tablet als Tabs, auf dem Desktop alle offen.
   - Der Sampler ist ebenfalls umgezogen: acht Pads, Wellenform auf einem Canvas mit ziehbaren Start- und Endmarken, Laden per Datei oder Mikrofon (MediaRecorder, mit Rückfall auf die Aufnahme-App), Rückwärts, Regler und Steps mit Sub-Modus. Pad-Samples liegen wie die eigenen Drum-Samples in der SampleBank.
   - Mixer und FX: 13 Kanalzüge mit Fader, Mute und Solo, Pan (rastet beim Ziehen in der Mitte ein) und Reverb-Send für den gewählten Kanal; Reverb (Return, Size, Damp), DJ-Filter (Tiefpass links, Hochpass rechts, Mitte aus) und Stutter zum Halten, das beim Loslassen, Abbrechen oder Verlieren des Zeigers immer ausgeht.
-  - Song und Vorlagen: Song-Kette aus Blöcken mit Wiederholungen, verschieben, entfernen, leeren; die gespielte Position leuchtet. Vorlagen (House, Electro, Hip-Hop, Trap), Kopieren, Einfügen, Pattern leeren und Zurück.
+  - Song und Vorlagen: Song-Kette aus Blöcken mit Wiederholungen, verschieben, entfernen, leeren; die gespielte Position leuchtet. Vorlagen-Browser (Stil wählen, Vorlage laden, Alles/Drums/Sound), Kits, Kopieren, Einfügen, Pattern leeren und Zurück.
+  - Vorlagen sind Daten in `src/core/templates/` in einer Kurzschreibweise (ein Zeichen pro Drum-Step, Noten als `Step:Stufe:Länge`), die `parse.ts` in gewöhnliche Patterns übersetzt. Laden erzeugt einen normalen Zustand, das Speicherformat kennt keine Vorlagen.
   - Der Synth ist umgezogen: Piano-Roll mit Takthälften und Notenlängen, die fünf SH-101-Module mit Drehreglern, senkrechten ADSR-Schiebereglern und live gezeichneter Hüllkurve, Presets je Stimme. Die Bedienlogik steckt als reine Funktionen in `core/synth.ts`.
   - Die Oberfläche kennt die Audio-Engine nicht direkt, sondern nur eine schmale Schnittstelle. Plattform-Eigenheiten (iOS-Stummschalter, Wake Lock, Hintergrund, Artifact-Host, Dateiauswahl, Teilen bzw. Download) liegen in einer eigenen Schicht.
 - **Design:**
@@ -218,8 +230,8 @@ Pocket 808 wird mit mehr Testcode als App-Code gebaut. Jeder Commit läuft durch
 
 | Ebene | Was geprüft wird | Umfang |
 |---|---|---|
-| **Unit** | `core`, `store`, `audio`, `ui` und `platform` einzeln (Oberfläche in jsdom), mit Eigenschafts- und Modelltests (fast-check); Abdeckung ≥ 90 % pro Datei erzwungen | 668 Tests |
-| **Referenz** | Die neue Engine klingt wie die bewährte alte App, die eingefroren als Vergleichsmaßstab in `tests/reference/legacy/oracle.html` liegt (sie wird nicht mehr ausgeliefert): Beide rendern dieselben Szenarien offline (`node-web-audio-api`) und werden über **Klang-Fingerabdrücke** (Spitze, RMS-Verlauf in 10 ms, spektraler Schwerpunkt) verglichen, dazu Speicherstände, Scheduler-Sequenzen und das Umrechnen importierter Samples (bitgleich) | 189 Tests, 15 Mix-Szenarien, 50 Drum-Varianten, WAV-Export, Step-Optionen, Locks und Fill, Punch-Effekte, Akzent, Slide, Akkorde, Arpeggiator, LFO, Chop und Pitch pro Step |
+| **Unit** | `core`, `store`, `audio`, `ui` und `platform` einzeln (Oberfläche in jsdom), mit Eigenschafts- und Modelltests (fast-check); Abdeckung ≥ 90 % pro Datei erzwungen | 793 Tests |
+| **Referenz** | Die neue Engine klingt wie die bewährte alte App, die eingefroren als Vergleichsmaßstab in `tests/reference/legacy/oracle.html` liegt (sie wird nicht mehr ausgeliefert): Beide rendern dieselben Szenarien offline (`node-web-audio-api`) und werden über **Klang-Fingerabdrücke** (Spitze, RMS-Verlauf in 10 ms, spektraler Schwerpunkt) verglichen, dazu Speicherstände, Scheduler-Sequenzen und das Umrechnen importierter Samples (bitgleich) | 210 Tests, 15 Mix-Szenarien, 50 Drum-Varianten, WAV-Export, Step-Optionen, Locks und Fill, Punch-Effekte, Akzent, Slide, Akkorde, Arpeggiator, LFO, Chop und Pitch pro Step; dazu jede der 21 Vorlagen offline gerendert und auf Pegel geprüft (keine Übersteuerung, keine Löcher) |
 | **Bench** | Performance-Budget: Audio-Knoten pro Sekunde und Renderzeit für ein Demo- und ein Worst-Case-Pattern | Demo 47 Knoten/s, Worst-Case 429 Knoten/s |
 | **E2E** | Playwright auf iPhone hoch und quer, iPad hoch und quer (WebKit) und Desktop (Chromium): Funktion, Kürzel, kein horizontaler Scroll, Screenshots je Gerät, Barrierefreiheit mit axe (keine schweren Verstöße), alte Speicherstände, Artifact-Host, Projekt sichern und öffnen, WAV-Export, Step-Optionen, Fill und Locks, Punch und Bounce, Würfel und Szenen, Akzent und Akkorde, Arp und LFO, Chop und Pitch, Tap-Tempo und Undo-Stapel, Live-Aufnahme, keine Long Tasks beim Spielen, Touch-Ziele ≥ 44 px, Größenbudget | 247 Tests |
 
@@ -303,4 +315,6 @@ Nach dem Fundament, in dieser Reihenfolge:
 7. ~~**Sampler:** Chop-Modus, melodische Tastatur, Pitch pro Step~~
 8. ~~Live-Aufnahme mit Count-in~~ (8b), Pattern-Länge 8–32 (8c); ~~Tap-Tempo, mehrstufiges Undo~~ (8a)
 
-Außerdem geplant ist ein umschaltbarer **„Warm“-Modus** für einen analogeren Klang: 24-dB-Filter, sanfte Sättigung, leichtes Driften und 808-Hats mit Bandpässen. Er lässt sich direkt im A/B-Vergleich hören.
+9. ~~**Klang und Vorlagen:** Warm und Tape, 21 Vorlagen in fünf Stilen, Kits, mehr Synth-Sounds~~
+
+Als Nächstes: Feinschliff der Vorlagen nach Gehör auf dem iPhone, weitere Stile (zum Beispiel Electro, Synthwave, UK Garage) und Vorhören einer Vorlage vor dem Laden.
