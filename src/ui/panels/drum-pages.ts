@@ -159,6 +159,16 @@ export const drumSoundPage: (c: UiContext, nav: Nav) => HTMLElement = (c) => {
         if (!audio.playing.peek()) audio.audition(voice.peek());
       },
     });
+  // Name des eigenen Samples (höchstens 10 Zeichen); ohne eigenes Sample keine Zeile
+  const sampleName = h('p', { class: 'drum-smp-name' });
+  bind(
+    scope,
+    () => c.samples.drums.value.get(voice.value)?.name.slice(0, 10),
+    (name) => {
+      sampleName.textContent = name ?? '';
+      sampleName.hidden = name === undefined;
+    },
+  );
   return h('div', { class: 'drum-sound' }, [
     h('div', { class: 'drum-knobs' }, [
       param('level', 'Level', pct),
@@ -166,5 +176,6 @@ export const drumSoundPage: (c: UiContext, nav: Nav) => HTMLElement = (c) => {
       param('decay', 'Decay', pct),
     ]),
     drumSampleRow(c, voice),
+    sampleName,
   ]);
 };

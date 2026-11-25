@@ -382,6 +382,26 @@ describe('drumSoundPage', () => {
     expect(audio.audition).not.toHaveBeenCalled();
   });
 
+  it('nennt das eigene Sample (10 Zeichen) nur für Stimmen, die eines haben', () => {
+    const { c, nav } = setup();
+    const el = drumSoundPage(c, nav);
+    const name = () => el.querySelector<HTMLElement>('.drum-smp-name');
+    expect(name()?.hidden).toBe(true);
+    c.samples.setDrum('BD', { pcm, name: 'Mein langer Name' });
+    expect(name()?.hidden).toBe(false);
+    expect(name()?.textContent).toBe('Mein lange');
+    nav.selectTrack('SD');
+    expect(name()?.hidden).toBe(true);
+    expect(name()?.textContent).toBe('');
+    c.samples.setDrum('SD', { pcm, name: 'Snap' });
+    expect(name()?.textContent).toBe('Snap');
+    nav.selectTrack('BD');
+    expect(name()?.textContent).toBe('Mein lange');
+    labelled(el, 'Zurück zum synthetischen Original-Klang')?.click();
+    expect(name()?.hidden).toBe(true);
+    expect(name()?.textContent).toBe('');
+  });
+
   it('Eigenes Sample laden und zurück zum Original', () => {
     const { c, nav } = setup();
     const el = drumSoundPage(c, nav);

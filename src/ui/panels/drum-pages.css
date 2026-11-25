@@ -14,4 +14,11 @@
     justify-content: center;
     margin-top: 12px;
   }
+  .drum-smp-name {
+    margin-top: 8px;
+    text-align: center;
+    font: 13px var(--font-lcd);
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--ink) 72%, var(--panel));
+  }
 }
