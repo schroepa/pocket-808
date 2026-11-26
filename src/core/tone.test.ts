@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { initialState } from './initial.ts';
+import { decodeProject, encodeProject } from './project.ts';
 import { loadState, serialize } from './persist.ts';
-import { sameTone, setTape, setWarm, toneOf } from './tone.ts';
+import { sameTone, setDrumDrive, setTape, setWarm, toneOf } from './tone.ts';
 
 describe('Klangcharakter', () => {
   it('ist ohne Felder aus', () => {
@@ -46,5 +47,33 @@ describe('Klangcharakter', () => {
     expect('tape' in off).toBe(false);
     expect('tape' in loadState({ tape: 'x' }, base)).toBe(false);
     expect(loadState({ tape: 7 }, initialState()).tape).toBe(1);
+  });
+});
+
+describe('Drum Drive im Zustand', () => {
+  it('setzt, begrenzt und löscht das Feld bei 0', () => {
+    expect(setDrumDrive(initialState(), 0.4).drumDrive).toBe(0.4);
+    expect(setDrumDrive(initialState(), 3).drumDrive).toBe(1);
+    expect('drumDrive' in setDrumDrive(setDrumDrive(initialState(), 0.4), 0)).toBe(false);
+    expect('drumDrive' in setDrumDrive(initialState(), -1)).toBe(false);
+    expect('drumDrive' in serialize(initialState())).toBe(false);
+  });
+
+  it('übersteht Speichern und Laden, auch in der Projektdatei', () => {
+    const on = setDrumDrive(initialState(), 0.6);
+    expect(loadState(JSON.parse(JSON.stringify(serialize(on))), initialState()).drumDrive).toBe(
+      0.6,
+    );
+    const file = decodeProject(encodeProject({ state: on, pads: [], drums: {} }, new Date(0)));
+    expect('state' in file && file.state.drumDrive).toBe(0.6);
+  });
+
+  it('verwirft Unsinn beim Laden; ohne Feld bleibt die Basis', () => {
+    for (const bad of ['x', -1, 0, Number.NaN, null])
+      expect('drumDrive' in loadState({ drumDrive: bad }, initialState())).toBe(false);
+    expect(loadState({ drumDrive: 5 }, initialState()).drumDrive).toBe(1);
+    const base = setDrumDrive(initialState(), 0.3);
+    expect(loadState({}, base).drumDrive).toBe(0.3);
+    expect('drumDrive' in loadState({ drumDrive: 0 }, base)).toBe(false);
   });
 });

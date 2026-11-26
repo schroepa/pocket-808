@@ -11,9 +11,11 @@ import { CHANNELS, DRUM_DEFAULTS, SYN_PRESETS, VOICE_IDS } from '../../../src/co
 import { initialState } from '../../../src/core/initial.ts';
 import { applyTemplate, SYNTH_SOUNDS, TEMPLATES } from '../../../src/core/templates/index.ts';
 import { applySynthPreset, setPartFx } from '../../../src/core/synth.ts';
+import { setDrumDrive } from '../../../src/core/tone.ts';
 import { audibleChannels } from '../../../src/core/mix.ts';
 import { seededRandom } from '../../../src/core/random.ts';
 import type {
+  ChannelId,
   DrumParams,
   Note,
   Part,
@@ -423,7 +425,7 @@ const COUNTED = [
 ] as const;
 
 /** Wie Legacy-Bench: 7 s spielen, 8 s rendern, Knoten des Haupt-Kontexts zählen. */
-export async function bench(args: { load: 'demo' | 'worst' }): Promise<BenchResult> {
+export async function bench(args: { load: 'demo' | 'worst' | 'drive' }): Promise<BenchResult> {
   const counts: Record<string, number> = Object.fromEntries(COUNTED.map((n) => [n, 0]));
   const { ctx } = await play({
     seconds: 8,
@@ -439,6 +441,7 @@ export async function bench(args: { load: 'demo' | 'worst' }): Promise<BenchResu
           s.patterns.A.sub[id] = sub;
         }
       }
+      if (args.load === 'drive') s.drumDrive = 1;
       s.tempo = 120;
       s.mode = 'pattern';
       s.cur = 'A';
@@ -1135,7 +1138,51 @@ export async function partFxMix(): Promise<{ peak: number }> {
   };
 }
 
+export interface DriveProbe {
+  peak: number;
+  rmsDb: number;
+  /** RMS der ersten Differenz / RMS (links), wie bei partFx */
+  brightness: number;
+}
+
+/** Demo-Song mit Drum Drive; stumm sind die Drums, alles andere (BA, LD, SM) oder nichts */
+export async function drumDriveProbe(args: {
+  drive: number;
+  mute: 'none' | 'drums' | 'rest';
+}): Promise<DriveProbe> {
+  const random = seededRandom(1);
+  const base = setDrumDrive(structuredClone(initialState()), args.drive);
+  const muted: readonly ChannelId[] =
+    args.mute === 'drums' ? VOICE_IDS : args.mute === 'rest' ? ['BA', 'LD', 'SM'] : [];
+  const state: State = {
+    ...base,
+    mix: Object.fromEntries(
+      CHANNELS.map((id) => [id, { ...base.mix[id], m: muted.includes(id) }]),
+    ) as State['mix'],
+  };
+  const buf = await renderOffline({
+    state,
+    pads: factorySamples(random('factory')),
+    drums: {},
+    playFor: 5,
+    seconds: 5,
+    createContext: createOffline,
+    createOffline,
+    random,
+  });
+  if (!buf) throw new Error('Export abgebrochen');
+  const L = buf.getChannelData(0);
+  const R = buf.getChannelData(1);
+  const diff = L.map((v, i) => v - (L[i - 1] ?? v));
+  return {
+    peak: Math.max(...[L, R].map((x) => x.reduce((m, v) => Math.max(m, Math.abs(v)), 0))),
+    rmsDb: 20 * Math.log10(Math.sqrt((rmsOf(L) ** 2 + rmsOf(R) ** 2) / 2)),
+    brightness: rmsOf(diff) / rmsOf(L),
+  };
+}
+
 export const SCENARIOS: Record<string, (args: never) => Promise<unknown>> = {
+  drumDriveProbe,
   partFx,
   partFxMix,
   templateLevels,

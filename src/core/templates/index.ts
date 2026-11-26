@@ -1,3 +1,4 @@
+import { BERLIN } from './berlin.ts';
 import { HIPHOP } from './hiphop.ts';
 import { HOUSE } from './house.ts';
 import { LOFI } from './lofi.ts';
@@ -13,7 +14,14 @@ export { GENRES, TEMPLATE_SCOPES } from './types.ts';
 export type { Genre, KitParams, Template, TemplatePattern, TemplateScope } from './types.ts';
 
 /** alle Vorlagen, nach Stil geordnet */
-export const TEMPLATES: readonly Template[] = [...LOFI, ...HIPHOP, ...TRAP, ...HOUSE, ...TECHNO];
+export const TEMPLATES: readonly Template[] = [
+  ...LOFI,
+  ...HIPHOP,
+  ...TRAP,
+  ...HOUSE,
+  ...TECHNO,
+  ...BERLIN,
+];
 
 export const templatesOf = (genre: Genre): readonly Template[] =>
   TEMPLATES.filter((t) => t.genre === genre);

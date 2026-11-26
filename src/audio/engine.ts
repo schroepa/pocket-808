@@ -300,6 +300,22 @@ export function createEngine(o: EngineOptions): Engine {
         timer.clearTimeout(release);
       });
     }
+    // Drum Drive; jede Änderung verwirft den ausstehenden Abbau, sonst fiele er in eine neue Blende
+    const drumDrive = store.select((s) => s.drumDrive ?? 0);
+    let driveRelease: unknown;
+    live(
+      () => drumDrive.value,
+      (v) => {
+        timer.clearTimeout(driveRelease);
+        if (g.setDrumDrive(v, now()))
+          driveRelease = timer.setTimeout(() => {
+            g.releaseDrumDrive();
+          }, 100);
+      },
+    );
+    disposers.push(() => {
+      timer.clearTimeout(driveRelease);
+    });
     const tone = store.select(toneOf, sameTone);
     live(
       () => tone.value,

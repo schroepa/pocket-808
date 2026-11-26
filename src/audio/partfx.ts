@@ -48,7 +48,7 @@ const CHORUS_VOICES = [
 ] as const;
 
 /** Pegel mit bekanntem Verlauf: der Anker der nächsten Rampe stimmt auch mitten in einer Blende */
-function level(g: GainNode, start: number): (to: number, t: number | null) => void {
+export function level(g: GainNode, start: number): (to: number, t: number | null) => void {
   let from = start;
   let to = start;
   let t0 = 0;

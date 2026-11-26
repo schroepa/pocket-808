@@ -183,4 +183,6 @@ export interface State {
   warm?: true;
   /** Tape-Charakter 0..1 (Eiern, weiche Höhen, Rauschen); fehlt = aus */
   tape?: number;
+  /** Drum Drive 0..1 (Verzerrung auf dem Drum-Bus); fehlt = aus */
+  drumDrive?: number;
 }

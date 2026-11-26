@@ -6,7 +6,7 @@
 
 Aufmachen, auf *Start* tippen, und der Beat läuft. Pocket 808 braucht keine Installation, kein Konto und keinen Server. Alles, was du baust, bleibt in deinem Browser.
 
-> Diese README ist ein **lebendes Dokument**. Sie wird mit jeder Änderung am Projekt aktualisiert. Stand: 2026-11-25, Version 0.29.0 mit der neuen Oberfläche „Ein Gerät“ (live).
+> Diese README ist ein **lebendes Dokument**. Sie wird mit jeder Änderung am Projekt aktualisiert. Stand: 2026-11-26, Version 0.30.0 mit **Drum Drive** und dem Stil **Berlin**. Diese Version ist **live**.
 
 ---
 
@@ -29,7 +29,7 @@ Aufmachen, auf *Start* tippen, und der Beat läuft. Pocket 808 braucht keine Ins
   - Pro Note **Akzent** (lauter und heller), **Slide** (gleitet wie bei der TB-303 von der vorigen Note herüber) und **Akkorde** (Dreiklang, Vierklang, Quinte, Oktave, immer passend zur gewählten Tonart). Gesetzt wird mit dem Werkzeug über der Piano-Roll.
   - **Arpeggiator** wie beim SH-101: Auf, Ab, Auf-Ab oder Zufall, in Sechzehnteln oder Zweiunddreißigsteln über eine oder zwei Oktaven. Mit einem Akkord entsteht daraus sofort eine Figur.
   - **LFO** je Stimme für Wobble (Cutoff) oder Vibrato (Pitch), von 0,1 bis 19 Hz.
-  - **Drive und Chorus** je Stimme: Drive macht Bässe dicht und fett, Chorus zieht Flächen und Leads stereo auf, während die tiefen Frequenzen in der Mitte bleiben. Alle Synth-Presets nutzen beides.
+  - **Drive und Chorus** je Stimme: Drive macht Bässe dicht und fett, Chorus zieht Flächen und Leads stereo auf, während die tiefen Frequenzen in der Mitte bleiben. Die Synth-Sounds bringen passende Werte gleich mit.
   - Tonart und Skala wählst du aus, die Piano-Roll bleibt automatisch in der Tonart, falsche Töne gibt es nicht.
   - Ein tempo-synchrones Delay ist eingebaut.
 - **Eigene Sounds:**
@@ -54,17 +54,20 @@ Aufmachen, auf *Start* tippen, und der Beat läuft. Pocket 808 braucht keine Ins
   - Das LCD zeigt beim Spielen ein **Oszilloskop** des Master-Ausgangs und die 16 Steps mit Lauflicht, wie beim OP-1. Gezeichnet wird nur während der Wiedergabe; bei „weniger Bewegung“ bleibt die Linie ruhig.
   - **Würfeln** erzeugt eine Variation des Patterns: Ghost-Hats, eine Extra-Kick, ein Snare-Ghost, eine Open Hat am Ende oder eine Hat weniger. Gefällt sie nicht, holt *Zurück* das Original.
   - **Szenen** wie beim OP-XY: acht Speicher für Pegel, Mute und Solo aller Kanäle. Ein Tipp sichert, der nächste ruft ab, live während des Spielens.
-- **21 Vorlagen als komplette Starter:** Sie liegen mit Synth-Sounds, Drum-Mustern und Kits in der **Plattenkiste** (Modus *Sound*). Fünf Stile mit je vier bis fünf Vorlagen, Lo-Fi als Schwerpunkt:
+- **30 Vorlagen in sechs Stilen als komplette Starter:** Sie liegen mit Synth-Sounds, Drum-Mustern und Kits in der **Plattenkiste** (Modus *Sound*). Fünf Stile haben je vier bis fünf Vorlagen, Lo-Fi als Schwerpunkt, Berlin hat neun:
   - **Lo-Fi:** Dusty Tape, Rainy Day, Late Night Study, Jazzy Hop, Sleepy Halftime
   - **Hip-Hop:** Classic Boom Bap, Golden Era, G-Funk, Dirty South
   - **Trap:** Atlanta Trap, Dark Trap, UK Drill, Melodic Trap
   - **House:** Classic House, Deep House, Chicago Jack, Tech House
   - **Techno:** Peak Techno, Acid Techno, Minimal, Detroit
-  - Eine Vorlage lädt in einem Tipp Tempo, Swing, Tonart, drei Patterns (Groove, Variation, Break) mit Ghost Notes, Rolls, Zufall und Bedingungen, Bass- und Lead-Noten mit Akzent, Slide und Akkorden, dazu Kit, Sounds, Mixer, FX, Klangcharakter und eine Song-Kette.
-  - Mit *Laden* wählst du, was ersetzt wird: **Alles**, nur die **Drums** oder nur der **Sound** (bei *Alles* und *Sound* beginnen Mixer und FX vom Standard, dazu kommen die Werte der Vorlage). *Zurück* nimmt das Laden wieder zurück. Die Pattern-Plätze D–H und der Sampler bleiben unberührt.
+  - **Berlin:** Kajal, Königin, Westwerk, Breitwand, Zimmerlinde, Ostkreuz, Spreeufer, Presslufthalle, Tiefgang. Electro, Electroclash, Big Beat und Punk-Techno im Geist der frühen 2000er: 118 bis 135 BPM, von kühl und trocken bis zum verzerrten Stampfer mit Shuffle, mit frei erfundenen Beats und Melodien, je eigener Tonart und eigenem Klang
+  - Eine Vorlage lädt in einem Tipp Tempo, Swing, Tonart, drei Patterns (Groove, Variation, Break), bei Berlin vier (dazu ein Fill oder Aufbau), mit Ghost Notes, Rolls, Zufall und Bedingungen, Bass- und Lead-Noten mit Akzent, Slide und Akkorden, dazu Kit, Sounds, Mixer, FX, Klangcharakter, Drum Drive und eine Song-Kette.
+  - Mit *Laden* wählst du, was ersetzt wird: **Alles**, nur die **Drums** oder nur der **Sound** (bei *Alles* und *Sound* beginnen Mixer und FX vom Standard, dazu kommen die Werte der Vorlage). Drum Drive setzt jede der drei Lade-Arten auf den Wert der Vorlage, ohne Wert ist er aus. *Zurück* nimmt das Laden wieder zurück. Pattern-Plätze, die die Vorlage nicht belegt, und der Sampler bleiben unberührt.
   - Unter **Basis-Muster** liegen weiter die vier einfachen Drum-Muster (House, Electro, Hip-Hop, Trap).
-- **Sechs Drum-Kits** (Classic, Boom, Tight, Lo-Fi, Hard, Trap) stellen Level, Tune und Decay aller Stimmen auf einmal, und je Stimme gibt es jetzt **acht bis neun Synth-Sounds** statt drei (zum Beispiel 808, Reese und Mellow im Bass, Keys, Pad, Stab und Bell im Lead).
-- **Warm und Tape:** Im Mixer auf der Seite **FX** schaltet **Warm** den analogen Klang ein: 24-dB-Filter und Sättigung im Synth, leichtes Driften je Note, Hats und Becken über zwei Bandpässe wie in der 808, kein Drum-Treffer gleicht exakt dem anderen. **Tape** dreht eine Bandmaschine dazu: Sättigung, leichtes Eiern der Tonhöhe, weiche Höhen und leises Rauschen mit Knacksern, das nur beim Spielen läuft. Ohne beides klingt alles wie bisher, und der A/B-Vergleich ist ein Tipp.
+- **Zehn Drum-Kits** (Classic, Boom, Tight, Lo-Fi, Hard, Trap, Electro, Break, Draht, Beton) stellen Level, Tune und Decay aller Stimmen auf einmal.
+- **27 Synth-Sounds:** 13 für den Bass (zum Beispiel 808, Reese, Kreissäge, Wummer und Knurr) und 14 für den Lead (zum Beispiel Keys, Pad, Neon, Orgel, Sirene und Zerre).
+- **Warm und Tape:** Im Mixer auf der Seite **FX** schaltet **Warm** den analogen Klang ein: 24-dB-Filter und Sättigung im Synth, leichtes Driften je Note, Hats und Becken über zwei Bandpässe wie in der 808, kein Drum-Treffer gleicht exakt dem anderen. **Tape** dreht eine Bandmaschine dazu: Sättigung, leichtes Eiern der Tonhöhe, weiche Höhen und leises Rauschen mit Knacksern, das nur beim Spielen läuft. Ohne beides bleibt der Klang sauber, und der A/B-Vergleich ist ein Tipp.
+- **Drum Drive:** Ein Regler daneben (Mixer, Seite **FX**, Abschnitt *Klang*) schickt alle zehn Drums gemeinsam durch eine Verzerrung, von etwas Biss bis zum Punk-Brett. Die Lautstärke bleibt dabei etwa gleich; Bass, Lead, Sampler und der Hall-Send bleiben sauber. Bei 0 liegt nichts im Signalweg, Doppeltipp schaltet aus, und Kits lassen den Regler, wie er ist.
 - **Vom Loop zum Song:** Acht Pattern-Plätze (A–H) lassen sich zu einer Song-Kette mit Wiederholungen verbinden. Dazu kommen Kopieren, Einfügen und Zurück.
 - **Live-Aufnahme:** *Rec* schaltet die Aufnahme scharf. Beim Start zählt ein Takt aus vier Klicks vor, dann spielst du ein: mit den Spurtasten, den Pads im Pad-Feld oder den Zeilen-Beschriftungen in „Alle Spuren“ (Bass und Lead nehmen so den Grundton auf), mit den Pads und der Tastatur im Sampler (mit Tonhöhe) oder mit den Tonnamen der Piano-Roll für Noten. Jeder Schlag rastet auf den nächsten Step. Aufgenommen wird nur hinzugefügt, nie gelöscht, im Song-Modus ins gerade laufende Pattern. Ein ganzer Take ist ein einziger Zurück-Schritt.
 - **Mehrstufiges Zurück** (bis zu 20 Schritte) und **Tap-Tempo**: Der Knopf *Tap* in der Tempo-Fläche (Tipp auf die BPM im Display; am Rechner die Taste T) liest das Tempo aus deinen Tipps ab, aus dem Mittel der letzten sechs Abstände, im Bereich 60–200 BPM.
@@ -196,6 +199,7 @@ flowchart LR
   V[Stimmen<br/>Drums · Synth · Sampler] --> K[Kanalzug<br/>Gain → Panner]
   K --> B[Bus]
   K -- Send --> R[Reverb<br/>Faltung]
+  K -- Drums, nur bei Bedarf --> DD[Drum Drive<br/>Sättigung] --> B
   S[Synth] -- Send --> D[Delay<br/>tempo-synchron]
   R --> B
   D --> B
@@ -211,6 +215,7 @@ flowchart LR
   - Sie werden **nacheinander** in einem `OfflineAudioContext` gerendert, nie parallel, damit das iPhone nicht ins Stocken gerät.
   - Pro Spur klingt immer nur ein Schlag, ein neuer blendet den alten in 6 ms aus. So gibt es keine Klick-Artefakte und keine Stimmen-Lawinen.
 - **Rauschen:** Snare, Clap und Rim Shot starten ihr Rauschen sample-genau. Bei der alten Version klangen sie je nach Seitenaufruf zufällig etwas heller oder dumpfer, weil der Rauschpuffer bei einem Bruchteil-Versatz startete. Das ist behoben.
+- **Drum Drive** (`audio/drumdrive.ts`): Die zehn Drum-Kanäle laufen nach Fader und Panorama gemeinsam über eine Summe in den Bus, entweder trocken oder durch Vorverstärkung, Sättigung (WaveShaper, 2× Oversampling) und Pegelausgleich. Der Ausgleich ist so berechnet, dass ein Signal in Höhe der üblichen Drum-Summe die Kette bei jeder Reglerstellung gleich laut verlässt. Die fünf Knoten entstehen erst bei Bedarf, einmal für alle Drums und nie pro Treffer, und werden 100 ms nach dem Ausschalten wieder abgebaut. Der Reverb-Send bleibt am Kanal, der Hall kommt also aus dem unverzerrten Signal. DJ-Filter, Stutter, Punch und Tape sitzen dahinter, und der WAV-Export klingt wie die Wiedergabe. Der Zustand trägt das optionale Feld `drumDrive` nur, solange der Regler über 0 steht.
 - **Synth:** Die Signalführung folgt dem SH-101: Oszillator mit Sub-Oszillator, Filter mit eigener ADSR, Verstärker mit ADSR. Jede Stimme ist monophon, eine neue Note schneidet die alte sauber ab.
   - Akkorde sind **paraphon**: Alle Töne teilen sich ein Filter und einen Verstärker, je Ton zwei Oszillatoren, der Sub nur für den Grundton. Der Mischpegel sinkt mit 1/√n, damit ein Akkord nicht lauter wird als ein Einzelton.
   - Ein **Slide** ist gebunden wie bei der TB-303: Die vorige Note hält ihr Gate bis zum Einsatz, die neue Stimme beginnt auf deren Frequenz und gleitet in 60 ms exponentiell zum Ziel. Ohne neuen Attack übernimmt sie in 6 ms den Pegel der Vorgängerin und klingt von dort mit dem Decay weiter. Die alte Stimme blendet gleichzeitig aus, verankert auf ihrem berechneten Hüllkurvenpegel. Ein Slide startet nur, wenn das Gate der Vorgängerin gerade erst endete. Ein **Akzent** hebt den Pegel um den Faktor 1,35 und öffnet die Filter-Hüllkurve weiter.
@@ -268,10 +273,10 @@ Pocket 808 wird mit mehr Testcode als App-Code gebaut. Jeder Commit läuft durch
 
 | Ebene | Was geprüft wird | Umfang |
 |---|---|---|
-| **Unit** | `core`, `store`, `audio`, `ui` und `platform` einzeln (Oberfläche in jsdom), mit Eigenschafts- und Modelltests (fast-check); Abdeckung ≥ 90 % pro Datei erzwungen | 961 Tests |
-| **Referenz** | Die neue Engine klingt wie die bewährte alte App, die eingefroren als Vergleichsmaßstab in `tests/reference/legacy/oracle.html` liegt (sie wird nicht mehr ausgeliefert): Beide rendern dieselben Szenarien offline (`node-web-audio-api`) und werden über **Klang-Fingerabdrücke** (Spitze, RMS-Verlauf in 10 ms, spektraler Schwerpunkt) verglichen, dazu Speicherstände, Scheduler-Sequenzen und das Umrechnen importierter Samples (bitgleich) | 218 Tests, 15 Mix-Szenarien, 50 Drum-Varianten, WAV-Export, Step-Optionen, Locks und Fill, Punch-Effekte, Akzent, Slide, Akkorde, Arpeggiator, LFO, Chop und Pitch pro Step, Drive und Chorus; dazu jede der 21 Vorlagen offline gerendert und auf Pegel geprüft (keine Übersteuerung, keine Löcher) |
-| **Bench** | Performance-Budget: Audio-Knoten pro Sekunde und Renderzeit für ein Demo- und ein Worst-Case-Pattern | Demo 47 Knoten/s, Worst-Case 429 Knoten/s |
-| **E2E** | Playwright auf iPhone hoch und quer, iPad hoch und quer (WebKit) und Desktop (Chromium): Funktion, Kürzel, kein Scrollen der Seite und alles im Bild (je Modus und Seite, ab 390 × 660), kein horizontaler Scroll, Screenshots je Gerät, Barrierefreiheit mit axe (keine schweren Verstöße), alte Speicherstände, Artifact-Host, Projekt sichern und öffnen, WAV-Export, Step-Optionen, Fill und Locks, Punch und Bounce, Würfel und Szenen, Akzent und Akkorde, Arp und LFO, Drive und Chorus, Chop und Pitch, Tap-Tempo und Undo-Stapel, Live-Aufnahme, keine Long Tasks beim Spielen, Touch-Ziele ≥ 44 px, Größenbudget | 313 Tests (dazu insgesamt 32 gerätespezifisch übersprungen) |
+| **Unit** | `core`, `store`, `audio`, `ui` und `platform` einzeln (Oberfläche in jsdom), mit Eigenschafts- und Modelltests (fast-check); Abdeckung ≥ 90 % pro Datei erzwungen | 1016 Tests |
+| **Referenz** | Die neue Engine klingt wie die bewährte alte App, die eingefroren als Vergleichsmaßstab in `tests/reference/legacy/oracle.html` liegt (sie wird nicht mehr ausgeliefert): Beide rendern dieselben Szenarien offline (`node-web-audio-api`) und werden über **Klang-Fingerabdrücke** (Spitze, RMS-Verlauf in 10 ms, spektraler Schwerpunkt) verglichen, dazu Speicherstände, Scheduler-Sequenzen und das Umrechnen importierter Samples (bitgleich) | 231 Tests, 15 Mix-Szenarien, 50 Drum-Varianten, WAV-Export, Drum Drive, Step-Optionen, Locks und Fill, Punch-Effekte, Akzent, Slide, Akkorde, Arpeggiator, LFO, Chop und Pitch pro Step, Drive und Chorus; dazu jede der 30 Vorlagen offline gerendert und auf Pegel geprüft (keine Übersteuerung, keine Löcher) |
+| **Bench** | Performance-Budget: Audio-Knoten pro Sekunde und Renderzeit für ein Demo- und ein Worst-Case-Pattern, dazu die Demo mit Drum Drive | Demo 47 Knoten/s (auch mit Drum Drive), Worst-Case 429 Knoten/s |
+| **E2E** | Playwright auf iPhone hoch und quer, iPad hoch und quer (WebKit) und Desktop (Chromium): Funktion, Kürzel, kein Scrollen der Seite und alles im Bild (je Modus und Seite, ab 390 × 660), kein horizontaler Scroll, Screenshots je Gerät, Barrierefreiheit mit axe (keine schweren Verstöße), alte Speicherstände, Artifact-Host, Projekt sichern und öffnen, WAV-Export, Step-Optionen, Fill und Locks, Punch und Bounce, Würfel und Szenen, Akzent und Akkorde, Arp und LFO, Drive und Chorus, Drum Drive, Stil Berlin, Chop und Pitch, Tap-Tempo und Undo-Stapel, Live-Aufnahme, keine Long Tasks beim Spielen, Touch-Ziele ≥ 44 px, Größenbudget | 323 Tests (dazu insgesamt 32 gerätespezifisch übersprungen) |
 
 - **Toleranzen kalibriert:** Die Toleranzen der Klang-Fingerabdrücke sind kalibriert. Ein Halbton Verstimmung oder 10 % mehr Decay werden erkannt, Rauschschwankungen nicht.
 - **Mutationsprüfung:** Wir bauen absichtlich Fehler ein, zum Beispiel einen ausgebauten Live-Effekt, falschen Swing oder eine Closed Hat, die die Open Hat nicht mehr abwürgt. Der passende Test muss rot werden, sonst fehlt ein Test.
@@ -296,6 +301,7 @@ Pocket 808 steht auf einem neuen technischen Fundament: TypeScript, getrennte Sc
 | 6 | Umstellung: die neue App ist live, alte App und alte Tests entfernt | ✅ (auf dem iPhone abgenommen) |
 | Ausbau | Roadmap-Etappen 1–7, 8a, 8b, 9 und 10a (siehe unten) | ✅ live |
 | Ein Gerät | Neue Oberfläche: fester Bildschirm, Modi und Seiten, Plattenkiste, drei Layouts (0.29.0) | ✅ live; Abnahme auf dem iPhone offen |
+| Berlin-Paket | Drum Drive, neun Vorlagen im Stil Berlin, vier Kits, zehn Synth-Sounds (0.30.0) | ✅ live; Hörprobe auf dem iPhone bestanden |
 
 ---
 
@@ -357,6 +363,6 @@ Nach dem Fundament, in dieser Reihenfolge:
 
 9. ~~**Klang und Vorlagen:** Warm und Tape, 21 Vorlagen in fünf Stilen, Kits, mehr Synth-Sounds~~
 
-Dazu außer der Reihe: ~~**Oberfläche „Ein Gerät“:** fester Bildschirm statt langer Seite, Modi und Seiten, Plattenkiste~~ (0.29.0)
+Dazu außer der Reihe: ~~**Oberfläche „Ein Gerät“:** fester Bildschirm statt langer Seite, Modi und Seiten, Plattenkiste~~ (0.29.0) und ~~**Berlin-Paket:** Drum Drive, Stil Berlin, neue Kits und Synth-Sounds~~ (0.30.0)
 
-Als Nächstes: Abnahme der neuen Oberfläche auf dem iPhone und Veröffentlichung, dann mehr Synth-Klang und Sounds zur Berliner Electro- und Techno-Szene. Außerdem Feinschliff der Vorlagen nach Gehör auf dem iPhone, weitere Stile (zum Beispiel Electro, Synthwave, UK Garage) und Vorhören einer Vorlage vor dem Laden.
+Als Nächstes: Abnahme der neuen Oberfläche auf dem iPhone, dann mehr Synth-Klang, mit dem sich einzelne Berlin-Sounds nachschärfen lassen. Außerdem Feinschliff der übrigen Vorlagen nach Gehör, weitere Stile (zum Beispiel Electro, Synthwave, UK Garage) und Vorhören einer Vorlage vor dem Laden.

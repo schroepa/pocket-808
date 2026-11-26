@@ -100,6 +100,7 @@ describe('library: Vorlagen', () => {
       'Trap',
       'House',
       'Techno',
+      'Berlin',
     ]);
     expect(pressed('Stil')).toEqual(['Lo-Fi']);
     expect(chips('Vorlagen des Stils').map((b) => b.textContent)).toEqual(

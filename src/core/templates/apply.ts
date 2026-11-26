@@ -1,7 +1,7 @@
 import { CHANNELS, DRUM_DEFAULTS, PARTS, VOICE_IDS } from '../constants.ts';
 import { fxDefaults, mixDefaults } from '../defaults.ts';
 import { keepOpt } from '../stepopts.ts';
-import { setTape, setWarm } from '../tone.ts';
+import { setDrumDrive, setTape, setWarm } from '../tone.ts';
 import type {
   DrumParams,
   OptMap,
@@ -72,6 +72,9 @@ function mergeDrums(old: Pattern, tpl: Pattern): Pattern {
   return next;
 }
 
+/** Drum Drive gehört zu den Drums und zum Sound: jede Lade-Art setzt oder löscht ihn */
+const withDrumDrive = (s: State, t: Template): State => setDrumDrive(s, t.drumDrive ?? 0);
+
 function withSound(s: State, t: Template): State {
   const mix = mixDefaults();
   // der Sampler-Kanal gehört den eigenen Samples: unverändert übernehmen
@@ -91,7 +94,7 @@ function withSound(s: State, t: Template): State {
     mix,
     fx: { ...fxDefaults(), ...t.fx },
   };
-  return setTape(setWarm(next, t.warm), t.tape);
+  return withDrumDrive(setTape(setWarm(next, t.warm), t.tape), t);
 }
 
 function withPatterns(s: State, t: Template, drumsOnly: boolean): State {
@@ -106,14 +109,16 @@ function withPatterns(s: State, t: Template, drumsOnly: boolean): State {
 /**
  * Vorlage laden.
  * - 'all': Tempo, Swing, Tonart, Patterns der Vorlage (A bis höchstens D), Kit, Sounds, Mixer, FX,
- *   Klangcharakter und Song-Kette. Übrige Pattern-Plätze und der Sampler bleiben.
- * - 'drums': nur die Drum-Spuren dieser Patterns, dazu Kit, Tempo und Swing.
- * - 'sound': nur Kit, Sounds, Mixer, FX und Klangcharakter.
+ *   Klangcharakter, Drum Drive und Song-Kette. Übrige Pattern-Plätze und der Sampler bleiben.
+ * - 'drums': nur die Drum-Spuren dieser Patterns, dazu Kit, Drum Drive, Tempo und Swing.
+ * - 'sound': nur Kit, Sounds, Mixer, FX, Klangcharakter und Drum Drive.
  */
 export function applyTemplate(s: State, t: Template, scope: TemplateScope): State {
   if (scope === 'sound') return withSound(s, t);
-  if (scope === 'drums')
-    return { ...withPatterns(s, t, true), params: kitParams(kitByName(t.kit), t.drums ?? {}) };
+  if (scope === 'drums') {
+    const params = kitParams(kitByName(t.kit), t.drums ?? {});
+    return withDrumDrive({ ...withPatterns(s, t, true), params }, t);
+  }
   return {
     ...withPatterns(withSound(s, t), t, false),
     key: t.key,

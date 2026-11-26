@@ -1,6 +1,6 @@
 import { fxDefaults } from '../../../core/defaults.ts';
 import { setFxValue } from '../../../core/mixer.ts';
-import { setTape, setWarm } from '../../../core/tone.ts';
+import { setDrumDrive, setTape, setWarm } from '../../../core/tone.ts';
 import type { Fx } from '../../../core/types.ts';
 import { computed } from '../../../store/signals.ts';
 import type { UiContext } from '../../context.ts';
@@ -88,6 +88,16 @@ export function fxPanel(c: UiContext): HTMLElement {
         format: pct,
         readout,
         tag: () => 'TAPE',
+      }),
+      knob(scope, {
+        label: 'Drum Drive',
+        value: computed(() => store.state.value.drumDrive ?? 0),
+        write: (v) => {
+          store.update((s) => setDrumDrive(s, v));
+        },
+        def: () => 0,
+        format: pct,
+        readout,
       }),
     ]),
     h('div', { class: 'cap-label', text: 'Stutter (halten)' }),

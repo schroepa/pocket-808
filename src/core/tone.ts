@@ -31,3 +31,12 @@ export function setTape(s: State, v: number): State {
   else delete next.tape;
   return next;
 }
+
+/** Drum Drive (Verzerrung auf dem Drum-Bus), 0..1; bei 0 fehlt das Feld */
+export function setDrumDrive(s: State, v: number): State {
+  const next = { ...s };
+  const x = Math.min(1, Math.max(0, v));
+  if (x > 0) next.drumDrive = x;
+  else delete next.drumDrive;
+  return next;
+}

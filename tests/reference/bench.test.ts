@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { readGolden } from './golden.ts';
 import type { BenchResult } from './legacy/scenarios.ts';
@@ -21,4 +22,16 @@ describe('Performance-Budget', () => {
       });
     }
   }
+
+  // nur die neue Engine: Drum Drive darf keine Knoten pro Treffer kosten (Vergleich mit der Demo)
+  it('neue Engine: Drum Drive', async () => {
+    const r = await runNext<BenchResult>('bench', { load: 'drive' });
+    // die Demo-Referenz hier nur lesen: readGolden würde sie mit REF_UPDATE=1 überschreiben
+    const demo = JSON.parse(
+      readFileSync(new URL('./golden/bench/demo.json', import.meta.url), 'utf8'),
+    ) as BenchResult;
+    const g = readGolden('bench/drive', r);
+    expect(r.nodesPerSecond, 'Audio-Knoten pro Sekunde').toBeLessThanOrEqual(demo.nodesPerSecond);
+    expect(r.renderMs, 'Renderzeit 8 s Audio').toBeLessThanOrEqual(g.renderMs * RENDER_SLACK);
+  });
 });

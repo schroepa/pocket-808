@@ -133,6 +133,11 @@ describe('Kits und Sounds', () => {
       Deep: [0.2, 0.1],
       Rubber: [0.3, 0],
       Mellow: [0.1, 0.25],
+      Kreissäge: [0.55, 0.15],
+      Roboter: [0.3, 0],
+      Wummer: [0.2, 0],
+      Knurr: [0.65, 0],
+      Beton: [0.45, 0],
     });
     expect(table('LD')).toEqual({
       Saw: [0.15, 0.45],
@@ -144,9 +149,36 @@ describe('Kits und Sounds', () => {
       Bell: [0, 0.35],
       Squelch: [0.4, 0],
       Flute: [0, 0.25],
+      Neon: [0.15, 0.2],
+      Orgel: [0.1, 0.65],
+      Sirene: [0.25, 0.3],
+      Glas: [0, 0.35],
+      Zerre: [0.7, 0.2],
     });
     expect(soundPatch('BA', { p: 'Reese' })).toMatchObject({ drive: 0.3, chorus: 0.45 });
     expect('chorus' in soundPatch('BA', { p: 'Sub' })).toBe(false);
+  });
+
+  it('neue Kits und Sounds: vorhanden, mit der Wellenform ihres Charakters, keine Dublette', () => {
+    expect(KITS.slice(6).map((k) => k.name)).toEqual(['Electro', 'Break', 'Draht', 'Beton']);
+    for (const part of ['BA', 'LD'] as const) {
+      const list = SYNTH_SOUNDS[part];
+      expect(new Set(list.map((p) => JSON.stringify(p.v))).size).toBe(list.length);
+    }
+    expect(SYNTH_SOUNDS.BA.slice(-5).map((p) => [p.name, p.v.wave])).toEqual([
+      ['Kreissäge', 0],
+      ['Roboter', 1],
+      ['Wummer', 3],
+      ['Knurr', 0],
+      ['Beton', 1],
+    ]);
+    expect(SYNTH_SOUNDS.LD.slice(-5).map((p) => [p.name, p.v.wave])).toEqual([
+      ['Neon', 1],
+      ['Orgel', 2],
+      ['Sirene', 0],
+      ['Glas', 2],
+      ['Zerre', 0],
+    ]);
   });
 
   it('soundPatch: Preset, Abweichungen, Oktave, Arp und LFO', () => {
@@ -253,6 +285,17 @@ describe('Vorlage laden', () => {
     expect('tape' in s).toBe(false);
   });
 
+  it('Drum Drive: jede Lade-Art setzt oder löscht ihn', () => {
+    const driven: Template = { ...first, drumDrive: 0.45 };
+    for (const scope of ['all', 'drums', 'sound'] as const) {
+      const on = applyTemplate(initialState(), driven, scope);
+      expect(on.drumDrive).toBe(0.45);
+      expect('drumDrive' in applyTemplate(on, first, scope)).toBe(false);
+    }
+    const on = applyTemplate(initialState(), driven, 'all');
+    expect(applyKit(on, kitByName('Beton')).drumDrive).toBe(0.45);
+  });
+
   it('ersetzt Warm und Tape einer vorherigen Vorlage', () => {
     const lofi = applyTemplate(initialState(), byId('lofi-sleepy-halftime'), 'all');
     expect(lofi.tape).toBe(0.8);
@@ -269,15 +312,66 @@ describe('Katalog', () => {
     trap: [130, 150],
     house: [118, 128],
     techno: [124, 140],
+    berlin: [115, 140],
   };
 
-  it('21 Vorlagen: Lo-Fi als Schwerpunkt, je Stil mindestens vier, eindeutige Namen', () => {
-    expect(TEMPLATES).toHaveLength(21);
+  it('30 Vorlagen: Lo-Fi und Berlin als Schwerpunkt, je Stil mindestens vier, eindeutige Namen', () => {
+    expect(TEMPLATES).toHaveLength(30);
     expect(templatesOf('lofi')).toHaveLength(5);
+    expect(templatesOf('berlin')).toHaveLength(9);
     for (const g of GENRES) expect(templatesOf(g.id).length).toBeGreaterThanOrEqual(4);
-    expect(new Set(TEMPLATES.map((t) => t.id)).size).toBe(21);
-    expect(new Set(TEMPLATES.map((t) => t.name)).size).toBe(21);
+    expect(new Set(TEMPLATES.map((t) => t.id)).size).toBe(30);
+    expect(new Set(TEMPLATES.map((t) => t.name)).size).toBe(30);
     expect(TEMPLATE_SCOPES.map((s) => s.id)).toEqual(['all', 'drums', 'sound']);
+  });
+
+  const BERLIN_A: Record<string, [number, number | undefined, string]> = {
+    // id: [BPM, Drum Drive, BD-Zeile in A]
+    'berlin-kajal': [124, undefined, 'x...x...x...x...'],
+    'berlin-koenigin': [128, 0.25, 'x...x...x...x..x'],
+    'berlin-westwerk': [135, 0.45, 'x..x..x...x.x...'],
+    'berlin-breitwand': [126, 0.45, 'x.x.......xx....'],
+    'berlin-zimmerlinde': [118, undefined, 'x.......x.x.....'],
+    'berlin-ostkreuz': [128, undefined, 'x...x...x...x..o'],
+    'berlin-spreeufer': [126, undefined, 'x.....x..x......'],
+    'berlin-presslufthalle': [132, 0.8, 'x...x...x...x.x.'],
+    'berlin-tiefgang': [130, 0.2, 'x..x......x..x..'],
+  };
+
+  it('Berlin: neun Vorlagen mit Tempo, Drive und Rhythmus aus dem Entwurf', () => {
+    expect(templatesOf('berlin').map((t) => t.id)).toEqual(Object.keys(BERLIN_A));
+    for (const t of templatesOf('berlin'))
+      expect([t.tempo, t.drumDrive, t.pat.A.d.BD]).toEqual(BERLIN_A[t.id]);
+  });
+
+  it('Berlin: jedes neue Kit und jeder neue Sound kommt vor', () => {
+    const list = templatesOf('berlin');
+    for (const kit of ['Electro', 'Break', 'Draht', 'Beton'])
+      expect(list.some((t) => t.kit === kit)).toBe(true);
+    for (const part of ['BA', 'LD'] as const)
+      for (const s of SYNTH_SOUNDS[part].slice(-5))
+        expect(list.some((t) => t.sound[part].p === s.name)).toBe(true);
+  });
+
+  it('Berlin: jeder Slide folgt direkt auf eine Note, die bis an ihn heranreicht', () => {
+    const loose: string[] = [];
+    for (const t of templatesOf('berlin'))
+      for (const slot of Object.keys(t.pat) as Slot[])
+        for (const part of ['BA', 'LD'] as const) {
+          const row = parseTemplatePattern(must(t.pat[slot], slot)).notes[part];
+          row.forEach((n, step) => {
+            if (!n?.s) return;
+            const prev = row.slice(0, step).findLastIndex(Boolean);
+            const p = row[prev];
+            if (!p || prev + p.l < step) loose.push(`${t.id} ${slot} ${part} ${String(step)}`);
+          });
+        }
+    expect(loose).toEqual([]);
+  });
+
+  it('kein Haupt-Groove gleicht dem einer anderen Vorlage', () => {
+    const grooves = TEMPLATES.map((t) => JSON.stringify(t.pat.A.d));
+    expect(new Set(grooves).size).toBe(TEMPLATES.length);
   });
 
   describe.each(TEMPLATES.map((t) => [t.id, t] as const))('%s', (_id, t) => {

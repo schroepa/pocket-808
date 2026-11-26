@@ -1,4 +1,4 @@
-import { CHANNELS, PARTS } from '../core/constants.ts';
+import { CHANNELS, PARTS, VOICE_IDS } from '../core/constants.ts';
 import { channelGain, channelPan, masterGain } from '../core/mix.ts';
 import type { Rng } from '../core/random.ts';
 import { sameTone, toneOf, type Tone } from '../core/tone.ts';
@@ -15,6 +15,7 @@ import {
   tapeSettings,
   vinylNoise,
 } from './dsp.ts';
+import { createDrumDrive, type DrumDrive } from './drumdrive.ts';
 import { holdAt, rampFrom } from './params.ts';
 import { createPartFx, stereoTrim, type PartFxChain } from './partfx.ts';
 
@@ -22,7 +23,8 @@ import { createPartFx, stereoTrim, type PartFxChain } from './partfx.ts';
  * Master-Kette wie Legacy setupGraph:
  * Kanäle → Bus → Dry-Gate → DJ-Filter (LP → HP) → Kompressor → Soft-Clip → Master → Limiter →
  * Sicherheits-Shaper → Ausgang. Sends: Reverb (Convolver) hinter dem Fader, tempo-synchrones Delay
- * für die Synth-Stimmen. Stutter greift hinter dem Bus ab und speist vor dem DJ-Filter wieder ein.
+ * für die Synth-Stimmen. Drum Drive verzerrt bei Bedarf die Drum-Summe vor dem Bus. Stutter greift
+ * hinter dem Bus ab und speist vor dem DJ-Filter wieder ein.
  */
 
 export interface ChannelNodes {
@@ -51,6 +53,10 @@ export interface Graph {
   setPartFx(part: Part, fx: PartFx, t: number | null): boolean;
   /** eine leere Effektkette abbauen (eine wieder benutzte bleibt) */
   releasePartFx(part: Part): void;
+  /** Verzerrung der Drum-Summe (0 = aus); true: aus, die Kette kann nach der Blende weg */
+  setDrumDrive(v: number, t: number | null): boolean;
+  /** die Drum-Kette abbauen, falls sie weiterhin aus ist */
+  releaseDrumDrive(): void;
   /** t = null: Anfangswert direkt setzen (Legacy init), sonst weich mit setTargetAtTime */
   setMaster(v: number, t: number | null): void;
   applyChannel(id: ChannelId, ch: MixChannel, audible: boolean, t: number | null): void;
@@ -250,6 +256,8 @@ export function createGraph(
       g.setValueAtTime(v, t);
     }
   };
+
+  let drumDrive: DrumDrive | null = null;
 
   let stutter: Stutter | null = null;
   const makeStutter = (): Stutter => {
@@ -562,6 +570,20 @@ export function createGraph(
       partFx[part] = undefined;
       switchTrim(part, c.currentTime);
     },
+    setDrumDrive(v, t) {
+      if (!drumDrive) {
+        if (v <= 0) return false;
+        const sources = VOICE_IDS.map((id) => chan[id].pan);
+        drumDrive = createDrumDrive(c, sources, bus);
+      }
+      drumDrive.set(v, t);
+      return drumDrive.idle;
+    },
+    releaseDrumDrive() {
+      if (!drumDrive?.idle) return;
+      drumDrive.dispose();
+      drumDrive = null;
+    },
     muteReverb(t) {
       rvOut.gain.setTargetAtTime(0, t, 0.01);
     },
@@ -708,6 +730,7 @@ export function createGraph(
   graph.applyFx(s.fx, null);
   graph.syncSynth(s, audible, c.currentTime);
   for (const id of PARTS) graph.setPartFx(id, s.synth[id], null);
+  graph.setDrumDrive(s.drumDrive ?? 0, null);
   tone = toneOf(s);
   routeTone(c.currentTime, true);
   return graph;

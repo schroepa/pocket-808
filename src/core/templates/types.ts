@@ -16,13 +16,14 @@ import type {
  * (siehe parse.ts). Das Speicherformat bleibt unberührt: Laden erzeugt einen gewöhnlichen Zustand.
  */
 
-export type Genre = 'lofi' | 'hiphop' | 'trap' | 'house' | 'techno';
+export type Genre = 'lofi' | 'hiphop' | 'trap' | 'house' | 'techno' | 'berlin';
 export const GENRES: readonly { id: Genre; name: string }[] = [
   { id: 'lofi', name: 'Lo-Fi' },
   { id: 'hiphop', name: 'Hip-Hop' },
   { id: 'trap', name: 'Trap' },
   { id: 'house', name: 'House' },
   { id: 'techno', name: 'Techno' },
+  { id: 'berlin', name: 'Berlin' },
 ];
 
 export type KitParams = Partial<Record<VoiceId, Partial<DrumParams>>>;
@@ -66,6 +67,8 @@ export interface Template {
   fx?: Partial<Fx>;
   warm: boolean;
   tape: number;
+  /** Verzerrung auf dem Drum-Bus 0..1; fehlt bei Vorlagen ohne Drive */
+  drumDrive?: number;
   pat: Partial<Record<Slot, TemplatePattern>> & { A: TemplatePattern };
   song: readonly (readonly [Slot, number])[];
 }

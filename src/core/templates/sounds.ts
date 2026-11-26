@@ -67,6 +67,31 @@ const BASS: readonly Sound[] = [
     name: 'Mellow',
     v: v(2, 0.32, 0.05, 0.15, [0.02, 0.3, 0.4, 0.25], [0.02, 0.5, 0.75, 0.25], 0.05, 0.5, 0, 0.85),
   },
+  // offene, sägende Säge, leicht verstimmt
+  {
+    name: 'Kreissäge',
+    v: v(0, 0.55, 0.2, 0.2, [0, 0.35, 0.55, 0.15], [0, 0.4, 0.8, 0.12], 0.35, 0.25, 0, 0.75),
+  },
+  // kurzes, hohles Rechteck ohne Sub, kaum Filterbewegung
+  {
+    name: 'Roboter',
+    v: v(1, 0.42, 0.15, 0.1, [0, 0.15, 0.5, 0.08], [0, 0.2, 0.6, 0.06], 0, 0, 0, 0.7),
+  },
+  // tiefer, langer Sinus mit viel Sub
+  {
+    name: 'Wummer',
+    v: v(3, 0.35, 0, 0.05, [0, 0.5, 0.6, 0.4], [0.01, 0.8, 0.85, 0.45], 0, 0.85, 0, 0.75),
+  },
+  // resonante Säge, die beim Filter-Schließen knurrt
+  {
+    name: 'Knurr',
+    v: v(0, 0.28, 0.65, 0.5, [0.02, 0.35, 0.25, 0.15], [0, 0.5, 0.75, 0.12], 0.15, 0.25, 0, 0.7),
+  },
+  // hartes, gedrücktes Rechteck: schneller Schlag, dann voller Pegel
+  {
+    name: 'Beton',
+    v: v(1, 0.34, 0.2, 0.4, [0, 0.12, 0.2, 0.08], [0, 0.25, 0.85, 0.08], 0.05, 0.5, 0, 0.7),
+  },
 ];
 
 const LEAD: readonly Sound[] = [
@@ -100,6 +125,31 @@ const LEAD: readonly Sound[] = [
     name: 'Flute',
     v: v(2, 0.6, 0.05, 0.1, [0.08, 0.4, 0.7, 0.3], [0.08, 0.5, 0.8, 0.3], 0.15, 0, 0.4, 0.55),
   },
+  // kaltes Rechteck ohne Delay
+  {
+    name: 'Neon',
+    v: v(1, 0.72, 0.15, 0.1, [0, 0.2, 0.6, 0.1], [0, 0.3, 0.7, 0.12], 0.05, 0, 0, 0.5),
+  },
+  // stehender Ton mit Unteroktave, Breite durch den Chorus
+  {
+    name: 'Orgel',
+    v: v(2, 0.7, 0, 0, [0, 0.3, 1, 0.15], [0.02, 0.3, 1, 0.15], 0.2, 0.35, 0.1, 0.55),
+  },
+  // hohe Resonanz mit langsamem Filter-Attack: der Ton gleitet nach oben
+  {
+    name: 'Sirene',
+    v: v(0, 0.35, 0.75, 0.55, [0.6, 0.6, 0.7, 0.4], [0.05, 0.5, 0.85, 0.35], 0.1, 0, 0.35, 0.5),
+  },
+  // zarter, heller Anschlag, der im Delay weiterklingt
+  {
+    name: 'Glas',
+    v: v(2, 0.85, 0.1, 0.15, [0, 0.3, 0.2, 0.4], [0.005, 0.4, 0.2, 0.4], 0.12, 0, 0.55, 0.5),
+  },
+  // kurzer, verzerrter Stab
+  {
+    name: 'Zerre',
+    v: v(0, 0.5, 0.3, 0.4, [0, 0.18, 0.1, 0.1], [0, 0.25, 0.15, 0.1], 0.3, 0, 0.2, 0.6),
+  },
 ];
 
 /** Drive und Chorus je Sound, nach Charakter: Bässe vor allem Drive, Flächen und Leads Chorus */
@@ -113,6 +163,11 @@ const FX: Readonly<Record<Part, Readonly<Record<string, Readonly<PartFx>>>>> = {
     Deep: { drive: 0.2, chorus: 0.1 },
     Rubber: { drive: 0.3 },
     Mellow: { drive: 0.1, chorus: 0.25 },
+    Kreissäge: { drive: 0.55, chorus: 0.15 },
+    Roboter: { drive: 0.3 },
+    Wummer: { drive: 0.2 },
+    Knurr: { drive: 0.65 },
+    Beton: { drive: 0.45 },
   },
   LD: {
     Saw: { drive: 0.15, chorus: 0.45 },
@@ -124,6 +179,11 @@ const FX: Readonly<Record<Part, Readonly<Record<string, Readonly<PartFx>>>>> = {
     Bell: { chorus: 0.35 },
     Squelch: { drive: 0.4 },
     Flute: { chorus: 0.25 },
+    Neon: { drive: 0.15, chorus: 0.2 },
+    Orgel: { drive: 0.1, chorus: 0.65 },
+    Sirene: { drive: 0.25, chorus: 0.3 },
+    Glas: { chorus: 0.35 },
+    Zerre: { drive: 0.7, chorus: 0.2 },
   },
 };
 

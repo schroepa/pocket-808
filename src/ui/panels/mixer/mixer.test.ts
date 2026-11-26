@@ -151,6 +151,24 @@ describe('Klang im FX-Feld', () => {
     }
     expect('tape' in store.state.value).toBe(false);
   });
+
+  it('Drum Drive stellt den Wert, meldet ihn und löscht das Feld bei 0', () => {
+    const { c, store } = makeContext();
+    const el = fxPanel(c);
+    const drive = el.querySelector('[role=slider][aria-label="Drum Drive"]');
+    key(drive, 'End');
+    expect(store.state.value.drumDrive).toBe(1);
+    expect(c.readout.text.value).toBe('Drum Drive 100%');
+    key(drive, 'Home');
+    expect('drumDrive' in store.state.value).toBe(false);
+    // Doppeltipp setzt auf den Standard (aus)
+    key(drive, 'End');
+    for (let i = 0; i < 2; i++) {
+      drive?.dispatchEvent(pointer('pointerdown'));
+      drive?.dispatchEvent(pointer('pointerup'));
+    }
+    expect('drumDrive' in store.state.value).toBe(false);
+  });
 });
 
 describe('Kanäle', () => {

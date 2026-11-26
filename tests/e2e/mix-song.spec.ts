@@ -32,6 +32,7 @@ const saved = (page: Page) =>
       JSON.parse(localStorage.getItem('pocket808.v1') ?? '{}') as {
         tape?: number;
         warm?: boolean;
+        drumDrive?: number;
         tempo?: number;
       },
   );
@@ -100,6 +101,23 @@ test('FX: Warm und Tape ein- und ausschalten; bleibt nach Neuladen', async ({ pa
   // aus heißt: die Felder fehlen wieder im Speicherstand
   await expect.poll(async () => 'tape' in (await saved(page))).toBe(false);
   await expect.poll(async () => 'warm' in (await saved(page))).toBe(false);
+});
+
+test('FX: Drum Drive einstellen; bleibt nach Neuladen', async ({ page }) => {
+  await openMixer(page, 'FX');
+  const drive = page.getByRole('slider', { name: 'Drum Drive', exact: true });
+  await expect(drive).toHaveAttribute('aria-valuenow', '0');
+  await drive.press('End');
+  await expect(drive).toHaveAttribute('aria-valuenow', '100');
+  await expect(page.locator('.lcd-sub')).toHaveText('Drum Drive 100%');
+  await expect.poll(async () => (await saved(page)).drumDrive).toBe(1);
+  await page.reload();
+  await openMixer(page, 'FX');
+  await expect(drive).toHaveAttribute('aria-valuenow', '100');
+  await drive.press('Home');
+  await expect(drive).toHaveAttribute('aria-valuenow', '0');
+  // aus heißt: das Feld fehlt wieder im Speicherstand
+  await expect.poll(async () => 'drumDrive' in (await saved(page))).toBe(false);
 });
 
 test('Song: anhängen, Wiederholung, verschieben, entfernen, leeren; bleibt nach Neuladen', async ({
@@ -196,6 +214,22 @@ test('Vorlagen-Browser: Stil wählen, Vorlage laden, Warm und Tape an; bleibt na
   await expect.poll(async () => (await saved(page)).tape).toBeUndefined();
   await page.getByRole('button', { name: 'Zurück', exact: true }).click();
   await expect.poll(async () => (await saved(page)).tape).toBe(0.6);
+});
+
+test('Stil Berlin: Vorlage laden setzt Drum Drive; eine ohne löscht ihn; Zurück', async ({
+  page,
+}) => {
+  await openMode(page, 'Sound');
+  await openPage(page, 'Vorlagen');
+  await page.locator('.library-genres .chip', { hasText: 'Berlin' }).click();
+  await page.locator('.library-templates .chip', { hasText: 'Westwerk' }).click();
+  await expect.poll(async () => (await saved(page)).drumDrive).toBe(0.45);
+  expect((await saved(page)).tempo).toBe(135);
+  await page.locator('.tpl-scope [role=radio]', { hasText: 'Drums' }).click();
+  await page.locator('.library-templates .chip', { hasText: 'Kajal' }).click();
+  await expect.poll(async () => 'drumDrive' in (await saved(page))).toBe(false);
+  await page.getByRole('button', { name: 'Zurück', exact: true }).click();
+  await expect.poll(async () => (await saved(page)).drumDrive).toBe(0.45);
 });
 
 test('Vorlagen-Browser: im Fenster, Touch-Ziele ≥ 44 px', async ({ page }, info) => {

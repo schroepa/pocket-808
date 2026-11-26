@@ -274,6 +274,10 @@ export function loadState(src: unknown, base: State): State {
     if (isNum(src.tape) && src.tape > 0) s.tape = clamp(src.tape, 0, 1);
     else delete s.tape;
   }
+  if ('drumDrive' in src) {
+    if (isNum(src.drumDrive) && src.drumDrive > 0) s.drumDrive = clamp(src.drumDrive, 0, 1);
+    else delete s.drumDrive;
+  }
   return s;
 }
 
@@ -328,5 +332,6 @@ export function serialize(state: State): State {
     ...(c.scenes ? { scenes: c.scenes } : {}),
     ...(c.warm ? { warm: true as const } : {}),
     ...(c.tape ? { tape: c.tape } : {}),
+    ...(c.drumDrive ? { drumDrive: c.drumDrive } : {}),
   };
 }
